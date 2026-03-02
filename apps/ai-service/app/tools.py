@@ -1,9 +1,9 @@
 """
-Tool schemas and async executors for the Gemini agent.
+Tool declarations and async executors for the Gemini agent.
 
-Each function below is a schema-only definition (empty body with a detailed
-docstring) that the google-genai SDK uses to auto-generate the JSON
-schema sent to Gemini.  Actual execution is async and lives in execute_tool().
+Each tool is a types.FunctionDeclaration (google-genai SDK v1+) with an
+explicit JSON schema — no Python function introspection, no default-value
+compatibility issues.  Actual execution is async and lives in execute_tool().
 """
 
 from __future__ import annotations
@@ -11,90 +11,141 @@ from __future__ import annotations
 import json
 import logging
 
+from google.genai import types
+
 from app import backend_client
 
 logger = logging.getLogger(__name__)
 
 
-# ── Tool schemas (Gemini reads the signature + docstring) ─────────────────────
+# ── Tool declarations ─────────────────────────────────────────────────────────
 
-def consultar_inventario(busqueda: str = "", presupuesto_max: float = 0.0) -> list:
-    """
-    Consulta el inventario real de productos disponibles en la tienda.
-    SIEMPRE llama esta herramienta antes de recomendar o cotizar cualquier producto.
-    Nunca inventes productos ni precios que no estén aquí.
+_consultar_inventario = types.FunctionDeclaration(
+    name="consultar_inventario",
+    description=(
+        "Consulta el inventario real de productos disponibles en la tienda. "
+        "SIEMPRE llama esta herramienta antes de recomendar o cotizar cualquier producto. "
+        "Nunca inventes productos ni precios que no estén aquí."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "busqueda": types.Schema(
+                type=types.Type.STRING,
+                description=(
+                    "Término de búsqueda libre (ej: 'laptop gaming', 'celular', 'monitor'). "
+                    "Deja vacío para obtener todo el catálogo."
+                ),
+            ),
+            "presupuesto_max": types.Schema(
+                type=types.Type.NUMBER,
+                description="Precio máximo en MXN. Usa 0 para sin límite de precio.",
+            ),
+        },
+        required=[],
+    ),
+)
 
-    Args:
-        busqueda: Término de búsqueda libre (ej: "laptop gaming", "celular", "monitor").
-                  Deja vacío para obtener todo el catálogo.
-        presupuesto_max: Precio máximo en MXN (0 = sin límite de precio).
-    """
-    ...
+_ver_reparacion = types.FunctionDeclaration(
+    name="ver_reparacion",
+    description=(
+        "Obtiene el estado actual de una reparación por su número de ticket. "
+        "Úsala cuando el cliente mencione su número de ticket."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "numero_ticket": types.Schema(
+                type=types.Type.INTEGER,
+                description="Número de ticket (ej: 42). Solo el número, sin prefijos.",
+            ),
+        },
+        required=["numero_ticket"],
+    ),
+)
+
+_ver_mis_reparaciones = types.FunctionDeclaration(
+    name="ver_mis_reparaciones",
+    description=(
+        "Busca todas las reparaciones registradas con el número de WhatsApp del cliente. "
+        "Úsala cuando el cliente pregunte por sus reparaciones sin mencionar un número "
+        "de ticket específico."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={},
+    ),
+)
+
+_registrar_reparacion = types.FunctionDeclaration(
+    name="registrar_reparacion",
+    description=(
+        "Registra una nueva solicitud de reparación y crea un ticket de servicio. "
+        "Úsala solo cuando tengas los tres datos completos: nombre, dispositivo y problema. "
+        "No la llames antes de confirmar la información con el cliente."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "nombre_cliente": types.Schema(
+                type=types.Type.STRING,
+                description="Nombre completo del cliente.",
+            ),
+            "dispositivo": types.Schema(
+                type=types.Type.STRING,
+                description=(
+                    "Marca y modelo exacto del dispositivo "
+                    "(ej: 'iPhone 13 Pro', 'Laptop HP Pavilion 15')."
+                ),
+            ),
+            "problema": types.Schema(
+                type=types.Type.STRING,
+                description="Descripción detallada del problema o falla que presenta el equipo.",
+            ),
+        },
+        required=["nombre_cliente", "dispositivo", "problema"],
+    ),
+)
+
+_generar_cotizacion = types.FunctionDeclaration(
+    name="generar_cotizacion",
+    description=(
+        "Genera una cotización formal para un producto del inventario. "
+        "Úsala solo después de que el cliente haya confirmado exactamente qué producto quiere. "
+        "Obtén el product_id llamando primero a consultar_inventario."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "nombre_cliente": types.Schema(
+                type=types.Type.STRING,
+                description="Nombre completo del cliente.",
+            ),
+            "product_id": types.Schema(
+                type=types.Type.STRING,
+                description=(
+                    "ID único del producto (campo 'id' devuelto por consultar_inventario)."
+                ),
+            ),
+            "cantidad": types.Schema(
+                type=types.Type.INTEGER,
+                description="Número de unidades a cotizar (mínimo 1).",
+            ),
+        },
+        required=["nombre_cliente", "product_id", "cantidad"],
+    ),
+)
 
 
-def ver_reparacion(numero_ticket: int) -> dict:
-    """
-    Obtiene el estado actual de una reparación por su número de ticket.
-    Úsala cuando el cliente mencione su número de ticket.
-
-    Args:
-        numero_ticket: Número de ticket (ej: 42). Solo el número, sin prefijos.
-    """
-    ...
-
-
-def ver_mis_reparaciones() -> list:
-    """
-    Busca todas las reparaciones registradas con el número de WhatsApp del cliente.
-    Úsala cuando el cliente pregunte por sus reparaciones sin mencionar un número
-    de ticket específico.
-    """
-    ...
-
-
-def registrar_reparacion(
-    nombre_cliente: str,
-    dispositivo: str,
-    problema: str,
-) -> dict:
-    """
-    Registra una nueva solicitud de reparación y crea un ticket de servicio.
-    Úsala solo cuando tengas los tres datos completos: nombre, dispositivo y problema.
-    No la llames antes de confirmar la información con el cliente.
-
-    Args:
-        nombre_cliente: Nombre completo del cliente.
-        dispositivo: Marca y modelo exacto (ej: "iPhone 13 Pro", "Laptop HP Pavilion 15").
-        problema: Descripción detallada del problema o falla que presenta el equipo.
-    """
-    ...
-
-
-def generar_cotizacion(
-    nombre_cliente: str,
-    product_id: str,
-    cantidad: int,
-) -> dict:
-    """
-    Genera una cotización formal para un producto del inventario.
-    Úsala solo después de que el cliente haya confirmado exactamente qué producto quiere.
-    Obtén el product_id llamando primero a consultar_inventario.
-
-    Args:
-        nombre_cliente: Nombre completo del cliente.
-        product_id: ID único del producto (campo 'id' devuelto por consultar_inventario).
-        cantidad: Número de unidades a cotizar (mínimo 1).
-    """
-    ...
-
-
-# Exported list — passed directly to GenerativeModel(tools=...)
+# Exported list — passed directly to GenerateContentConfig(tools=...)
 ALL_TOOLS = [
-    consultar_inventario,
-    ver_reparacion,
-    ver_mis_reparaciones,
-    registrar_reparacion,
-    generar_cotizacion,
+    types.Tool(function_declarations=[
+        _consultar_inventario,
+        _ver_reparacion,
+        _ver_mis_reparaciones,
+        _registrar_reparacion,
+        _generar_cotizacion,
+    ])
 ]
 
 
