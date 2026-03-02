@@ -6,9 +6,7 @@ settings:
 
 importers:
 
-  .: {}
-
-  apps/backend:
+  .:
     dependencies:
       '@nestjs/common':
         specifier: ^11.0.1
@@ -144,7 +142,9 @@ importers:
         specifier: ^8.20.0
         version: 8.56.1(eslint@9.39.3(jiti@2.6.1))(typescript@5.9.3)
 
-  apps/frontend:
+  ../..: {}
+
+  ../frontend:
     dependencies:
       '@tanstack/react-query':
         specifier: ^5.51.1
