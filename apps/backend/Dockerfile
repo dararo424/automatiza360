@@ -9,13 +9,6 @@ RUN npm install -g pnpm@10.30.3
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --no-frozen-lockfile
 
-# Generate Prisma Client
-# DATABASE_URL is not used by 'prisma generate' (no DB connection),
-# but prisma.config.ts imports dotenv so we provide a dummy value.
-COPY prisma ./prisma/
-COPY prisma.config.ts ./
-RUN DATABASE_URL=postgresql://build:build@localhost/build pnpm prisma generate
-
 # Compile TypeScript → dist/
 COPY tsconfig.json tsconfig.build.json nest-cli.json ./
 COPY src ./src/
@@ -29,17 +22,19 @@ ENV NODE_ENV=production
 
 RUN npm install -g pnpm@10.30.3
 
-# Install production dependencies only
+# Install production dependencies only (includes prisma CLI → needed for generate)
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod --no-frozen-lockfile
 
-# Copy compiled output from builder (includes dist/src/**/*.js)
-COPY --from=builder /app/dist ./dist/
+# Generate Prisma Client into node_modules/.prisma/client
+# DATABASE_URL is not used by 'prisma generate' (no DB connection),
+# but prisma.config.ts imports dotenv so we provide a dummy value.
+COPY prisma ./prisma/
+COPY prisma.config.ts ./
+RUN DATABASE_URL=postgresql://build:build@localhost/build pnpm prisma generate
 
-# Copy the Prisma-generated client into dist/generated/prisma.
-# Compiled files live at dist/src/<module>/*.js; their relative import
-# "../../generated/prisma" resolves to dist/generated/prisma at runtime.
-COPY --from=builder /app/generated/prisma ./dist/generated/prisma
+# Copy compiled output from builder
+COPY --from=builder /app/dist ./dist/
 
 EXPOSE 3000
 
