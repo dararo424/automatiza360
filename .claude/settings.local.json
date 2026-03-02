@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm build:*)",
+      "Bash(pnpm test:*)",
+      "Bash(node:*)",
+      "Bash(npx prisma:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm install:*)"
+    ]
+  }
+}

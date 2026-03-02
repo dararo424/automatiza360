@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Tenant = cada negocio cliente de Automatiza360
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      Plan     @default(STARTER)
+  industry  Industry
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users          User[]
+  orders         Order[]
+  products       Product[]
+  tickets        Ticket[]
+  cotizaciones   Cotizacion[]
+  notificaciones Notificacion[]
+}
+
+// Usuario dentro de un negocio
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(STAFF)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// Pedidos (restaurante)
+model Order {
+  id        String      @id @default(cuid())
+  number    Int
+  status    OrderStatus @default(PENDING)
+  total     Float
+  notes     String?
+  phone     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  tenantId  String
+  tenant    Tenant      @relation(fields: [tenantId], references: [id])
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  quantity  Int
+  price     Float
+  name      String
+
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+}
+
+// Productos / inventario (tienda tech + menú restaurante)
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  cost        Float?
+  stock       Int      @default(0)
+  minStock    Int      @default(5)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// Tickets de reparación (tienda tech)
+model Ticket {
+  id          String       @id @default(cuid())
+  number      Int
+  clientName  String
+  clientPhone String
+  device      String
+  issue       String
+  diagnosis   String?
+  status      TicketStatus @default(RECEIVED)
+  price       Float?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+}
+
+model Cotizacion {
+  id          String           @id @default(cuid())
+  number      Int
+  clientName  String
+  clientPhone String?
+  notes       String?
+  total       Float
+  status      CotizacionStatus @default(DRAFT)
+  validUntil  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  tenantId    String
+  tenant      Tenant           @relation(fields: [tenantId], references: [id])
+  items       CotizacionItem[]
+}
+
+model CotizacionItem {
+  id           String     @id @default(cuid())
+  quantity     Int
+  price        Float
+  name         String
+  subtotal     Float
+  cotizacionId String
+  cotizacion   Cotizacion @relation(fields: [cotizacionId], references: [id])
+}
+
+model Notificacion {
+  id        String   @id @default(cuid())
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// Enums
+enum Plan {
+  STARTER
+  PRO
+  BUSINESS
+}
+
+enum Industry {
+  RESTAURANT
+  TECH_STORE
+  CLINIC
+  OTHER
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum TicketStatus {
+  RECEIVED
+  DIAGNOSING
+  WAITING_PARTS
+  REPAIRING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum CotizacionStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}

@@ -1,0 +1,123 @@
+import { NavLink } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../../context/AuthContext';
+import { getNotificaciones } from '../../api/notificaciones';
+import type { Industry } from '../../types';
+
+interface NavItem {
+  to: string;
+  label: string;
+  emoji: string;
+}
+
+const PLAN_COLORS: Record<string, string> = {
+  STARTER: 'bg-slate-600',
+  PRO: 'bg-indigo-600',
+  BUSINESS: 'bg-amber-600',
+};
+
+function getNavItems(industry: Industry): NavItem[] {
+  const base: NavItem[] = [{ to: '/dashboard', label: 'Dashboard', emoji: '🏠' }];
+
+  if (industry === 'RESTAURANT') {
+    return [
+      ...base,
+      { to: '/ordenes', label: 'Órdenes', emoji: '🍽️' },
+      { to: '/productos', label: 'Productos', emoji: '📦' },
+    ];
+  }
+
+  if (industry === 'TECH_STORE') {
+    return [
+      ...base,
+      { to: '/tickets', label: 'Tickets', emoji: '🔧' },
+      { to: '/cotizaciones', label: 'Cotizaciones', emoji: '📄' },
+      { to: '/inventario', label: 'Inventario', emoji: '📦' },
+    ];
+  }
+
+  return base;
+}
+
+export function Sidebar() {
+  const { user, logout } = useAuth();
+  const industry = user?.tenant?.industry ?? 'OTHER';
+
+  const { data: notificaciones } = useQuery({
+    queryKey: ['notificaciones', false],
+    queryFn: () => getNotificaciones(false),
+    refetchInterval: 30_000,
+    enabled: !!user,
+  });
+
+  const unreadCount = notificaciones?.filter((n) => !n.read).length ?? 0;
+  const navItems = getNavItems(industry);
+  const planColor = PLAN_COLORS[user?.tenant?.plan ?? ''] ?? 'bg-slate-600';
+
+  return (
+    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 h-full">
+      {/* Header */}
+      <div className="p-5 border-b border-slate-700">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-2xl font-black text-white">A360</span>
+        </div>
+        <p className="text-sm font-medium text-slate-200 truncate">{user?.tenant?.name}</p>
+        <span className={`mt-1 inline-block text-xs px-2 py-0.5 rounded-full text-white ${planColor}`}>
+          {user?.tenant?.plan}
+        </span>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+              }`
+            }
+          >
+            <span>{item.emoji}</span>
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+
+        {/* Notifications always last */}
+        <NavLink
+          to="/notificaciones"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-indigo-600 text-white'
+                : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+            }`
+          }
+        >
+          <span>🔔</span>
+          <span className="flex-1">Notificaciones</span>
+          {unreadCount > 0 && (
+            <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </NavLink>
+      </nav>
+
+      {/* User footer */}
+      <div className="p-4 border-t border-slate-700">
+        <p className="text-sm font-medium text-slate-200 truncate">{user?.name}</p>
+        <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+        <button
+          onClick={logout}
+          className="mt-3 w-full text-left text-xs text-slate-400 hover:text-red-400 transition-colors"
+        >
+          Cerrar sesión →
+        </button>
+      </div>
+    </aside>
+  );
+}
