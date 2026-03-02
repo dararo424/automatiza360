@@ -2,11 +2,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Form, Response
 
-from app.backend_client import ping
+from app.backend_client import get_perfil, ping
+from app.agent import set_store_name
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,17 +19,36 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 1. Validate required env vars
+    missing = [v for v in ("GEMINI_API_KEY", "BOT_EMAIL", "BOT_PASSWORD") if not os.getenv(v)]
+    if missing:
+        logger.error("Missing required environment variables: %s", ", ".join(missing))
+
+    # 2. Authenticate with the NestJS backend
     ok = await ping()
     if not ok:
         logger.warning(
-            "Could not authenticate with backend on startup. "
-            "Check BOT_EMAIL, BOT_PASSWORD and BACKEND_URL env vars. "
-            "Bot will return error messages until backend is reachable."
+            "Backend authentication failed on startup. "
+            "Check BOT_EMAIL, BOT_PASSWORD and BACKEND_URL."
         )
+
+    # 3. Fetch store name from the bot's tenant profile (unless overridden by env var)
+    if ok and not os.getenv("BOT_STORE_NAME"):
+        try:
+            perfil = await get_perfil()
+            store_name = (perfil.get("tenant") or {}).get("name", "")
+            if store_name:
+                set_store_name(store_name)
+                logger.info("Store name loaded from backend: %s", store_name)
+        except Exception as exc:
+            logger.warning("Could not fetch store name from backend: %s", exc)
+    elif os.getenv("BOT_STORE_NAME"):
+        set_store_name(os.getenv("BOT_STORE_NAME"))  # type: ignore[arg-type]
+
     yield
 
 
-app = FastAPI(title="Automatiza360 WhatsApp Bot", lifespan=lifespan)
+app = FastAPI(title="Automatiza360 WhatsApp AI Agent", lifespan=lifespan)
 
 
 @app.get("/health")
@@ -40,14 +61,14 @@ async def webhook(
     From: str = Form(...),
     Body: str = Form(default=""),
 ):
-    """Twilio WhatsApp webhook. Receives a message and returns TwiML."""
-    # Import here to avoid circular import at module load time
+    """Twilio WhatsApp webhook — receives a message and returns TwiML."""
     from app.message_handler import handle_message
 
-    text = Body.strip() or "menu"
-    logger.info("Incoming from %s: %r", From, text[:80])
+    text = Body.strip() or "hola"
+    logger.info("Incoming  from=%s  text=%r", From, text[:120])
 
     reply = await handle_message(From, text)
+    logger.info("Outgoing  to=%s  text=%r", From, reply[:120])
 
     safe = reply.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     twiml = (

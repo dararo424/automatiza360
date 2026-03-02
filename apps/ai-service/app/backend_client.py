@@ -101,3 +101,9 @@ async def crear_ticket(data: dict) -> dict:
 async def crear_cotizacion(data: dict) -> dict:
     result = await _request("POST", "/cotizaciones", json=data)
     return result  # type: ignore[return-value]
+
+
+async def get_perfil() -> dict:
+    """Return the authenticated bot user's profile including tenant info."""
+    result = await _request("GET", "/auth/perfil")
+    return result  # type: ignore[return-value]
