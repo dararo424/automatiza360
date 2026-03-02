@@ -5,7 +5,10 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Form, Response
+from pathlib import Path
+
+from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.backend_client import get_perfil, ping
 from app.agent import set_store_name
@@ -50,10 +53,33 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Automatiza360 WhatsApp AI Agent", lifespan=lifespan)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://automatiza360-frontend.vercel.app",
+        "http://localhost:5173",
+    ],
+    allow_methods=["POST", "GET"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.post("/import-inventory")
+async def import_inventory(file: UploadFile = File(...)):
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in {".pdf", ".xlsx", ".xls", ".jpg", ".jpeg", ".png"}:
+        raise HTTPException(400, "Formato no soportado")
+    content = await file.read()
+    if len(content) > 20 * 1024 * 1024:
+        raise HTTPException(413, "Archivo supera 20 MB")
+    from app.importer import extract_products
+    products = await extract_products(content, file.filename or "file")
+    return {"products": products}
 
 
 @app.post("/webhook")

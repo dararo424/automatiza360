@@ -117,3 +117,12 @@ export interface Notificacion {
   read: boolean;
   createdAt: string;
 }
+
+export interface ImportedProduct {
+  name: string;
+  description?: string;
+  price: number;
+  cost?: number;
+  stock: number;
+  minStock: number;
+}
