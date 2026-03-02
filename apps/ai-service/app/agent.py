@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 _STORE_NAME: str = ""          # set by main.py lifespan after backend login
 
-_MODEL_NAME = "gemini-2.0-flash"
+_MODEL_NAME = "gemini-2.0-flash-lite"
 MAX_HISTORY = 20               # Content entries to keep (≈ 10 conversation turns)
 MAX_TOOL_ITERATIONS = 6        # guard against infinite tool-call loops
 
