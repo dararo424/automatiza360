@@ -14,7 +14,8 @@
       "Bash(pnpm prisma:*)",
       "Bash(pnpm prune:*)",
       "Bash(CI=true pnpm prune:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(python:*)"
     ]
   }
 }
