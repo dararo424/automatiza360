@@ -15,7 +15,8 @@
       "Bash(pnpm prune:*)",
       "Bash(CI=true pnpm prune:*)",
       "Bash(npm run:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(pip show:*)"
     ]
   }
 }
