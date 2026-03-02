@@ -41,6 +41,9 @@ importers:
       class-validator:
         specifier: ^0.15.1
         version: 0.15.1
+      dotenv:
+        specifier: ^17.3.1
+        version: 17.3.1
       passport:
         specifier: ^0.7.0
         version: 0.7.0
@@ -93,9 +96,6 @@ importers:
       '@types/supertest':
         specifier: ^6.0.2
         version: 6.0.3
-      dotenv:
-        specifier: ^17.3.1
-        version: 17.3.1
       eslint:
         specifier: ^9.18.0
         version: 9.39.3(jiti@2.6.1)
