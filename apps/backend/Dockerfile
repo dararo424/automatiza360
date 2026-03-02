@@ -45,4 +45,4 @@ COPY --from=builder /app/dist ./dist/
 EXPOSE 3000
 
 # Run node directly — equivalent to 'pnpm start:prod' but without the pnpm overhead
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main"]
