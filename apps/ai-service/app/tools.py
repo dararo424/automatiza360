@@ -2,7 +2,7 @@
 Tool schemas and async executors for the Gemini agent.
 
 Each function below is a schema-only definition (empty body with a detailed
-docstring) that the google-generativeai SDK uses to auto-generate the JSON
+docstring) that the google-genai SDK uses to auto-generate the JSON
 schema sent to Gemini.  Actual execution is async and lives in execute_tool().
 """
 

@@ -1,7 +1,7 @@
 """
 Gemini conversational agent.
 
-Wraps google-generativeai's ChatSession in an async function-calling loop.
+Uses the google-genai SDK (v1+) with a manual function-calling loop.
 Conversation history is stored in the caller's session dict so context is
 preserved across WhatsApp messages (in-memory; survives for the lifetime of
 the process — replace with Redis for multi-instance deployments).
@@ -13,7 +13,8 @@ import asyncio
 import logging
 import os
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from app.tools import ALL_TOOLS, execute_tool
 
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 _STORE_NAME: str = ""          # set by main.py lifespan after backend login
 
+_MODEL_NAME = "gemini-2.0-flash"
 MAX_HISTORY = 20               # Content entries to keep (≈ 10 conversation turns)
 MAX_TOOL_ITERATIONS = 6        # guard against infinite tool-call loops
 
@@ -59,22 +61,24 @@ Cuando un cliente quiera comprar, cotizar o pedir recomendaciones:
 - NUNCA inventes datos de productos, stock ni precios fuera del inventario real."""
 
 
-# ── Model singleton ────────────────────────────────────────────────────────────
+# ── Client singleton ────────────────────────────────────────────────────────────
 
-_model: genai.GenerativeModel | None = None
+_client: genai.Client | None = None
+_chat_config: types.GenerateContentConfig | None = None
 
 
 def set_store_name(name: str) -> None:
     """Called from main.py lifespan after fetching tenant info from the backend."""
-    global _STORE_NAME, _model
+    global _STORE_NAME, _client, _chat_config
     _STORE_NAME = name
-    _model = None   # force model rebuild with new store name
+    _client = None        # force rebuild with new store name
+    _chat_config = None
 
 
-def _get_model() -> genai.GenerativeModel:
-    global _model
-    if _model is not None:
-        return _model
+def _get_client() -> tuple[genai.Client, types.GenerateContentConfig]:
+    global _client, _chat_config
+    if _client is not None:
+        return _client, _chat_config  # type: ignore[return-value]
 
     if not GEMINI_API_KEY:
         raise RuntimeError(
@@ -83,14 +87,16 @@ def _get_model() -> genai.GenerativeModel:
         )
 
     store = _STORE_NAME or os.getenv("BOT_STORE_NAME", "nuestra tienda")
-    genai.configure(api_key=GEMINI_API_KEY)
-    _model = genai.GenerativeModel(
-        model_name="gemini-pro",
-        tools=ALL_TOOLS,
+    _client = genai.Client(api_key=GEMINI_API_KEY)
+    _chat_config = types.GenerateContentConfig(
         system_instruction=_build_system_prompt(store),
+        tools=ALL_TOOLS,
+        # Disable automatic function calling — we drive the loop manually so we
+        # can execute tools asynchronously and inject the phone context.
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
     )
-    logger.info("Gemini model initialised for store: %s", store)
-    return _model
+    logger.info("Gemini client initialised for store: %s", store)
+    return _client, _chat_config
 
 
 # ── Agentic loop ───────────────────────────────────────────────────────────────
@@ -104,18 +110,23 @@ async def run(phone: str, text: str, session: dict) -> str:
 
     Updates session["history"] so follow-up messages retain context.
     """
-    model = _get_model()
+    client, config = _get_client()
     history: list = session.get("history", [])
 
-    chat = model.start_chat(history=history)
-    response = await chat.send_message_async(text)
+    chat = client.aio.chats.create(
+        model=_MODEL_NAME,
+        history=history,
+        config=config,
+    )
+    response = await chat.send_message(text)
 
     for iteration in range(MAX_TOOL_ITERATIONS):
         # Collect function calls from this response
+        parts = response.candidates[0].content.parts if response.candidates else []
         fn_calls = [
             part.function_call
-            for part in response.parts
-            if part.function_call.name   # empty name → not a real function call
+            for part in parts
+            if part.function_call and part.function_call.name
         ]
 
         if not fn_calls:
@@ -135,22 +146,20 @@ async def run(phone: str, text: str, session: dict) -> str:
 
         # Return results to Gemini
         fn_response_parts = [
-            genai.protos.Part(
-                function_response=genai.protos.FunctionResponse(
-                    name=fc.name,
-                    response={"result": result},
-                )
+            types.Part.from_function_response(
+                name=fc.name,
+                response={"result": result},
             )
             for fc, result in zip(fn_calls, results)
         ]
-        response = await chat.send_message_async(fn_response_parts)
+        response = await chat.send_message(fn_response_parts)
 
     # Persist conversation history (bounded to avoid unbounded memory growth)
-    session["history"] = list(chat.history)[-MAX_HISTORY:]
+    session["history"] = chat.get_history()[-MAX_HISTORY:]
 
     reply = response.text
     if not reply:
-        logger.warning("Gemini returned no text (phone=%s, iteration=%d)", phone, iteration)
+        logger.warning("Gemini returned no text (phone=%s)", phone)
         reply = "Lo siento, no pude procesar tu mensaje en este momento. Intenta de nuevo."
 
     return reply
