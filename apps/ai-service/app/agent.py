@@ -155,7 +155,7 @@ async def run(phone: str, text: str, session: dict) -> str:
         response = await chat.send_message(fn_response_parts)
 
     # Persist conversation history (bounded to avoid unbounded memory growth)
-    session["history"] = chat.get_history()[-MAX_HISTORY:]
+    session["history"] = chat.get_history(curated=True)[-MAX_HISTORY:]
 
     reply = response.text
     if not reply:
