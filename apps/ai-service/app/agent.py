@@ -85,7 +85,7 @@ def _get_model() -> genai.GenerativeModel:
     store = _STORE_NAME or os.getenv("BOT_STORE_NAME", "nuestra tienda")
     genai.configure(api_key=GEMINI_API_KEY)
     _model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-1.5-flash-latest",
         tools=ALL_TOOLS,
         system_instruction=_build_system_prompt(store),
     )
