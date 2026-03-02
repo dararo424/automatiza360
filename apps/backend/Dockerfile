@@ -33,14 +33,13 @@ RUN npm install -g pnpm@10.30.3
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod --no-frozen-lockfile
 
-# Copy the Prisma-generated client from builder
-# schema.prisma sets output = "../generated/prisma", so the client lands at
-# /app/generated/prisma — a stable path outside node_modules, unaffected
-# by pnpm's virtual store hashing.
-COPY --from=builder /app/generated/prisma ./generated/prisma
-
-# Copy compiled output from builder
+# Copy compiled output from builder (includes dist/src/**/*.js)
 COPY --from=builder /app/dist ./dist/
+
+# Copy the Prisma-generated client into dist/generated/prisma.
+# Compiled files live at dist/src/<module>/*.js; their relative import
+# "../../generated/prisma" resolves to dist/generated/prisma at runtime.
+COPY --from=builder /app/generated/prisma ./dist/generated/prisma
 
 EXPOSE 3000
 
