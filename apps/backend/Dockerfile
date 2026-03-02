@@ -33,10 +33,11 @@ RUN npm install -g pnpm@10.30.3
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod --no-frozen-lockfile
 
-# Regenerate Prisma Client inside production node_modules
-COPY prisma ./prisma/
-COPY prisma.config.ts ./
-RUN DATABASE_URL=postgresql://build:build@localhost/build pnpm prisma generate
+# Copy the Prisma-generated client from builder
+# (prisma generate runs in builder where the CLI is available;
+#  pnpm install --prod already installs @prisma/client and @prisma/adapter-pg,
+#  but the generated runtime lives in node_modules/.prisma/client/)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Copy compiled output from builder
 COPY --from=builder /app/dist ./dist/
