@@ -13,7 +13,8 @@
       "Bash(CI=true pnpm install:*)",
       "Bash(pnpm prisma:*)",
       "Bash(pnpm prune:*)",
-      "Bash(CI=true pnpm prune:*)"
+      "Bash(CI=true pnpm prune:*)",
+      "Bash(npm run:*)"
     ]
   }
 }
