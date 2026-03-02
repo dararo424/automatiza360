@@ -6,7 +6,10 @@
       "Bash(node:*)",
       "Bash(npx prisma:*)",
       "Bash(pnpm add:*)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(DATABASE_URL=postgresql://build:build@localhost/build npx prisma:*)",
+      "Bash(ls \"E:/Proyectos/automatiza360/apps/backend/node_modules/@prisma/client/\" | grep -E \"prisma|generated\"\nfind \"E:/Proyectos/automatiza360/apps/backend/node_modules/@prisma/client\" -name \"default.js\" 2>/dev/null\nfind \"E:/Proyectos/automatiza360/apps/backend/node_modules/.pnpm\" -name \"index.d.ts\" -path \"*prisma*client*\" 2>/dev/null | head -5)",
+      "Bash(dir:*)"
     ]
   }
 }
