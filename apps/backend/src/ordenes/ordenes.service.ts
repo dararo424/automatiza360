@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus } from '../../generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { ActualizarEstadoDto } from './dto/actualizar-estado.dto';

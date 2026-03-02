@@ -1,5 +1,5 @@
 import { IsEnum } from 'class-validator';
-import { CotizacionStatus } from '@prisma/client';
+import { CotizacionStatus } from '../../../generated/prisma';
 
 export class ActualizarEstadoCotizacionDto {
   @IsEnum(CotizacionStatus)

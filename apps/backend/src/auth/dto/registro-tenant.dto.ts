@@ -1,4 +1,4 @@
-import { Industry } from '@prisma/client';
+import { Industry } from '../../../generated/prisma';
 import {
   IsEmail,
   IsEnum,

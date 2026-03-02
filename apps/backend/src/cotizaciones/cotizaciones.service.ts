@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CotizacionStatus } from '@prisma/client';
+import { CotizacionStatus } from '../../generated/prisma';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrearCotizacionDto } from './dto/crear-cotizacion.dto';
 import { ActualizarEstadoCotizacionDto } from './dto/actualizar-estado-cotizacion.dto';
