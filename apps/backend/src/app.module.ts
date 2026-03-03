@@ -9,6 +9,7 @@ import { InventarioModule } from './inventario/inventario.module';
 import { CotizacionesModule } from './cotizaciones/cotizaciones.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { TicketsModule } from './tickets/tickets.module';
+import { ProveedoresModule } from './proveedores/proveedores.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TicketsModule } from './tickets/tickets.module';
     CotizacionesModule,
     NotificacionesModule,
     TicketsModule,
+    ProveedoresModule,
   ],
   controllers: [AppController],
   providers: [AppService],

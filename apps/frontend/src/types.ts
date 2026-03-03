@@ -121,8 +121,30 @@ export interface Notificacion {
 export interface ImportedProduct {
   name: string;
   description?: string;
+  sku?: string;
   price: number;
   cost?: number;
-  stock: number;
-  minStock: number;
+  stock?: number;
+  minStock?: number;
+}
+
+export interface Proveedor {
+  id: string;
+  name: string;
+  active: boolean;
+  createdAt: string;
+  tenantId: string;
+  _count: { products: number };
+}
+
+export interface ProveedorProducto {
+  id: string;
+  name: string;
+  description?: string;
+  sku?: string;
+  cost: number;
+  price: number;
+  active: boolean;
+  createdAt: string;
+  supplierId: string;
 }

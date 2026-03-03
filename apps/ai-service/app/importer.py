@@ -10,15 +10,24 @@ logger = logging.getLogger(__name__)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
-_PROMPT = """Analiza el contenido y extrae TODOS los productos/artículos.
-Para cada uno devuelve un objeto JSON con:
-  name (string, requerido), description (string o null),
-  price (number MXN, requerido; usa precio de venta al público),
-  cost (number o null), stock (int, default 0), minStock (int, default 0)
-Devuelve ÚNICAMENTE un JSON array válido. Sin texto extra, sin markdown, sin ```json."""
+_PROMPT = """Analiza el documento y extrae la información del proveedor y TODOS los productos.
+Devuelve ÚNICAMENTE un JSON con esta estructura:
+{
+  "supplier_name": "nombre del proveedor del logo/membrete/encabezado, o null si no se detecta",
+  "products": [
+    {
+      "name": "nombre completo del producto",
+      "description": null,
+      "sku": "código como OC-001927 o null",
+      "cost": precio numérico original,
+      "price": cost * 1.10 redondeado al entero
+    }
+  ]
+}
+Sin texto extra, sin markdown, sin backticks."""
 
 
-async def extract_products(content: bytes, filename: str) -> list[dict]:
+async def extract_products(content: bytes, filename: str) -> dict:
     ext = Path(filename).suffix.lower()
     if ext in {".xlsx", ".xls"}:
         return await _extract_from_excel(content)
@@ -26,7 +35,7 @@ async def extract_products(content: bytes, filename: str) -> list[dict]:
         return await _extract_from_file(content, filename)
 
 
-async def _extract_from_excel(content: bytes) -> list[dict]:
+async def _extract_from_excel(content: bytes) -> dict:
     import openpyxl
 
     wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True)
@@ -48,7 +57,7 @@ async def _extract_from_excel(content: bytes) -> list[dict]:
     return _parse_response(response.text)
 
 
-async def _extract_from_file(content: bytes, filename: str) -> list[dict]:
+async def _extract_from_file(content: bytes, filename: str) -> dict:
     ext = Path(filename).suffix.lower()
     mime_map = {
         ".pdf": "application/pdf",
@@ -78,7 +87,7 @@ async def _extract_from_file(content: bytes, filename: str) -> list[dict]:
     return _parse_response(response.text)
 
 
-def _parse_response(text: str) -> list[dict]:
+def _parse_response(text: str) -> dict:
     text = text.strip()
     # Strip possible markdown code fences if model ignores instructions
     if text.startswith("```"):
@@ -88,8 +97,10 @@ def _parse_response(text: str) -> list[dict]:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
         logger.error("Gemini returned invalid JSON: %s\nRaw: %s", exc, text[:500])
-        return []
-    if not isinstance(data, list):
-        logger.error("Gemini returned non-list JSON: %s", type(data))
-        return []
-    return data
+        return {"supplier_name": None, "products": []}
+    if isinstance(data, list):
+        return {"supplier_name": None, "products": data}
+    if isinstance(data, dict):
+        return data
+    logger.error("Gemini returned unexpected JSON type: %s", type(data))
+    return {"supplier_name": None, "products": []}

@@ -78,8 +78,8 @@ async def import_inventory(file: UploadFile = File(...)):
     if len(content) > 20 * 1024 * 1024:
         raise HTTPException(413, "Archivo supera 20 MB")
     from app.importer import extract_products
-    products = await extract_products(content, file.filename or "file")
-    return {"products": products}
+    result = await extract_products(content, file.filename or "file")
+    return {"supplier_name": result.get("supplier_name"), "products": result.get("products", [])}
 
 
 @app.post("/webhook")
