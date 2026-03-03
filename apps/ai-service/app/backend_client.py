@@ -107,3 +107,10 @@ async def get_perfil() -> dict:
     """Return the authenticated bot user's profile including tenant info."""
     result = await _request("GET", "/auth/perfil")
     return result  # type: ignore[return-value]
+
+
+async def buscar_en_proveedores(q: str) -> dict:
+    """Busca productos en inventario propio + catálogos de proveedores."""
+    from urllib.parse import quote_plus
+    result = await _request("GET", f"/proveedores/buscar?q={quote_plus(q)}")
+    return result  # type: ignore[return-value]  # retorna { propios: [...], catalogo: [...] }

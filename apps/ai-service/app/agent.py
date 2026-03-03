@@ -49,6 +49,13 @@ Cuando un cliente quiera comprar, cotizar o pedir recomendaciones:
    Explica brevemente por qué cada una encaja en sus necesidades.
 4. Cuando el cliente confirme qué quiere, pide su nombre y llama a generar_cotizacion.
 
+Los resultados de consultar_inventario pueden venir de dos fuentes:
+- fuente='inventario_propio' y disponible=true: producto en stock físico, entrega inmediata.
+  Puedes generar cotización formal con generar_cotizacion.
+- fuente='proveedor_NOMBRE' y disponible=false: producto del catálogo del proveedor NOMBRE,
+  no está en stock, hay que solicitarlo. NO uses generar_cotizacion para estos.
+  Informa al cliente que se puede conseguir bajo pedido y ofrece contactarlo cuando llegue.
+
 ## Reparaciones
 - Para consultar estado → llama a ver_reparacion (si tiene número) o ver_mis_reparaciones.
 - Para registrar una reparación nueva → recopila: nombre completo, modelo exacto del

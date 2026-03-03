@@ -161,20 +161,37 @@ async def execute_tool(name: str, args: dict, phone: str) -> str:
 
     try:
         if name == "consultar_inventario":
-            products = await backend_client.get_productos()
             busqueda = str(args.get("busqueda", "")).lower()
             presupuesto = float(args.get("presupuesto_max", 0) or 0)
 
             if busqueda:
-                products = [
-                    p for p in products
-                    if busqueda in p["name"].lower()
-                    or busqueda in (p.get("description") or "").lower()
-                ]
-            if presupuesto > 0:
-                products = [p for p in products if p["price"] <= presupuesto]
+                # Buscar en inventario propio + catálogos de proveedores en paralelo
+                resultado = await backend_client.buscar_en_proveedores(busqueda)
+                propios = resultado.get("propios", [])
+                catalogo = resultado.get("catalogo", [])
+            else:
+                # Sin búsqueda: solo inventario propio
+                propios = await backend_client.get_productos()
+                catalogo = []
 
-            return json.dumps(products[:10], ensure_ascii=False)
+            # Filtrar por presupuesto
+            if presupuesto > 0:
+                propios = [p for p in propios if p["price"] <= presupuesto]
+                catalogo = [p for p in catalogo if p["price"] <= presupuesto]
+
+            # Combinar resultados con etiqueta de origen
+            combinados = []
+            for p in propios[:5]:
+                combinados.append({**p, "fuente": "inventario_propio", "disponible": True})
+            for p in catalogo[:10]:
+                combinados.append({
+                    **p,
+                    "fuente": f"proveedor_{p.get('supplier', {}).get('name', 'proveedor')}",
+                    "disponible": False,  # hay que pedirlo al proveedor
+                    "supplier_id": p.get("supplier", {}).get("id"),
+                })
+
+            return json.dumps(combinados[:15], ensure_ascii=False)
 
         if name == "ver_reparacion":
             numero = int(args["numero_ticket"])
