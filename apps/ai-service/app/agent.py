@@ -106,6 +106,43 @@ def _get_client() -> tuple[genai.Client, types.GenerateContentConfig]:
     return _client, _chat_config
 
 
+# ── History sanitizer ──────────────────────────────────────────────────────────
+
+def _sanitize_history(history: list) -> list:
+    """
+    Remove any trailing function_call turns that lack a paired function_response.
+    Gemini requires: function_call must be immediately followed by function_response.
+    """
+    sanitized = []
+    i = 0
+    while i < len(history):
+        turn = history[i]
+        # Check if this turn contains a function call
+        has_function_call = any(
+            hasattr(part, 'function_call') and part.function_call is not None
+            for part in (turn.parts or [])
+        )
+        if has_function_call:
+            # Only include if next turn exists and has function_response
+            if i + 1 < len(history):
+                next_turn = history[i + 1]
+                has_function_response = any(
+                    hasattr(part, 'function_response') and part.function_response is not None
+                    for part in (next_turn.parts or [])
+                )
+                if has_function_response:
+                    sanitized.append(turn)
+                    sanitized.append(next_turn)
+                    i += 2
+                    continue
+            # Skip unpaired function_call turn
+            i += 1
+            continue
+        sanitized.append(turn)
+        i += 1
+    return sanitized
+
+
 # ── Agentic loop ───────────────────────────────────────────────────────────────
 
 async def run(phone: str, text: str, session: dict) -> str:
@@ -118,7 +155,7 @@ async def run(phone: str, text: str, session: dict) -> str:
     Updates session["history"] so follow-up messages retain context.
     """
     client, config = _get_client()
-    history: list = session.get("history", [])
+    history: list = _sanitize_history(session.get("history", []))
 
     chat = client.aio.chats.create(
         model=_MODEL_NAME,
