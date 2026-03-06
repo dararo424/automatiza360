@@ -4,14 +4,13 @@ load_dotenv()
 import logging
 import os
 from contextlib import asynccontextmanager
-
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.backend_client import get_perfil, ping
-from app.agent import set_store_name
+from app.backend_client import get_client
+from app.config import TENANT_CONFIGS
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,30 +22,26 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 1. Validate required env vars
-    missing = [v for v in ("GEMINI_API_KEY", "BOT_EMAIL", "BOT_PASSWORD") if not os.getenv(v)]
-    if missing:
-        logger.error("Missing required environment variables: %s", ", ".join(missing))
+    if not os.getenv("GEMINI_API_KEY"):
+        logger.error("Missing required environment variable: GEMINI_API_KEY")
 
-    # 2. Authenticate with the NestJS backend
-    ok = await ping()
-    if not ok:
-        logger.warning(
-            "Backend authentication failed on startup. "
-            "Check BOT_EMAIL, BOT_PASSWORD and BACKEND_URL."
+    if not TENANT_CONFIGS:
+        logger.error(
+            "No tenant configuration found. "
+            "Set TENANT_CONFIG (JSON array) or BOT_EMAIL + BOT_PASSWORD."
         )
 
-    # 3. Fetch store name from the bot's tenant profile (unless overridden by env var)
-    if ok and not os.getenv("BOT_STORE_NAME"):
-        try:
-            perfil = await get_perfil()
-            store_name = (perfil.get("tenant") or {}).get("name", "")
-            if store_name:
-                set_store_name(store_name)
-                logger.info("Store name loaded from backend: %s", store_name)
-        except Exception as exc:
-            logger.warning("Could not fetch store name from backend: %s", exc)
-    elif os.getenv("BOT_STORE_NAME"):
-        set_store_name(os.getenv("BOT_STORE_NAME"))  # type: ignore[arg-type]
+    # 2. Authenticate with the backend and pre-load store info for every tenant
+    for cfg in TENANT_CONFIGS:
+        client = get_client(cfg.bot_email, cfg.bot_password)
+        ok = await client.ping()   # also fetches store_name + industry
+        if not ok:
+            logger.warning(
+                "Backend ping failed for %s (twilio: %s). "
+                "Check credentials and BACKEND_URL.",
+                cfg.bot_email,
+                cfg.twilio_number,
+            )
 
     yield
 
@@ -66,7 +61,11 @@ app.add_middleware(
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    tenants = [
+        {"twilio_number": cfg.twilio_number, "bot_email": cfg.bot_email}
+        for cfg in TENANT_CONFIGS
+    ]
+    return {"status": "ok", "tenants": tenants}
 
 
 @app.post("/import-inventory")
@@ -86,14 +85,25 @@ async def import_inventory(file: UploadFile = File(...)):
 async def webhook(
     From: str = Form(...),
     Body: str = Form(default=""),
+    To: str = Form(default=""),
 ):
-    """Twilio WhatsApp webhook — receives a message and returns TwiML."""
+    """
+    Twilio WhatsApp webhook — receives a message and returns TwiML.
+
+    Twilio sends:
+      From: the customer's WhatsApp number  (e.g. 'whatsapp:+521234567890')
+      To:   the Twilio number that received the message (e.g. 'whatsapp:+15551234567')
+      Body: the message text
+    """
     from app.message_handler import handle_message
 
     text = Body.strip() or "hola"
-    logger.info("Incoming  from=%s  text=%r", From, text[:120])
+    # Strip the "whatsapp:" prefix from the To number for tenant lookup
+    to_number = To.replace("whatsapp:", "").strip() or "default"
 
-    reply = await handle_message(From, text)
+    logger.info("Incoming  from=%s  to=%s  text=%r", From, to_number, text[:120])
+
+    reply = await handle_message(From, text, to_number)
     logger.info("Outgoing  to=%s  text=%r", From, reply[:120])
 
     safe = reply.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

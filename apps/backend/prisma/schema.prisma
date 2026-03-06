@@ -24,6 +24,7 @@ model Tenant {
   cotizaciones   Cotizacion[]
   notificaciones Notificacion[]
   suppliers      Supplier[]
+  menusDia       MenuDia[]
 }
 
 // Usuario dentro de un negocio
@@ -161,6 +162,27 @@ model SupplierProduct {
   createdAt   DateTime @default(now())
   supplierId  String
   supplier    Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+}
+
+model MenuDia {
+  id        String         @id @default(cuid())
+  fecha     DateTime       @default(now())
+  activo    Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  tenantId  String
+  tenant    Tenant         @relation(fields: [tenantId], references: [id])
+  platos    PlatoMenuDia[]
+}
+
+model PlatoMenuDia {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  disponible  Boolean  @default(true)
+  menuDiaId   String
+  menuDia     MenuDia  @relation(fields: [menuDiaId], references: [id], onDelete: Cascade)
 }
 
 // Enums

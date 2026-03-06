@@ -2,8 +2,9 @@
 Tool declarations and async executors for the Gemini agent.
 
 Each tool is a types.FunctionDeclaration (google-genai SDK v1+) with an
-explicit JSON schema — no Python function introspection, no default-value
-compatibility issues.  Actual execution is async and lives in execute_tool().
+explicit JSON schema.  Actual execution is async and lives in execute_tool(),
+which receives a BackendClient instance so it works correctly in multi-tenant
+deployments.
 """
 
 from __future__ import annotations
@@ -13,12 +14,12 @@ import logging
 
 from google.genai import types
 
-from app import backend_client
+from app.backend_client import BackendClient
 
 logger = logging.getLogger(__name__)
 
 
-# ── Tool declarations ─────────────────────────────────────────────────────────
+# ── Tech-store tool declarations ───────────────────────────────────────────────
 
 _consultar_inventario = types.FunctionDeclaration(
     name="consultar_inventario",
@@ -39,7 +40,7 @@ _consultar_inventario = types.FunctionDeclaration(
             ),
             "presupuesto_max": types.Schema(
                 type=types.Type.NUMBER,
-                description="Precio máximo en MXN. Usa 0 para sin límite de precio.",
+                description="Precio máximo. Usa 0 para sin límite de precio.",
             ),
         },
         required=[],
@@ -137,8 +138,148 @@ _generar_cotizacion = types.FunctionDeclaration(
 )
 
 
-# Exported list — passed directly to GenerateContentConfig(tools=...)
-ALL_TOOLS = [
+# ── Restaurant tool declarations ───────────────────────────────────────────────
+
+_consultar_menu_carta = types.FunctionDeclaration(
+    name="consultar_menu_carta",
+    description=(
+        "Consulta la carta permanente del restaurante: platos fijos con sus precios. "
+        "SIEMPRE llama esta herramienta antes de responder sobre disponibilidad de platos. "
+        "Nunca inventes platos ni precios que no estén en la carta."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={},
+        required=[],
+    ),
+)
+
+_consultar_menu_dia = types.FunctionDeclaration(
+    name="consultar_menu_dia",
+    description=(
+        "Consulta el menú del día de hoy con los platos especiales y sus precios. "
+        "Llámala cuando el cliente pregunte por el menú del día, el almuerzo o los especiales de hoy."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={},
+        required=[],
+    ),
+)
+
+_tomar_pedido = types.FunctionDeclaration(
+    name="tomar_pedido",
+    description=(
+        "Registra un pedido a domicilio del cliente. "
+        "Llámala SOLO cuando tengas: nombre, dirección de entrega, método de pago y los platos confirmados. "
+        "Confirma siempre el resumen del pedido con el cliente antes de llamar esta herramienta."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "nombre_cliente": types.Schema(
+                type=types.Type.STRING,
+                description="Nombre completo del cliente.",
+            ),
+            "telefono": types.Schema(
+                type=types.Type.STRING,
+                description="Número de WhatsApp del cliente (se toma automáticamente del chat).",
+            ),
+            "items": types.Schema(
+                type=types.Type.ARRAY,
+                description="Lista de platos pedidos.",
+                items=types.Schema(
+                    type=types.Type.OBJECT,
+                    properties={
+                        "nombre_producto": types.Schema(
+                            type=types.Type.STRING,
+                            description="Nombre exacto del plato tal como aparece en la carta o menú del día.",
+                        ),
+                        "cantidad": types.Schema(
+                            type=types.Type.INTEGER,
+                            description="Cantidad de unidades (mínimo 1).",
+                        ),
+                    },
+                    required=["nombre_producto", "cantidad"],
+                ),
+            ),
+            "metodo_pago": types.Schema(
+                type=types.Type.STRING,
+                description="Método de pago: efectivo, nequi, daviplata o tarjeta.",
+                enum=["efectivo", "nequi", "daviplata", "tarjeta"],
+            ),
+            "direccion_entrega": types.Schema(
+                type=types.Type.STRING,
+                description="Dirección completa de entrega del pedido.",
+            ),
+            "notas": types.Schema(
+                type=types.Type.STRING,
+                description="Instrucciones especiales opcionales (ej: sin cebolla, extra salsa).",
+            ),
+        },
+        required=["nombre_cliente", "items", "metodo_pago", "direccion_entrega"],
+    ),
+)
+
+_ver_estado_pedido = types.FunctionDeclaration(
+    name="ver_estado_pedido",
+    description=(
+        "Consulta el estado actual de un pedido por su número. "
+        "Úsala cuando el cliente mencione su número de pedido."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "numero_pedido": types.Schema(
+                type=types.Type.INTEGER,
+                description="Número del pedido (ej: 12). Solo el número, sin prefijos.",
+            ),
+        },
+        required=["numero_pedido"],
+    ),
+)
+
+_actualizar_menu_dia = types.FunctionDeclaration(
+    name="actualizar_menu_dia",
+    description=(
+        "Actualiza el menú del día del restaurante con los platos especiales de hoy. "
+        "SOLO disponible para la dueña del restaurante. "
+        "Recibe la lista de platos con nombre, descripción opcional y precio."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "platos": types.Schema(
+                type=types.Type.ARRAY,
+                description="Lista de platos del menú del día.",
+                items=types.Schema(
+                    type=types.Type.OBJECT,
+                    properties={
+                        "name": types.Schema(
+                            type=types.Type.STRING,
+                            description="Nombre del plato.",
+                        ),
+                        "description": types.Schema(
+                            type=types.Type.STRING,
+                            description="Descripción o ingredientes del plato (opcional).",
+                        ),
+                        "price": types.Schema(
+                            type=types.Type.NUMBER,
+                            description="Precio del plato.",
+                        ),
+                    },
+                    required=["name", "price"],
+                ),
+            ),
+        },
+        required=["platos"],
+    ),
+)
+
+
+# ── Tool lists by industry ─────────────────────────────────────────────────────
+
+TOOLS_TECH_STORE = [
     types.Tool(function_declarations=[
         _consultar_inventario,
         _ver_reparacion,
@@ -148,38 +289,67 @@ ALL_TOOLS = [
     ])
 ]
 
+TOOLS_RESTAURANT = [
+    types.Tool(function_declarations=[
+        _consultar_menu_carta,
+        _consultar_menu_dia,
+        _tomar_pedido,
+        _ver_estado_pedido,
+        _actualizar_menu_dia,
+    ])
+]
+
+# Legacy alias
+ALL_TOOLS = TOOLS_TECH_STORE
+
+
+def get_tools(industry: str) -> list[types.Tool]:
+    """Return the tool list for the given tenant industry string."""
+    if industry and industry.upper() == "RESTAURANT":
+        return TOOLS_RESTAURANT
+    return TOOLS_TECH_STORE
+
 
 # ── Async executor ─────────────────────────────────────────────────────────────
 
-async def execute_tool(name: str, args: dict, phone: str) -> str:
+async def execute_tool(
+    name: str,
+    args: dict,
+    phone: str,
+    client: BackendClient,
+    owner_phone: str = "",
+) -> str:
     """
     Execute a tool requested by Gemini and return a JSON string with the result.
-    'phone' is the raw Twilio From value (e.g. 'whatsapp:+521234567890').
+
+    Args:
+        name:        Tool name as returned by Gemini.
+        args:        Tool arguments dict.
+        phone:       Raw Twilio From value (e.g. 'whatsapp:+521234567890').
+        client:      Authenticated BackendClient for this tenant.
+        owner_phone: Restaurant owner's phone (normalized, no prefix). Optional.
     """
     clean_phone = phone.replace("whatsapp:", "").strip()
-    logger.info("Tool call: %s  args=%s", name, args)
+    logger.info("Tool call: %s  args=%s  tenant=%s", name, args, client.bot_email)
 
     try:
+        # ── Tech-store tools ──────────────────────────────────────────────────
         if name == "consultar_inventario":
             busqueda = str(args.get("busqueda", "")).lower()
             presupuesto = float(args.get("presupuesto_max", 0) or 0)
 
             if busqueda:
-                # Buscar en inventario propio + catálogos de proveedores en paralelo
-                resultado = await backend_client.buscar_en_proveedores(busqueda)
+                resultado = await client.buscar_en_proveedores(busqueda)
                 propios = resultado.get("propios", [])
                 catalogo = resultado.get("catalogo", [])
             else:
-                # Sin búsqueda: solo inventario propio
-                propios = await backend_client.get_productos()
+                propios = await client.get_productos()
                 catalogo = []
 
-            # Filtrar por presupuesto
             if presupuesto > 0:
                 propios = [p for p in propios if p["price"] <= presupuesto]
                 catalogo = [p for p in catalogo if p["price"] <= presupuesto]
 
-            # Combinar resultados con etiqueta de origen
             combinados = []
             for p in propios[:5]:
                 combinados.append({**p, "fuente": "inventario_propio", "disponible": True})
@@ -187,15 +357,14 @@ async def execute_tool(name: str, args: dict, phone: str) -> str:
                 combinados.append({
                     **p,
                     "fuente": f"proveedor_{p.get('supplier', {}).get('name', 'proveedor')}",
-                    "disponible": False,  # hay que pedirlo al proveedor
+                    "disponible": False,
                     "supplier_id": p.get("supplier", {}).get("id"),
                 })
-
             return json.dumps(combinados[:15], ensure_ascii=False)
 
         if name == "ver_reparacion":
             numero = int(args["numero_ticket"])
-            ticket = await backend_client.buscar_ticket_por_numero(numero)
+            ticket = await client.buscar_ticket_por_numero(numero)
             if not ticket:
                 return json.dumps(
                     {"error": f"No se encontró ningún ticket con el número {numero}."},
@@ -204,7 +373,7 @@ async def execute_tool(name: str, args: dict, phone: str) -> str:
             return json.dumps(ticket, ensure_ascii=False)
 
         if name == "ver_mis_reparaciones":
-            tickets = await backend_client.buscar_tickets_por_telefono(phone)
+            tickets = await client.buscar_tickets_por_telefono(phone)
             if not tickets:
                 return json.dumps(
                     {"mensaje": "No se encontraron reparaciones para este número de WhatsApp."},
@@ -213,7 +382,7 @@ async def execute_tool(name: str, args: dict, phone: str) -> str:
             return json.dumps(tickets, ensure_ascii=False)
 
         if name == "registrar_reparacion":
-            ticket = await backend_client.crear_ticket({
+            ticket = await client.crear_ticket({
                 "clientName":  args["nombre_cliente"],
                 "clientPhone": clean_phone,
                 "device":      args["dispositivo"],
@@ -222,7 +391,7 @@ async def execute_tool(name: str, args: dict, phone: str) -> str:
             return json.dumps(ticket, ensure_ascii=False)
 
         if name == "generar_cotizacion":
-            cotizacion = await backend_client.crear_cotizacion({
+            cotizacion = await client.crear_cotizacion({
                 "clientName":  args["nombre_cliente"],
                 "clientPhone": clean_phone,
                 "items": [{
@@ -232,8 +401,53 @@ async def execute_tool(name: str, args: dict, phone: str) -> str:
             })
             return json.dumps(cotizacion, ensure_ascii=False)
 
+        # ── Restaurant tools ──────────────────────────────────────────────────
+        if name == "consultar_menu_carta":
+            productos = await client.get_productos()
+            return json.dumps(productos, ensure_ascii=False)
+
+        if name == "consultar_menu_dia":
+            menu = await client.get_menu_dia()
+            if not menu:
+                return json.dumps(
+                    {"mensaje": "Hoy no hay menú del día disponible. Consulta la carta permanente."},
+                    ensure_ascii=False,
+                )
+            return json.dumps(menu, ensure_ascii=False)
+
+        if name == "tomar_pedido":
+            orden = await client.crear_orden_bot({
+                "nombre_cliente":    args["nombre_cliente"],
+                "telefono":          clean_phone,
+                "items":             args["items"],
+                "metodo_pago":       args["metodo_pago"],
+                "direccion_entrega": args["direccion_entrega"],
+                "notas":             args.get("notas"),
+            })
+            return json.dumps(orden, ensure_ascii=False)
+
+        if name == "ver_estado_pedido":
+            numero = int(args["numero_pedido"])
+            all_orders: list = await client._request("GET", "/ordenes")
+            orden = next((o for o in all_orders if o.get("number") == numero), None)
+            if not orden:
+                return json.dumps(
+                    {"error": f"No se encontró ningún pedido con el número {numero}."},
+                    ensure_ascii=False,
+                )
+            return json.dumps(orden, ensure_ascii=False)
+
+        if name == "actualizar_menu_dia":
+            if owner_phone and clean_phone != owner_phone:
+                return json.dumps(
+                    {"error": "No tienes permiso para actualizar el menú del día."},
+                    ensure_ascii=False,
+                )
+            menu = await client.actualizar_menu_dia(args["platos"])
+            return json.dumps(menu, ensure_ascii=False)
+
         return json.dumps({"error": f"Herramienta '{name}' no reconocida."})
 
     except Exception as exc:
-        logger.error("Tool %s failed: %s", name, exc, exc_info=True)
+        logger.error("Tool %s failed (tenant=%s): %s", name, client.bot_email, exc, exc_info=True)
         return json.dumps({"error": str(exc)}, ensure_ascii=False)

@@ -10,6 +10,7 @@ import { CotizacionesModule } from './cotizaciones/cotizaciones.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { ProveedoresModule } from './proveedores/proveedores.module';
+import { MenuDiaModule } from './menu-dia/menu-dia.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ProveedoresModule } from './proveedores/proveedores.module';
     NotificacionesModule,
     TicketsModule,
     ProveedoresModule,
+    MenuDiaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

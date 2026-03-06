@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { OrdenesService } from './ordenes.service';
 import { CrearOrdenDto } from './dto/crear-orden.dto';
+import { CrearOrdenBotDto } from './dto/crear-orden-bot.dto';
 import { ActualizarEstadoDto } from './dto/actualizar-estado.dto';
 
 @UseGuards(JwtAuthGuard)
@@ -23,6 +24,11 @@ export class OrdenesController {
   @Post()
   crear(@Body() dto: CrearOrdenDto, @CurrentUser() user: any) {
     return this.ordenesService.crear(dto, user.tenantId);
+  }
+
+  @Post('bot')
+  crearDesdeBot(@Body() dto: CrearOrdenBotDto, @CurrentUser() user: any) {
+    return this.ordenesService.crearDesdeBot(dto, user.tenantId);
   }
 
   @Get()

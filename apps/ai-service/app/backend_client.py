@@ -1,116 +1,218 @@
-"""HTTP client for the NestJS backend with automatic JWT refresh."""
+"""
+HTTP client for the NestJS backend.
+
+BackendClient is the per-tenant class that handles JWT auth and all domain
+calls.  A module-level cache (_clients) returns the same instance for the
+same bot_email so tokens are reused across requests.
+
+Legacy module-level helper functions are kept for backwards compatibility;
+they delegate to the first available client in the cache.
+"""
+
+from __future__ import annotations
 
 import logging
 import os
+from urllib.parse import quote_plus
 
 import httpx
 
 logger = logging.getLogger(__name__)
 
 BACKEND_URL = os.getenv("BACKEND_URL", "https://backend-production-1a8c.up.railway.app")
-BOT_EMAIL = os.getenv("BOT_EMAIL", "")
-BOT_PASSWORD = os.getenv("BOT_PASSWORD", "")
 
-_token: str | None = None
+# Cache: bot_email → BackendClient instance
+_clients: dict[str, "BackendClient"] = {}
 
 
-async def _login() -> None:
-    global _token
-    if not BOT_EMAIL or not BOT_PASSWORD:
-        raise RuntimeError(
-            "BOT_EMAIL and BOT_PASSWORD environment variables are not set. "
-            "Create a STAFF user for the bot and configure these variables."
-        )
-    logger.info("Authenticating with backend as %s", BOT_EMAIL)
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.post(
-            f"{BACKEND_URL}/auth/login",
-            json={"email": BOT_EMAIL, "password": BOT_PASSWORD},
-        )
-        if not resp.is_success:
-            logger.error(
-                "Login failed — status %s, body: %s", resp.status_code, resp.text
+# ── Per-tenant client class ────────────────────────────────────────────────────
+
+class BackendClient:
+    def __init__(self, bot_email: str, bot_password: str) -> None:
+        self.bot_email = bot_email
+        self.bot_password = bot_password
+        self._token: str | None = None
+        # Populated after the first get_perfil() call
+        self.store_name: str = ""
+        self.industry: str = ""
+
+    # ── Auth ──────────────────────────────────────────────────────────────────
+
+    async def _login(self) -> None:
+        if not self.bot_email or not self.bot_password:
+            raise RuntimeError(
+                "bot_email and bot_password must be set. "
+                "Configure TENANT_CONFIG (or BOT_EMAIL/BOT_PASSWORD) env vars."
             )
-        resp.raise_for_status()
-    _token = resp.json()["token"]
-    logger.info("Backend authentication successful")
+        logger.info("Authenticating with backend as %s", self.bot_email)
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{BACKEND_URL}/auth/login",
+                json={"email": self.bot_email, "password": self.bot_password},
+            )
+            if not resp.is_success:
+                logger.error(
+                    "Login failed — status %s, body: %s", resp.status_code, resp.text
+                )
+            resp.raise_for_status()
+        self._token = resp.json()["token"]
+        logger.info("Backend authentication successful for %s", self.bot_email)
+
+    async def ping(self) -> bool:
+        """Test backend connectivity and pre-populate store info. Returns True on success."""
+        try:
+            await self._login()
+            perfil = await self.get_perfil()
+            tenant = (perfil or {}).get("tenant") or {}
+            self.store_name = tenant.get("name", "")
+            self.industry = tenant.get("industry", "TECH_STORE")
+            logger.info(
+                "Tenant info loaded for %s: store=%r industry=%s",
+                self.bot_email, self.store_name, self.industry,
+            )
+            return True
+        except Exception as exc:
+            logger.error("Backend ping failed for %s: %s", self.bot_email, exc)
+            return False
+
+    # ── Core request helper ───────────────────────────────────────────────────
+
+    async def _request(self, method: str, path: str, **kwargs) -> dict | list:
+        """Authenticated request with a single token-refresh retry on 401."""
+        for attempt in range(2):
+            if not self._token:
+                await self._login()
+            headers = {"Authorization": f"Bearer {self._token}"}
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.request(
+                    method, f"{BACKEND_URL}{path}", headers=headers, **kwargs
+                )
+            if resp.status_code == 401 and attempt == 0:
+                logger.warning("Token expired for %s, refreshing…", self.bot_email)
+                self._token = None
+                continue
+            if not resp.is_success:
+                logger.error(
+                    "%s %s failed — status %s, body: %s",
+                    method, path, resp.status_code, resp.text,
+                )
+            resp.raise_for_status()
+            return resp.json()
+        raise RuntimeError("Authentication failed after retry")
+
+    # ── Domain helpers ────────────────────────────────────────────────────────
+
+    async def get_perfil(self) -> dict:
+        result = await self._request("GET", "/auth/perfil")
+        return result  # type: ignore[return-value]
+
+    async def get_productos(self) -> list[dict]:
+        products: list = await self._request("GET", "/productos")
+        return [p for p in products if p.get("active", True)]
+
+    async def buscar_en_proveedores(self, q: str) -> dict:
+        result = await self._request("GET", f"/proveedores/buscar?q={quote_plus(q)}")
+        return result  # type: ignore[return-value]
+
+    async def buscar_tickets_por_telefono(self, phone: str) -> list[dict]:
+        all_tickets: list = await self._request("GET", "/tickets")
+        clean = phone.replace("whatsapp:", "").strip()
+        return [t for t in all_tickets if clean in t.get("clientPhone", "")]
+
+    async def buscar_ticket_por_numero(self, numero: int) -> dict | None:
+        all_tickets: list = await self._request("GET", "/tickets")
+        for t in all_tickets:
+            if t.get("number") == numero:
+                return t
+        return None
+
+    async def crear_ticket(self, data: dict) -> dict:
+        result = await self._request("POST", "/tickets", json=data)
+        return result  # type: ignore[return-value]
+
+    async def crear_cotizacion(self, data: dict) -> dict:
+        result = await self._request("POST", "/cotizaciones", json=data)
+        return result  # type: ignore[return-value]
+
+    async def crear_orden_bot(self, data: dict) -> dict:
+        result = await self._request("POST", "/ordenes/bot", json=data)
+        return result  # type: ignore[return-value]
+
+    async def get_menu_dia(self) -> dict | None:
+        try:
+            result = await self._request("GET", "/menu-dia/hoy")
+            return result  # type: ignore[return-value]
+        except Exception:
+            return None
+
+    async def actualizar_menu_dia(self, platos: list) -> dict:
+        result = await self._request("POST", "/menu-dia", json={"platos": platos})
+        return result  # type: ignore[return-value]
+
+
+# ── Client cache ───────────────────────────────────────────────────────────────
+
+def get_client(bot_email: str, bot_password: str) -> BackendClient:
+    """Return (and cache) a BackendClient instance for the given credentials."""
+    if bot_email not in _clients:
+        _clients[bot_email] = BackendClient(bot_email, bot_password)
+    return _clients[bot_email]
+
+
+# ── Legacy module-level helpers (single-tenant compatibility) ──────────────────
+
+def _default_client() -> BackendClient:
+    if not _clients:
+        raise RuntimeError(
+            "No BackendClient instances available. "
+            "Set TENANT_CONFIG or BOT_EMAIL/BOT_PASSWORD."
+        )
+    return next(iter(_clients.values()))
 
 
 async def ping() -> bool:
-    """Test backend connectivity at startup. Returns True on success."""
-    try:
-        await _login()
-        return True
-    except Exception as exc:
-        logger.error("Backend ping failed: %s", exc)
-        return False
-
-
-async def _request(method: str, path: str, **kwargs) -> dict | list:
-    """Authenticated request with a single token-refresh retry on 401."""
-    global _token
-    for attempt in range(2):
-        if not _token:
-            await _login()
-        headers = {"Authorization": f"Bearer {_token}"}
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.request(
-                method, f"{BACKEND_URL}{path}", headers=headers, **kwargs
-            )
-        if resp.status_code == 401 and attempt == 0:
-            logger.warning("Token expired, refreshing...")
-            _token = None
-            continue
-        if not resp.is_success:
-            logger.error(
-                "%s %s failed — status %s, body: %s",
-                method, path, resp.status_code, resp.text,
-            )
-        resp.raise_for_status()
-        return resp.json()
-    raise RuntimeError("Authentication failed after retry")
-
-
-# ── Domain helpers ─────────────────────────────────────────────────────────────
-
-async def buscar_tickets_por_telefono(phone: str) -> list[dict]:
-    all_tickets: list = await _request("GET", "/tickets")
-    clean = phone.replace("whatsapp:", "").strip()
-    return [t for t in all_tickets if clean in t.get("clientPhone", "")]
-
-
-async def buscar_ticket_por_numero(numero: int) -> dict | None:
-    all_tickets: list = await _request("GET", "/tickets")
-    for t in all_tickets:
-        if t.get("number") == numero:
-            return t
-    return None
-
-
-async def get_productos() -> list[dict]:
-    """Return active products available for quotation."""
-    products: list = await _request("GET", "/productos")
-    return [p for p in products if p.get("active", True)]
-
-
-async def crear_ticket(data: dict) -> dict:
-    result = await _request("POST", "/tickets", json=data)
-    return result  # type: ignore[return-value]
-
-
-async def crear_cotizacion(data: dict) -> dict:
-    result = await _request("POST", "/cotizaciones", json=data)
-    return result  # type: ignore[return-value]
+    return await _default_client().ping()
 
 
 async def get_perfil() -> dict:
-    """Return the authenticated bot user's profile including tenant info."""
-    result = await _request("GET", "/auth/perfil")
-    return result  # type: ignore[return-value]
+    return await _default_client().get_perfil()
+
+
+async def get_productos() -> list[dict]:
+    return await _default_client().get_productos()
 
 
 async def buscar_en_proveedores(q: str) -> dict:
-    """Busca productos en inventario propio + catálogos de proveedores."""
-    from urllib.parse import quote_plus
-    result = await _request("GET", f"/proveedores/buscar?q={quote_plus(q)}")
-    return result  # type: ignore[return-value]  # retorna { propios: [...], catalogo: [...] }
+    return await _default_client().buscar_en_proveedores(q)
+
+
+async def buscar_tickets_por_telefono(phone: str) -> list[dict]:
+    return await _default_client().buscar_tickets_por_telefono(phone)
+
+
+async def buscar_ticket_por_numero(numero: int) -> dict | None:
+    return await _default_client().buscar_ticket_por_numero(numero)
+
+
+async def crear_ticket(data: dict) -> dict:
+    return await _default_client().crear_ticket(data)
+
+
+async def crear_cotizacion(data: dict) -> dict:
+    return await _default_client().crear_cotizacion(data)
+
+
+async def crear_orden_bot(data: dict) -> dict:
+    return await _default_client().crear_orden_bot(data)
+
+
+async def get_menu_dia() -> dict | None:
+    return await _default_client().get_menu_dia()
+
+
+async def buscar_orden_por_numero(numero: int) -> dict | None:
+    all_orders: list = await _default_client()._request("GET", "/ordenes")
+    for o in all_orders:
+        if o.get("number") == numero:
+            return o
+    return None

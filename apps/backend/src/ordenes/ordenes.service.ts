@@ -6,6 +6,7 @@ import {
 import { OrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrearOrdenDto } from './dto/crear-orden.dto';
+import { CrearOrdenBotDto } from './dto/crear-orden-bot.dto';
 import { ActualizarEstadoDto } from './dto/actualizar-estado.dto';
 
 @Injectable()
@@ -73,6 +74,56 @@ export class OrdenesService {
       throw new NotFoundException('Orden no encontrada');
     }
     return orden;
+  }
+
+  async crearDesdeBot(dto: CrearOrdenBotDto, tenantId: string) {
+    const nombres = dto.items.map((i) => i.nombre_producto.toLowerCase());
+
+    const products = await this.prisma.product.findMany({
+      where: { tenantId, active: true },
+    });
+
+    const productMap = new Map(
+      products.map((p) => [p.name.toLowerCase(), p]),
+    );
+
+    for (const nombre of nombres) {
+      if (!productMap.has(nombre)) {
+        throw new BadRequestException(`Producto no encontrado: "${nombre}"`);
+      }
+    }
+
+    const total = dto.items.reduce((sum, item) => {
+      return sum + productMap.get(item.nombre_producto.toLowerCase())!.price * item.cantidad;
+    }, 0);
+
+    const notesPartes = [
+      `Cliente: ${dto.nombre_cliente}`,
+      `Pago: ${dto.metodo_pago}`,
+      `Dirección: ${dto.direccion_entrega}`,
+    ];
+    if (dto.notas) notesPartes.push(`Notas: ${dto.notas}`);
+
+    return this.prisma.$transaction(async (tx) => {
+      const count = await tx.order.count({ where: { tenantId } });
+      return tx.order.create({
+        data: {
+          number: count + 1,
+          total,
+          notes: notesPartes.join(' | '),
+          phone: dto.telefono,
+          tenantId,
+          status: OrderStatus.PENDING,
+          items: {
+            create: dto.items.map((i) => {
+              const p = productMap.get(i.nombre_producto.toLowerCase())!;
+              return { quantity: i.cantidad, price: p.price, name: p.name };
+            }),
+          },
+        },
+        include: { items: true },
+      });
+    });
   }
 
   async actualizarEstado(

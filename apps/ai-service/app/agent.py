@@ -1,10 +1,14 @@
 """
-Gemini conversational agent.
+Gemini conversational agent — multi-tenant edition.
 
-Uses the google-genai SDK (v1+) with a manual function-calling loop.
+A single genai.Client is shared (same API key for all tenants).
+GenerateContentConfig is cached per bot_email so each tenant gets its own
+system prompt + tool set.  The cache is invalidated whenever the tenant's
+store_name changes (e.g. first request after startup).
+
 Conversation history is stored in the caller's session dict so context is
-preserved across WhatsApp messages (in-memory; survives for the lifetime of
-the process — replace with Redis for multi-instance deployments).
+preserved across WhatsApp messages (in-memory; replace with Redis for
+multi-instance deployments).
 """
 
 from __future__ import annotations
@@ -16,22 +20,22 @@ import os
 from google import genai
 from google.genai import types
 
-from app.tools import ALL_TOOLS, execute_tool
+from app.backend_client import BackendClient
+from app.tools import execute_tool, get_tools
 
 logger = logging.getLogger(__name__)
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-_STORE_NAME: str = ""          # set by main.py lifespan after backend login
 
 _MODEL_NAME = "gemini-2.5-flash"
-MAX_HISTORY = 20               # Content entries to keep (≈ 10 conversation turns)
-MAX_TOOL_ITERATIONS = 6        # guard against infinite tool-call loops
+MAX_HISTORY = 20
+MAX_TOOL_ITERATIONS = 6
 
-# ── System prompt ──────────────────────────────────────────────────────────────
+# ── System prompts ─────────────────────────────────────────────────────────────
 
-def _build_system_prompt(store_name: str) -> str:
+def _build_system_prompt_tech_store(store_name: str) -> str:
     return f"""Eres el asistente inteligente de {store_name}, una tienda de tecnología.
 Ayudas a los clientes de forma natural, como lo haría un vendedor experto y un técnico experimentado.
 
@@ -68,74 +72,142 @@ Los resultados de consultar_inventario pueden venir de dos fuentes:
 - NUNCA inventes datos de productos, stock ni precios fuera del inventario real."""
 
 
-# ── Client singleton ────────────────────────────────────────────────────────────
+def _build_system_prompt_restaurant(store_name: str, owner_phone: str) -> str:
+    owner_note = (
+        f"\n\nEl número de la dueña es {owner_phone}. "
+        "Si quien escribe es ese número, puede actualizar el menú del día "
+        "enviando los platos (nombre, descripción opcional y precio). "
+        "En ese caso usa la herramienta actualizar_menu_dia."
+        if owner_phone else ""
+    )
+    return f"""Eres el asistente virtual de {store_name}, un restaurante.
+Ayudas a los clientes de forma amable y eficiente, como lo haría un mesero experto.
 
-_client: genai.Client | None = None
-_chat_config: types.GenerateContentConfig | None = None
+## Carta y menú del día
+- SIEMPRE llama a consultar_menu_dia o consultar_menu_carta antes de responder sobre disponibilidad.
+  Nunca inventes platos ni precios.
+- Si el cliente pregunta qué hay hoy → llama a consultar_menu_dia.
+- Si pregunta por platos fijos o la carta → llama a consultar_menu_carta.
+- Si no hay menú del día, infórmalo y ofrece la carta permanente.
+
+## Pedidos a domicilio
+- Hacemos domicilios en el área general. No hay zonas restringidas.
+- El domicilio es GRATIS.
+- Si el cliente necesita desechables (cubiertos, servilletas), tienen un costo adicional de $2.000.
+- Métodos de pago aceptados: efectivo contra entrega, Nequi, Daviplata, tarjeta en línea.
+- Para tomar un pedido necesitas:
+  1. Nombre del cliente
+  2. Platos que desea (verifica que estén en la carta o menú del día)
+  3. Dirección de entrega completa
+  4. Método de pago
+- Confirma el resumen del pedido con el cliente ANTES de llamar tomar_pedido.
+- Después de registrar el pedido, comparte el número de pedido y el total.
+
+## Estado de pedidos
+- Cuando el cliente mencione un número de pedido → llama a ver_estado_pedido.
+
+## Reglas
+- Responde SIEMPRE en español, de forma amable, breve y clara.
+- Mensajes cortos y directos — el cliente los lee en WhatsApp.
+- Si no tienes información o hay un error, dilo honestamente.
+- NUNCA inventes platos, precios ni disponibilidad fuera de la carta real.{owner_note}"""
+
+
+def _build_system_prompt(store_name: str, industry: str, owner_phone: str) -> str:
+    if industry and industry.upper() == "RESTAURANT":
+        return _build_system_prompt_restaurant(store_name, owner_phone)
+    return _build_system_prompt_tech_store(store_name)
+
+
+# ── Gemini client + per-tenant config cache ────────────────────────────────────
+
+_gemini_client: genai.Client | None = None
+
+# Keyed by bot_email → (store_name_at_build_time, GenerateContentConfig)
+_config_cache: dict[str, tuple[str, types.GenerateContentConfig]] = {}
+
+
+def _get_gemini_client() -> genai.Client:
+    global _gemini_client
+    if _gemini_client is None:
+        if not GEMINI_API_KEY:
+            raise RuntimeError(
+                "GEMINI_API_KEY environment variable is not set. "
+                "Get a key at https://aistudio.google.com/apikey"
+            )
+        _gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+    return _gemini_client
+
+
+def _get_config(backend_client: BackendClient, owner_phone: str) -> types.GenerateContentConfig:
+    """
+    Return (and cache) the GenerateContentConfig for this tenant.
+    Cache is keyed by bot_email; invalidated when store_name changes.
+    """
+    key = backend_client.bot_email
+    store_name = backend_client.store_name or os.getenv("BOT_STORE_NAME", "nuestra tienda")
+    industry = backend_client.industry or os.getenv("BOT_INDUSTRY", "TECH_STORE")
+
+    cached = _config_cache.get(key)
+    if cached and cached[0] == store_name:
+        return cached[1]
+
+    config = types.GenerateContentConfig(
+        system_instruction=_build_system_prompt(store_name, industry, owner_phone),
+        tools=get_tools(industry),
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+    )
+    _config_cache[key] = (store_name, config)
+    logger.info(
+        "Gemini config built for %s (store=%r industry=%s)", key, store_name, industry
+    )
+    return config
+
+
+# ── Legacy single-tenant helpers (kept for backwards compatibility) ────────────
+
+# These are used by main.py when BOT_STORE_NAME / BOT_INDUSTRY are set via env.
+_LEGACY_STORE_NAME: str = ""
+_LEGACY_INDUSTRY: str = ""
+
+
+def set_store_info(name: str, industry: str) -> None:
+    """Legacy shim — no-op in multi-tenant mode; store info lives in BackendClient."""
+    global _LEGACY_STORE_NAME, _LEGACY_INDUSTRY
+    _LEGACY_STORE_NAME = name
+    _LEGACY_INDUSTRY = industry
 
 
 def set_store_name(name: str) -> None:
-    """Called from main.py lifespan after fetching tenant info from the backend."""
-    global _STORE_NAME, _client, _chat_config
-    _STORE_NAME = name
-    _client = None        # force rebuild with new store name
-    _chat_config = None
-
-
-def _get_client() -> tuple[genai.Client, types.GenerateContentConfig]:
-    global _client, _chat_config
-    if _client is not None:
-        return _client, _chat_config  # type: ignore[return-value]
-
-    if not GEMINI_API_KEY:
-        raise RuntimeError(
-            "GEMINI_API_KEY environment variable is not set. "
-            "Get a key at https://aistudio.google.com/apikey"
-        )
-
-    store = _STORE_NAME or os.getenv("BOT_STORE_NAME", "nuestra tienda")
-    _client = genai.Client(api_key=GEMINI_API_KEY)
-    _chat_config = types.GenerateContentConfig(
-        system_instruction=_build_system_prompt(store),
-        tools=ALL_TOOLS,
-        # Disable automatic function calling — we drive the loop manually so we
-        # can execute tools asynchronously and inject the phone context.
-        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
-    )
-    logger.info("Gemini client initialised for store: %s", store)
-    return _client, _chat_config
+    set_store_info(name, _LEGACY_INDUSTRY)
 
 
 # ── History sanitizer ──────────────────────────────────────────────────────────
 
 def _sanitize_history(history: list) -> list:
     """
-    Remove any trailing function_call turns that lack a paired function_response.
+    Remove trailing function_call turns that lack a paired function_response.
     Gemini requires: function_call must be immediately followed by function_response.
     """
     sanitized = []
     i = 0
     while i < len(history):
         turn = history[i]
-        # Check if this turn contains a function call
-        has_function_call = any(
-            hasattr(part, 'function_call') and part.function_call is not None
-            for part in (turn.parts or [])
+        has_fc = any(
+            hasattr(p, "function_call") and p.function_call is not None
+            for p in (turn.parts or [])
         )
-        if has_function_call:
-            # Only include if next turn exists and has function_response
+        if has_fc:
             if i + 1 < len(history):
-                next_turn = history[i + 1]
-                has_function_response = any(
-                    hasattr(part, 'function_response') and part.function_response is not None
-                    for part in (next_turn.parts or [])
+                nxt = history[i + 1]
+                has_fr = any(
+                    hasattr(p, "function_response") and p.function_response is not None
+                    for p in (nxt.parts or [])
                 )
-                if has_function_response:
-                    sanitized.append(turn)
-                    sanitized.append(next_turn)
+                if has_fr:
+                    sanitized.extend([turn, nxt])
                     i += 2
                     continue
-            # Skip unpaired function_call turn
             i += 1
             continue
         sanitized.append(turn)
@@ -145,19 +217,28 @@ def _sanitize_history(history: list) -> list:
 
 # ── Agentic loop ───────────────────────────────────────────────────────────────
 
-async def run(phone: str, text: str, session: dict) -> str:
+async def run(
+    phone: str,
+    text: str,
+    session: dict,
+    client: BackendClient,
+    owner_phone: str = "",
+) -> str:
     """
     Process one WhatsApp message through the Gemini agent.
 
-    Runs the full function-calling loop:
-      user message → Gemini → [tool calls → tool results →]* final text
-
-    Updates session["history"] so follow-up messages retain context.
+    Args:
+        phone:       Raw Twilio From value (e.g. 'whatsapp:+521234567890').
+        text:        Incoming message text.
+        session:     Per-conversation state dict (mutated in-place).
+        client:      Authenticated BackendClient for the tenant.
+        owner_phone: Restaurant owner's WhatsApp number (optional).
     """
-    client, config = _get_client()
+    gemini = _get_gemini_client()
+    config = _get_config(client, owner_phone)
     history: list = _sanitize_history(session.get("history", []))
 
-    chat = client.aio.chats.create(
+    chat = gemini.aio.chats.create(
         model=_MODEL_NAME,
         history=history,
         config=config,
@@ -165,30 +246,31 @@ async def run(phone: str, text: str, session: dict) -> str:
     response = await chat.send_message(text)
 
     for iteration in range(MAX_TOOL_ITERATIONS):
-        # Collect function calls from this response
         parts = response.candidates[0].content.parts if response.candidates else []
         fn_calls = [
-            part.function_call
-            for part in parts
-            if part.function_call and part.function_call.name
+            p.function_call
+            for p in parts
+            if p.function_call and p.function_call.name
         ]
 
         if not fn_calls:
-            break   # Gemini produced a text response — we're done
+            break
 
         logger.info(
-            "Turn %d: Gemini requested %d tool(s): %s",
+            "Turn %d: Gemini requested %d tool(s): %s (tenant=%s)",
             iteration + 1,
             len(fn_calls),
             [fc.name for fc in fn_calls],
+            client.bot_email,
         )
 
-        # Execute all tool calls concurrently
         results = await asyncio.gather(
-            *[execute_tool(fc.name, dict(fc.args), phone) for fc in fn_calls]
+            *[
+                execute_tool(fc.name, dict(fc.args), phone, client, owner_phone)
+                for fc in fn_calls
+            ]
         )
 
-        # Return results to Gemini
         fn_response_parts = [
             types.Part.from_function_response(
                 name=fc.name,
@@ -198,12 +280,11 @@ async def run(phone: str, text: str, session: dict) -> str:
         ]
         response = await chat.send_message(fn_response_parts)
 
-    # Persist conversation history (bounded to avoid unbounded memory growth)
     session["history"] = chat.get_history(curated=True)[-MAX_HISTORY:]
 
     reply = response.text
     if not reply:
-        logger.warning("Gemini returned no text (phone=%s)", phone)
+        logger.warning("Gemini returned no text (phone=%s tenant=%s)", phone, client.bot_email)
         reply = "Lo siento, no pude procesar tu mensaje en este momento. Intenta de nuevo."
 
     return reply
