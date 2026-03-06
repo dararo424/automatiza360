@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
@@ -9,8 +10,23 @@ import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { CrearOrdenBotDto } from './dto/crear-orden-bot.dto';
 import { ActualizarEstadoDto } from './dto/actualizar-estado.dto';
 
+const STATUS_MESSAGES: Partial<Record<OrderStatus, string>> = {
+  [OrderStatus.CONFIRMED]:
+    '✅ Hola! Tu pedido #{{number}} ha sido confirmado. ¡Lo estamos preparando con mucho cariño!',
+  [OrderStatus.PREPARING]:
+    '👨‍🍳 Tu pedido #{{number}} está en preparación. En breve estará listo.',
+  [OrderStatus.READY]:
+    '🛵 Tu pedido #{{number}} está en camino. ¡Pronto llegará a tu puerta!',
+  [OrderStatus.DELIVERED]:
+    '✅ Tu pedido #{{number}} fue entregado. ¡Gracias por preferir nuestro restaurante! Esperamos verte pronto 😊',
+  [OrderStatus.CANCELLED]:
+    '❌ Tu pedido #{{number}} fue cancelado. Si tienes dudas contáctanos directamente.',
+};
+
 @Injectable()
 export class OrdenesService {
+  private readonly logger = new Logger(OrdenesService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async crear(dto: CrearOrdenDto, tenantId: string) {
@@ -131,10 +147,81 @@ export class OrdenesService {
     dto: ActualizarEstadoDto,
     tenantId: string,
   ) {
-    await this.buscarUno(id, tenantId);
-    return this.prisma.order.update({
+    const orden = await this.buscarUno(id, tenantId);
+    const updated = await this.prisma.order.update({
       where: { id },
       data: { status: dto.estado },
     });
+
+    if (orden.phone) {
+      // Fire-and-forget — do not await so Twilio latency never affects the response
+      this.sendWhatsAppNotification(orden.phone, orden.number, dto.estado).catch(
+        (err) => this.logger.error('WhatsApp notification error: %s', err?.message ?? err),
+      );
+    }
+
+    return updated;
+  }
+
+  private async sendWhatsAppNotification(
+    phone: string,
+    orderNumber: number,
+    status: OrderStatus,
+  ): Promise<void> {
+    const template = STATUS_MESSAGES[status];
+    if (!template) return; // PENDING and unknown statuses → no notification
+
+    const sid = process.env.TWILIO_ACCOUNT_SID;
+    const token = process.env.TWILIO_AUTH_TOKEN;
+    const from = process.env.TWILIO_WHATSAPP_NUMBER;
+
+    if (!sid || !token || !from) {
+      this.logger.warn(
+        'Twilio env vars not configured — skipping WhatsApp notification for order #%d',
+        orderNumber,
+      );
+      return;
+    }
+
+    const body = template.replace('{{number}}', String(orderNumber));
+    const to = phone.startsWith('whatsapp:') ? phone : `whatsapp:${phone}`;
+
+    const params = new URLSearchParams({
+      From: `whatsapp:${from}`,
+      To: to,
+      Body: body,
+    });
+
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+    const credentials = Buffer.from(`${sid}:${token}`).toString('base64');
+
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        this.logger.error(
+          'Twilio API error %d for order #%d: %s',
+          res.status,
+          orderNumber,
+          text,
+        );
+      } else {
+        this.logger.log('WhatsApp notification sent for order #%d → %s', orderNumber, status);
+      }
+    } catch (err: any) {
+      this.logger.error(
+        'Failed to send WhatsApp notification for order #%d: %s',
+        orderNumber,
+        err?.message ?? err,
+      );
+    }
   }
 }
