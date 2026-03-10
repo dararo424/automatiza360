@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { LoginPage } from './pages/LoginPage';
+import { OnboardingPage } from './pages/onboarding/OnboardingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { OrdenesPage } from './pages/ordenes/OrdenesPage';
 import { ProductosPage } from './pages/productos/ProductosPage';
@@ -16,6 +17,7 @@ export function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />

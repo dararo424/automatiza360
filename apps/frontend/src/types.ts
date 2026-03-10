@@ -1,4 +1,5 @@
 export type Industry = 'RESTAURANT' | 'TECH_STORE' | 'CLINIC' | 'OTHER';
+export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'SUSPENDED' | 'CANCELLED';
 export type Role = 'OWNER' | 'ADMIN' | 'STAFF';
 export type OrderStatus =
   | 'PENDING'
@@ -37,6 +38,14 @@ export interface Tenant {
   plan: string;
   industry: Industry;
   active: boolean;
+  subscriptionStatus?: SubscriptionStatus;
+  trialEndsAt?: string | null;
+}
+
+export interface TrialInfo {
+  daysRemaining: number;
+  status: SubscriptionStatus;
+  trialEndsAt: string | null;
 }
 
 export interface UserProfile extends AuthUser {

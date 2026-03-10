@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import { getNotificaciones } from '../../api/notificaciones';
+import { getTrialInfo } from '../../api/subscriptions';
 import type { Industry } from '../../types';
 
 interface NavItem {
@@ -47,6 +48,13 @@ export function Sidebar() {
     queryKey: ['notificaciones', false],
     queryFn: () => getNotificaciones(false),
     refetchInterval: 30_000,
+    enabled: !!user,
+  });
+
+  const { data: trialInfo } = useQuery({
+    queryKey: ['trial-info'],
+    queryFn: getTrialInfo,
+    refetchInterval: 5 * 60_000,
     enabled: !!user,
   });
 
@@ -106,6 +114,23 @@ export function Sidebar() {
           )}
         </NavLink>
       </nav>
+
+      {/* Trial banner */}
+      {trialInfo?.status === 'TRIAL' && (
+        <div
+          className={`mx-3 mb-3 rounded-lg px-3 py-2.5 text-xs ${
+            trialInfo.daysRemaining <= 3
+              ? 'bg-red-900/60 text-red-200 border border-red-700'
+              : 'bg-indigo-800/60 text-indigo-200 border border-indigo-700'
+          }`}
+        >
+          <p className="font-semibold">
+            {trialInfo.daysRemaining <= 3 ? '⚠️' : '🎉'} Trial gratis:{' '}
+            {trialInfo.daysRemaining === 0 ? 'último día' : `${trialInfo.daysRemaining} días restantes`}
+          </p>
+          <button className="mt-1 underline hover:no-underline font-medium">Activar plan →</button>
+        </div>
+      )}
 
       {/* User footer */}
       <div className="p-4 border-t border-slate-700">

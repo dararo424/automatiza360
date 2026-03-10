@@ -10,21 +10,20 @@ import {
 export class RegistroTenantDto {
   @IsString()
   @MinLength(2)
-  tenantName: string;
-
-  @IsString()
-  @MinLength(2)
-  @Matches(/^[a-z0-9-]+$/, {
-    message: 'El slug solo puede contener letras minúsculas, números y guiones',
-  })
-  tenantSlug: string;
-
-  @IsEnum(Industry)
-  industry: Industry;
+  businessName: string;
 
   @IsString()
   @MinLength(2)
   ownerName: string;
+
+  @IsString()
+  @Matches(/^\+?[1-9]\d{6,14}$/, {
+    message: 'El número de WhatsApp debe tener formato internacional (ej: +573001234567)',
+  })
+  ownerPhone: string;
+
+  @IsEnum(Industry)
+  industry: Industry;
 
   @IsEmail()
   email: string;

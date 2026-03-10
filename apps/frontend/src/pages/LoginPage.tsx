@@ -108,6 +108,13 @@ export function LoginPage() {
               )}
             </button>
           </form>
+
+          <p className="text-center text-sm text-slate-500 mt-6">
+            ¿No tienes cuenta?{' '}
+            <a href="/onboarding" className="text-indigo-600 hover:underline font-medium">
+              Regístrate gratis
+            </a>
+          </p>
         </div>
       </div>
     </div>

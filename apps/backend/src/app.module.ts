@@ -11,6 +11,7 @@ import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { ProveedoresModule } from './proveedores/proveedores.module';
 import { MenuDiaModule } from './menu-dia/menu-dia.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { MenuDiaModule } from './menu-dia/menu-dia.module';
     TicketsModule,
     ProveedoresModule,
     MenuDiaModule,
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
