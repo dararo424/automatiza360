@@ -277,6 +277,111 @@ _actualizar_menu_dia = types.FunctionDeclaration(
 )
 
 
+# ── Clinic / Beauty tool declarations ─────────────────────────────────────────
+
+_consultar_servicios_citas = types.FunctionDeclaration(
+    name="_consultar_servicios",
+    description="Lista todos los servicios disponibles con duración y precio.",
+    parameters=types.Schema(type=types.Type.OBJECT, properties={}, required=[]),
+)
+
+_consultar_profesionales_citas = types.FunctionDeclaration(
+    name="_consultar_profesionales",
+    description="Lista los profesionales/doctores/estilistas disponibles con sus horarios.",
+    parameters=types.Schema(type=types.Type.OBJECT, properties={}, required=[]),
+)
+
+_consultar_disponibilidad_citas = types.FunctionDeclaration(
+    name="_consultar_disponibilidad",
+    description=(
+        "Consulta los horarios disponibles para una fecha. "
+        "SIEMPRE consultar disponibilidad ANTES de agendar una cita."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "date": types.Schema(
+                type=types.Type.STRING,
+                description="Fecha en formato YYYY-MM-DD.",
+            ),
+            "professional_id": types.Schema(
+                type=types.Type.STRING,
+                description="ID del profesional (opcional).",
+            ),
+        },
+        required=["date"],
+    ),
+)
+
+_agendar_cita = types.FunctionDeclaration(
+    name="_agendar_cita",
+    description=(
+        "Agenda una cita para el cliente. "
+        "Requiere haber consultado disponibilidad primero. "
+        "Confirma todos los datos con el cliente antes de llamar esta herramienta."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "client_name": types.Schema(
+                type=types.Type.STRING,
+                description="Nombre completo del cliente.",
+            ),
+            "service_name": types.Schema(
+                type=types.Type.STRING,
+                description="Nombre exacto del servicio.",
+            ),
+            "date": types.Schema(
+                type=types.Type.STRING,
+                description="Fecha y hora en formato YYYY-MM-DDTHH:MM:00.",
+            ),
+            "professional_name": types.Schema(
+                type=types.Type.STRING,
+                description="Nombre del profesional (opcional).",
+            ),
+            "notes": types.Schema(
+                type=types.Type.STRING,
+                description="Notas adicionales (opcional).",
+            ),
+        },
+        required=["client_name", "service_name", "date"],
+    ),
+)
+
+_ver_mis_citas = types.FunctionDeclaration(
+    name="_ver_mis_citas",
+    description="Muestra las citas activas del cliente.",
+    parameters=types.Schema(type=types.Type.OBJECT, properties={}, required=[]),
+)
+
+_cancelar_cita = types.FunctionDeclaration(
+    name="_cancelar_cita",
+    description="Cancela una cita existente del cliente.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "appointment_id": types.Schema(
+                type=types.Type.STRING,
+                description="ID de la cita a cancelar.",
+            ),
+        },
+        required=["appointment_id"],
+    ),
+)
+
+_CLINIC_TOOLS = [
+    _consultar_servicios_citas,
+    _consultar_profesionales_citas,
+    _consultar_disponibilidad_citas,
+    _agendar_cita,
+    _ver_mis_citas,
+    _cancelar_cita,
+]
+
+TOOLS_CLINIC = [types.Tool(function_declarations=_CLINIC_TOOLS)]
+TOOLS_BEAUTY = [types.Tool(function_declarations=_CLINIC_TOOLS)]
+
+
 # ── Tool lists by industry ─────────────────────────────────────────────────────
 
 TOOLS_TECH_STORE = [
@@ -305,8 +410,13 @@ ALL_TOOLS = TOOLS_TECH_STORE
 
 def get_tools(industry: str) -> list[types.Tool]:
     """Return the tool list for the given tenant industry string."""
-    if industry and industry.upper() == "RESTAURANT":
+    upper = (industry or "").upper()
+    if upper == "RESTAURANT":
         return TOOLS_RESTAURANT
+    if upper == "CLINIC":
+        return TOOLS_CLINIC
+    if upper == "BEAUTY":
+        return TOOLS_BEAUTY
     return TOOLS_TECH_STORE
 
 
@@ -445,6 +555,44 @@ async def execute_tool(
                 )
             menu = await client.actualizar_menu_dia(args["platos"])
             return json.dumps(menu, ensure_ascii=False)
+
+        # ── Clinic / Beauty tools ─────────────────────────────────────────────
+        if name == "_consultar_servicios":
+            result = await client.get_servicios()
+            return json.dumps(result, ensure_ascii=False)
+
+        if name == "_consultar_profesionales":
+            result = await client.get_profesionales()
+            return json.dumps(result, ensure_ascii=False)
+
+        if name == "_consultar_disponibilidad":
+            result = await client.get_disponibilidad(
+                args["date"],
+                args.get("professional_id"),
+            )
+            return json.dumps(result, ensure_ascii=False)
+
+        if name == "_agendar_cita":
+            data = {
+                "clientName": args["client_name"],
+                "clientPhone": clean_phone,
+                "serviceName": args["service_name"],
+                "date": args["date"],
+            }
+            if args.get("professional_name"):
+                data["professionalName"] = args["professional_name"]
+            if args.get("notes"):
+                data["notes"] = args["notes"]
+            result = await client.crear_cita(data)
+            return json.dumps(result, ensure_ascii=False)
+
+        if name == "_ver_mis_citas":
+            result = await client.get_citas_cliente(clean_phone)
+            return json.dumps(result, ensure_ascii=False)
+
+        if name == "_cancelar_cita":
+            result = await client.cancelar_cita(args["appointment_id"], clean_phone)
+            return json.dumps(result, ensure_ascii=False)
 
         return json.dumps({"error": f"Herramienta '{name}' no reconocida."})
 

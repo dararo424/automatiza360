@@ -149,6 +149,36 @@ class BackendClient:
         result = await self._request("POST", "/menu-dia", json={"platos": platos})
         return result  # type: ignore[return-value]
 
+    # ── Citas (clínica / salón de belleza) ────────────────────────────────────
+
+    async def get_servicios(self) -> list[dict]:
+        result = await self._request("GET", "/citas/servicios")
+        return result  # type: ignore[return-value]
+
+    async def get_profesionales(self) -> list[dict]:
+        result = await self._request("GET", "/citas/profesionales")
+        return result  # type: ignore[return-value]
+
+    async def get_disponibilidad(self, date: str, professional_id: str | None = None) -> list[dict]:
+        params = f"date={date}"
+        if professional_id:
+            params += f"&professionalId={professional_id}"
+        result = await self._request("GET", f"/citas/disponibilidad?{params}")
+        return result  # type: ignore[return-value]
+
+    async def crear_cita(self, data: dict) -> dict:
+        result = await self._request("POST", "/citas/bot/crear", json=data)
+        return result  # type: ignore[return-value]
+
+    async def cancelar_cita(self, appointment_id: str, client_phone: str) -> dict:
+        result = await self._request("PUT", f"/citas/{appointment_id}/cancelar",
+                                     json={"clientPhone": client_phone})
+        return result  # type: ignore[return-value]
+
+    async def get_citas_cliente(self, phone: str) -> list[dict]:
+        result = await self._request("GET", f"/citas/cliente?phone={phone}")
+        return result  # type: ignore[return-value]
+
 
 # ── Client cache ───────────────────────────────────────────────────────────────
 

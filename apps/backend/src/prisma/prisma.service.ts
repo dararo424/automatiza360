@@ -25,6 +25,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get supplierProduct() { return this.client.supplierProduct; }
   get menuDia() { return this.client.menuDia; }
   get platoMenuDia() { return this.client.platoMenuDia; }
+  get professional() { return this.client.professional; }
+  get schedule() { return this.client.schedule; }
+  get service() { return this.client.service; }
+  get appointment() { return this.client.appointment; }
 
   // Transaction support
   $transaction: PrismaClient['$transaction'] = (...args: any[]) =>
