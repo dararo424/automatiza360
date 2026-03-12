@@ -13,6 +13,7 @@ import { ProveedoresModule } from './proveedores/proveedores.module';
 import { MenuDiaModule } from './menu-dia/menu-dia.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { CitasModule } from './citas/citas.module';
+import { CalendarModule } from './calendar/calendar.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CitasModule } from './citas/citas.module';
     MenuDiaModule,
     SubscriptionsModule,
     CitasModule,
+    CalendarModule,
   ],
   controllers: [AppController],
   providers: [AppService],

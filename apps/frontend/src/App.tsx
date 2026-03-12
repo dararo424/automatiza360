@@ -10,6 +10,7 @@ import { TicketsPage } from './pages/tickets/TicketsPage';
 import { CotizacionesPage } from './pages/cotizaciones/CotizacionesPage';
 import { InventarioPage } from './pages/inventario/InventarioPage';
 import { NotificacionesPage } from './pages/notificaciones/NotificacionesPage';
+import { AgendaPage } from './pages/agenda/AgendaPage';
 
 export function App() {
   return (
@@ -27,6 +28,7 @@ export function App() {
             <Route path="/cotizaciones" element={<CotizacionesPage />} />
             <Route path="/inventario" element={<InventarioPage />} />
             <Route path="/notificaciones" element={<NotificacionesPage />} />
+            <Route path="/agenda" element={<AgendaPage />} />
           </Route>
         </Routes>
       </AuthProvider>

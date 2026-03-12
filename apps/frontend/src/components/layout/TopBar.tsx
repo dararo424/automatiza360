@@ -9,6 +9,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/cotizaciones': 'Cotizaciones',
   '/inventario': 'Inventario',
   '/notificaciones': 'Notificaciones',
+  '/agenda': 'Agenda',
 };
 
 const ROL_LABELS: Record<string, string> = {

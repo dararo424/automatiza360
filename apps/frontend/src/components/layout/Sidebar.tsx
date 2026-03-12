@@ -37,6 +37,13 @@ function getNavItems(industry: Industry): NavItem[] {
     ];
   }
 
+  if (industry === 'CLINIC' || industry === 'BEAUTY') {
+    return [
+      ...base,
+      { to: '/agenda', label: 'Agenda', emoji: '📅' },
+    ];
+  }
+
   return base;
 }
 

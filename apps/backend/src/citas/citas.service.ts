@@ -6,11 +6,15 @@ import {
 } from '@nestjs/common';
 import { AppointmentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CalendarService } from '../calendar/calendar.service';
 import { CrearCitaBotDto } from './dto/crear-cita-bot.dto';
 
 @Injectable()
 export class CitasService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly calendar: CalendarService,
+  ) {}
 
   listarServicios(tenantId: string) {
     return this.prisma.service.findMany({
@@ -58,7 +62,12 @@ export class CitasService {
     return professionals.map((prof) => {
       const schedule = prof.schedules[0];
       if (!schedule) {
-        return { professionalId: prof.id, name: prof.name, available: false, reason: 'No trabaja este día' };
+        return {
+          professionalId: prof.id,
+          name: prof.name,
+          available: false,
+          reason: 'No trabaja este día',
+        };
       }
 
       const slots = this._generateSlots(
@@ -82,8 +91,135 @@ export class CitasService {
     });
   }
 
+  async getCitasDelMes(tenantId: string, year: number, month: number) {
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 1));
+
+    const appointments = await this.prisma.appointment.findMany({
+      where: { tenantId, date: { gte: startDate, lt: endDate } },
+      include: { service: true, professional: true },
+      orderBy: { date: 'asc' },
+    });
+
+    const counts: Record<string, number> = {};
+    for (const a of appointments) {
+      const key = a.date.toISOString().substring(0, 10);
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+
+    return { counts, appointments };
+  }
+
+  getCitasDelDia(tenantId: string, date: string) {
+    return this.prisma.appointment.findMany({
+      where: {
+        tenantId,
+        date: {
+          gte: new Date(`${date}T00:00:00.000Z`),
+          lt: new Date(`${date}T23:59:59.999Z`),
+        },
+      },
+      include: { service: true, professional: true },
+      orderBy: { date: 'asc' },
+    });
+  }
+
+  async actualizarEstado(
+    id: string,
+    status: AppointmentStatus,
+    tenantId: string,
+  ) {
+    const cita = await this.prisma.appointment.findFirst({
+      where: { id, tenantId },
+      include: { service: true, professional: true },
+    });
+    if (!cita) throw new NotFoundException('Cita no encontrada');
+
+    const updated = await this.prisma.appointment.update({
+      where: { id },
+      data: { status },
+      include: { service: true, professional: true },
+    });
+
+    const fechaStr = cita.date.toLocaleDateString('es-CO', {
+      dateStyle: 'medium',
+    });
+    const horaStr = cita.date.toLocaleTimeString('es-CO', {
+      timeStyle: 'short',
+    });
+    const profName = cita.professional?.name ?? 'Sin asignar';
+
+    const NOTIFS: Partial<
+      Record<AppointmentStatus, { title: string; message: string }>
+    > = {
+      [AppointmentStatus.CONFIRMED]: {
+        title: `Cita confirmada — ${cita.clientName}`,
+        message: `✅ ${cita.clientName} — ${cita.service.name} — ${fechaStr} ${horaStr} con ${profName}`,
+      },
+      [AppointmentStatus.CANCELLED]: {
+        title: `Cita cancelada — ${cita.clientName}`,
+        message: `❌ ${cita.clientName} — ${cita.service.name} — ${fechaStr} ${horaStr} fue cancelada`,
+      },
+      [AppointmentStatus.COMPLETED]: {
+        title: `Cita completada — ${cita.clientName}`,
+        message: `✅ ${cita.clientName} completó su cita de ${cita.service.name} con ${profName}`,
+      },
+    };
+
+    const notif = NOTIFS[status];
+    if (notif) {
+      await this.prisma.notificacion.create({
+        data: { type: 'CITA_ESTADO', ...notif, tenantId },
+      });
+    }
+
+    return updated;
+  }
+
+  async getCalendarLinks(id: string, tenantId: string) {
+    const cita = await this.prisma.appointment.findFirst({
+      where: { id, tenantId },
+      include: { service: true, professional: true },
+    });
+    if (!cita) throw new NotFoundException('Cita no encontrada');
+
+    const { title, description, endDateTime } = this._calendarData(cita);
+
+    return {
+      googleUrl: this.calendar.generateGoogleCalendarUrl({
+        title,
+        description,
+        startDateTime: cita.date,
+        endDateTime,
+      }),
+      outlookUrl: this.calendar.generateOutlookUrl({
+        title,
+        description,
+        startDateTime: cita.date,
+        endDateTime,
+      }),
+    };
+  }
+
+  async generateICS(id: string, tenantId: string): Promise<string> {
+    const cita = await this.prisma.appointment.findFirst({
+      where: { id, tenantId },
+      include: { service: true, professional: true },
+    });
+    if (!cita) throw new NotFoundException('Cita no encontrada');
+
+    const { title, description, endDateTime } = this._calendarData(cita);
+
+    return this.calendar.generateICSFile({
+      id: cita.id,
+      title,
+      description,
+      startDateTime: cita.date,
+      endDateTime,
+    });
+  }
+
   async crearCitaBot(dto: CrearCitaBotDto, tenantId: string) {
-    // Resolve service by name (case-insensitive)
     const services = await this.prisma.service.findMany({
       where: { tenantId, active: true },
     });
@@ -91,12 +227,9 @@ export class CitasService {
       (s) => s.name.toLowerCase() === dto.serviceName.toLowerCase(),
     );
     if (!service) {
-      throw new NotFoundException(
-        `Servicio "${dto.serviceName}" no encontrado`,
-      );
+      throw new NotFoundException(`Servicio "${dto.serviceName}" no encontrado`);
     }
 
-    // Resolve professional by name if provided
     let professionalId: string | undefined;
     if (dto.professionalName) {
       const professionals = await this.prisma.professional.findMany({
@@ -113,7 +246,6 @@ export class CitasService {
       professionalId = prof.id;
     }
 
-    // Check for conflicts
     const appointmentDate = new Date(dto.date);
     const endTime = new Date(
       appointmentDate.getTime() + service.duration * 60_000,
@@ -135,7 +267,7 @@ export class CitasService {
       }
     }
 
-    return this.prisma.appointment.create({
+    const cita = await this.prisma.appointment.create({
       data: {
         clientName: dto.clientName,
         clientPhone: dto.clientPhone,
@@ -147,6 +279,25 @@ export class CitasService {
       },
       include: { service: true, professional: true },
     });
+
+    const { title, description, endDateTime } = this._calendarData(cita);
+
+    const calendarLinks = {
+      googleUrl: this.calendar.generateGoogleCalendarUrl({
+        title,
+        description,
+        startDateTime: cita.date,
+        endDateTime,
+      }),
+      outlookUrl: this.calendar.generateOutlookUrl({
+        title,
+        description,
+        startDateTime: cita.date,
+        endDateTime,
+      }),
+    };
+
+    return { ...cita, calendarLinks };
   }
 
   async cancelarCita(id: string, clientPhone: string, tenantId: string) {
@@ -173,7 +324,9 @@ export class CitasService {
       where: {
         tenantId,
         clientPhone: { contains: clean },
-        status: { notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.COMPLETED] },
+        status: {
+          notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.COMPLETED],
+        },
         date: { gte: new Date() },
       },
       include: { service: true, professional: true },
@@ -181,7 +334,27 @@ export class CitasService {
     });
   }
 
-  // ── Private helpers ───────────────────────────────────────────────────────
+  // ── Private helpers ────────────────────────────────────────────────────────
+
+  private _calendarData(cita: {
+    date: Date;
+    service: { name: string; duration: number };
+    clientName: string;
+    professional?: { name: string } | null;
+  }) {
+    const endDateTime = new Date(
+      cita.date.getTime() + cita.service.duration * 60_000,
+    );
+    const title = cita.service.name;
+    const description = [
+      `Paciente/Cliente: ${cita.clientName}`,
+      cita.professional ? `Profesional: ${cita.professional.name}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    return { title, description, endDateTime };
+  }
 
   private _generateSlots(
     startTime: string,
@@ -199,14 +372,13 @@ export class CitasService {
     for (let min = startMin; min < endMin; min += 30) {
       const h = String(Math.floor(min / 60)).padStart(2, '0');
       const m = String(min % 60).padStart(2, '0');
-      const slotTime = `${h}:${m}`;
 
       const occupied = booked.some((a) => {
         const aMin = a.date.getUTCHours() * 60 + a.date.getUTCMinutes();
         return min >= aMin && min < aMin + a.service.duration;
       });
 
-      if (!occupied) slots.push(slotTime);
+      if (!occupied) slots.push(`${h}:${m}`);
     }
     return slots;
   }

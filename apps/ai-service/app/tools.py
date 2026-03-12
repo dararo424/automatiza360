@@ -584,6 +584,13 @@ async def execute_tool(
             if args.get("notes"):
                 data["notes"] = args["notes"]
             result = await client.crear_cita(data)
+            # Format calendar links for the AI to show to the client
+            links = result.get("calendarLinks", {})
+            if links:
+                result["_calendarMessage"] = (
+                    f"📲 Google Calendar: {links.get('googleUrl', '')}\n"
+                    f"📅 Outlook: {links.get('outlookUrl', '')}"
+                )
             return json.dumps(result, ensure_ascii=False)
 
         if name == "_ver_mis_citas":

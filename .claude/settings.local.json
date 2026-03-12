@@ -20,7 +20,8 @@
       "Bash(npx ts-node:*)",
       "Bash(cd \"E:\\\\Proyectos\\\\automatiza360\\\\apps\\\\backend\" && npx tsc --noEmit 2>&1 | head -50)",
       "Bash(cd \"E:\\\\Proyectos\\\\automatiza360\\\\apps\\\\backend\" && npx tsc --noEmit 2>&1 | head -20)",
-      "Bash(cd \"E:\\\\Proyectos\\\\automatiza360\\\\apps\\\\backend\" && npx tsc --noEmit 2>&1)"
+      "Bash(cd \"E:\\\\Proyectos\\\\automatiza360\\\\apps\\\\backend\" && npx tsc --noEmit 2>&1)",
+      "Bash(cd \"E:\\\\Proyectos\\\\automatiza360\\\\apps\\\\frontend\" && npx tsc --noEmit 2>&1)"
     ]
   }
 }

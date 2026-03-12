@@ -1,4 +1,10 @@
-export type Industry = 'RESTAURANT' | 'TECH_STORE' | 'CLINIC' | 'OTHER';
+export type Industry = 'RESTAURANT' | 'TECH_STORE' | 'CLINIC' | 'BEAUTY' | 'OTHER';
+export type AppointmentStatus =
+  | 'SCHEDULED'
+  | 'CONFIRMED'
+  | 'CANCELLED'
+  | 'COMPLETED'
+  | 'NO_SHOW';
 export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'SUSPENDED' | 'CANCELLED';
 export type Role = 'OWNER' | 'ADMIN' | 'STAFF';
 export type OrderStatus =
@@ -125,6 +131,40 @@ export interface Notificacion {
   message: string;
   read: boolean;
   createdAt: string;
+}
+
+export interface Profesional {
+  id: string;
+  name: string;
+  specialty?: string;
+}
+
+export interface Servicio {
+  id: string;
+  name: string;
+  description?: string;
+  duration: number;
+  price: number;
+}
+
+export interface Cita {
+  id: string;
+  clientName: string;
+  clientPhone: string;
+  date: string;
+  status: AppointmentStatus;
+  notes?: string;
+  createdAt: string;
+  serviceId: string;
+  service: Servicio;
+  professionalId?: string;
+  professional?: Profesional | null;
+  tenantId: string;
+}
+
+export interface CalendarLinks {
+  googleUrl: string;
+  outlookUrl: string;
 }
 
 export interface ImportedProduct {
