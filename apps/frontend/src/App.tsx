@@ -11,6 +11,8 @@ import { CotizacionesPage } from './pages/cotizaciones/CotizacionesPage';
 import { InventarioPage } from './pages/inventario/InventarioPage';
 import { NotificacionesPage } from './pages/notificaciones/NotificacionesPage';
 import { AgendaPage } from './pages/agenda/AgendaPage';
+import { PlanesPage } from './pages/planes/PlanesPage';
+import { PagoResultadoPage } from './pages/planes/PagoResultadoPage';
 
 export function App() {
   return (
@@ -29,7 +31,9 @@ export function App() {
             <Route path="/inventario" element={<InventarioPage />} />
             <Route path="/notificaciones" element={<NotificacionesPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
+            <Route path="/planes" element={<PlanesPage />} />
           </Route>
+          <Route path="/pago-resultado" element={<PagoResultadoPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -135,7 +135,7 @@ export function Sidebar() {
             {trialInfo.daysRemaining <= 3 ? '⚠️' : '🎉'} Trial gratis:{' '}
             {trialInfo.daysRemaining === 0 ? 'último día' : `${trialInfo.daysRemaining} días restantes`}
           </p>
-          <button className="mt-1 underline hover:no-underline font-medium">Activar plan →</button>
+          <NavLink to="/planes" className="mt-1 underline hover:no-underline font-medium">Activar plan →</NavLink>
         </div>
       )}
 

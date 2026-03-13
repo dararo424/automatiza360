@@ -14,6 +14,7 @@ import { MenuDiaModule } from './menu-dia/menu-dia.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { CitasModule } from './citas/citas.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { CalendarModule } from './calendar/calendar.module';
     SubscriptionsModule,
     CitasModule,
     CalendarModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
