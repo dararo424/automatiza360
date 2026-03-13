@@ -16,9 +16,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from datetime import datetime
-
-import pytz
+from datetime import datetime, timezone, timedelta
 from google import genai
 from google.genai import types
 
@@ -37,19 +35,15 @@ MAX_TOOL_ITERATIONS = 6
 
 # ── System prompts ─────────────────────────────────────────────────────────────
 
-_COLOMBIA_TZ = pytz.timezone("America/Bogota")
-
-
-def _fecha_contexto() -> str:
-    """Devuelve una línea con la fecha y hora actual en Colombia."""
-    now = datetime.now(_COLOMBIA_TZ)
-    fecha = now.strftime("%A %d de %B de %Y")   # jueves 12 de marzo de 2026
-    hora  = now.strftime("%H:%M")
-    return f"Hoy es {fecha}, hora actual: {hora} (hora Colombia)."
+# Zona horaria Colombia = UTC-5
+colombia_offset = timezone(timedelta(hours=-5))
+now = datetime.now(colombia_offset)
+fecha_actual = now.strftime("%A %d de %B de %Y")
+hora_actual = now.strftime("%H:%M")
 
 
 def _build_system_prompt_tech_store(store_name: str) -> str:
-    return f"""{_fecha_contexto()}
+    return f"""Hoy es {fecha_actual}, hora actual: {hora_actual} (hora Colombia).
 
 Eres el asistente inteligente de {store_name}, una tienda de tecnología.
 Ayudas a los clientes de forma natural, como lo haría un vendedor experto y un técnico experimentado.
@@ -95,7 +89,7 @@ def _build_system_prompt_restaurant(store_name: str, owner_phone: str) -> str:
         "En ese caso usa la herramienta actualizar_menu_dia."
         if owner_phone else ""
     )
-    return f"""{_fecha_contexto()}
+    return f"""Hoy es {fecha_actual}, hora actual: {hora_actual} (hora Colombia).
 
 Eres el asistente virtual de {store_name}, un restaurante.
 Ayudas a los clientes de forma amable y eficiente, como lo haría un mesero experto.
@@ -131,7 +125,7 @@ Ayudas a los clientes de forma amable y eficiente, como lo haría un mesero expe
 
 
 def _build_system_prompt_clinic(store_name: str) -> str:
-    return f"""{_fecha_contexto()}
+    return f"""Hoy es {fecha_actual}, hora actual: {hora_actual} (hora Colombia).
 
 Eres el asistente virtual de {store_name}, un consultorio médico.
 Tu función es ayudar a los pacientes a:
@@ -159,7 +153,7 @@ Reglas importantes:
 
 
 def _build_system_prompt_beauty(store_name: str) -> str:
-    return f"""{_fecha_contexto()}
+    return f"""Hoy es {fecha_actual}, hora actual: {hora_actual} (hora Colombia).
 
 Eres el asistente virtual de {store_name}, salón de belleza y estética.
 Tu función es ayudar a los clientes a:
