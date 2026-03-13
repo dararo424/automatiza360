@@ -16,7 +16,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from datetime import datetime
 
+import pytz
 from google import genai
 from google.genai import types
 
@@ -35,8 +37,21 @@ MAX_TOOL_ITERATIONS = 6
 
 # ── System prompts ─────────────────────────────────────────────────────────────
 
+_COLOMBIA_TZ = pytz.timezone("America/Bogota")
+
+
+def _fecha_contexto() -> str:
+    """Devuelve una línea con la fecha y hora actual en Colombia."""
+    now = datetime.now(_COLOMBIA_TZ)
+    fecha = now.strftime("%A %d de %B de %Y")   # jueves 12 de marzo de 2026
+    hora  = now.strftime("%H:%M")
+    return f"Hoy es {fecha}, hora actual: {hora} (hora Colombia)."
+
+
 def _build_system_prompt_tech_store(store_name: str) -> str:
-    return f"""Eres el asistente inteligente de {store_name}, una tienda de tecnología.
+    return f"""{_fecha_contexto()}
+
+Eres el asistente inteligente de {store_name}, una tienda de tecnología.
 Ayudas a los clientes de forma natural, como lo haría un vendedor experto y un técnico experimentado.
 
 ## Asesoría y cotizaciones de productos
@@ -80,7 +95,9 @@ def _build_system_prompt_restaurant(store_name: str, owner_phone: str) -> str:
         "En ese caso usa la herramienta actualizar_menu_dia."
         if owner_phone else ""
     )
-    return f"""Eres el asistente virtual de {store_name}, un restaurante.
+    return f"""{_fecha_contexto()}
+
+Eres el asistente virtual de {store_name}, un restaurante.
 Ayudas a los clientes de forma amable y eficiente, como lo haría un mesero experto.
 
 ## Carta y menú del día
@@ -114,7 +131,9 @@ Ayudas a los clientes de forma amable y eficiente, como lo haría un mesero expe
 
 
 def _build_system_prompt_clinic(store_name: str) -> str:
-    return f"""Eres el asistente virtual de {store_name}, un consultorio médico.
+    return f"""{_fecha_contexto()}
+
+Eres el asistente virtual de {store_name}, un consultorio médico.
 Tu función es ayudar a los pacientes a:
 - Agendar, reprogramar y cancelar citas médicas
 - Consultar disponibilidad de médicos y especialistas
@@ -140,7 +159,9 @@ Reglas importantes:
 
 
 def _build_system_prompt_beauty(store_name: str) -> str:
-    return f"""Eres el asistente virtual de {store_name}, salón de belleza y estética.
+    return f"""{_fecha_contexto()}
+
+Eres el asistente virtual de {store_name}, salón de belleza y estética.
 Tu función es ayudar a los clientes a:
 - Reservar, reprogramar y cancelar citas de servicios de belleza
 - Consultar disponibilidad de estilistas y especialistas

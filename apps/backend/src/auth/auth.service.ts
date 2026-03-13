@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Role, SubscriptionStatus, User, Tenant } from '@prisma/client';
+import { Industry, Role, SubscriptionStatus, User, Tenant } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,6 +22,9 @@ export class AuthService {
   ) {}
 
   async registrarTenant(dto: RegistroTenantDto) {
+    // IMPORTANTE: el bot-staff y el owner DEBEN estar en el mismo tenantId.
+    // Nunca crear un tenant separado para el bot y otro para el owner.
+
     const emailExistente = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -29,6 +32,20 @@ export class AuthService {
       throw new ConflictException('El correo ya está registrado');
     }
 
+    const slugBase = this.buildSlugBase(dto.businessName);
+
+    // Si ya existe un tenant con ese slug sin OWNER, agregar el owner ahí
+    // (evita crear un tenant duplicado cuando el negocio fue pre-registrado via seed)
+    const tenantExistente = await this.prisma.tenant.findUnique({
+      where: { slug: slugBase },
+      include: { users: { where: { role: Role.OWNER } } },
+    });
+
+    if (tenantExistente && tenantExistente.users.length === 0) {
+      return this.agregarOwnerATenantExistente(dto, tenantExistente);
+    }
+
+    // Flujo normal: crear tenant nuevo con owner + bot en la misma transacción
     const slug = await this.generateUniqueSlug(dto.businessName);
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const botPassword = crypto.randomBytes(16).toString('hex');
@@ -68,6 +85,9 @@ export class AuthService {
         },
       });
 
+      // Datos default por industry (servicios + profesional de ejemplo)
+      await this.crearDatosDefault(tx, newTenant.id, dto.industry);
+
       return [newTenant, newOwner];
     });
 
@@ -90,6 +110,82 @@ export class AuthService {
         industry: tenant.industry,
       },
       trialEndsAt: trialEndsAt.toISOString(),
+      setupInstructions: provision.setupInstructions,
+      sandboxMode: provision.sandboxMode,
+      sandboxWord: provision.sandboxWord,
+      twilioNumber: provision.twilioNumber,
+    };
+  }
+
+  private async agregarOwnerATenantExistente(
+    dto: RegistroTenantDto,
+    tenant: Tenant,
+  ) {
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    const owner = await this.prisma.user.create({
+      data: {
+        name: dto.ownerName,
+        email: dto.email,
+        password: passwordHash,
+        role: Role.OWNER,
+        tenantId: tenant.id,
+      },
+    });
+
+    // Actualizar ownerPhone si no estaba registrado
+    if (!tenant.ownerPhone && dto.ownerPhone) {
+      await this.prisma.tenant.update({
+        where: { id: tenant.id },
+        data: { ownerPhone: dto.ownerPhone },
+      });
+    }
+
+    const token = this.generarToken(owner);
+
+    // El bot ya existe; provisionamos Twilio solo si no tiene número asignado
+    const botUser = await this.prisma.user.findFirst({
+      where: { tenantId: tenant.id, role: Role.STAFF },
+    });
+
+    let provision = {
+      setupInstructions: 'WhatsApp ya configurado para este negocio.',
+      sandboxMode: true,
+      sandboxWord: '',
+      twilioNumber: tenant.twilioNumber ?? '',
+    };
+
+    if (!tenant.twilioNumber && botUser) {
+      const botPassword = crypto.randomBytes(16).toString('hex');
+      const botPasswordHash = await bcrypt.hash(botPassword, 10);
+      await this.prisma.user.update({
+        where: { id: botUser.id },
+        data: { password: botPasswordHash },
+      });
+      const p = await this.twilioProvisioning.provisionNumber(
+        tenant.id,
+        tenant.slug,
+        botUser.email,
+        botPassword,
+      );
+      provision = {
+        setupInstructions: p.setupInstructions,
+        sandboxMode: p.sandboxMode,
+        sandboxWord: p.sandboxWord ?? '',
+        twilioNumber: p.twilioNumber ?? '',
+      };
+    }
+
+    return {
+      mensaje: 'Cuenta creada para negocio existente',
+      token,
+      tenant: {
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.slug,
+        industry: tenant.industry,
+      },
+      trialEndsAt: tenant.trialEndsAt?.toISOString() ?? null,
       setupInstructions: provision.setupInstructions,
       sandboxMode: provision.sandboxMode,
       sandboxWord: provision.sandboxWord,
@@ -162,17 +258,22 @@ export class AuthService {
     });
   }
 
-  private async generateUniqueSlug(businessName: string): Promise<string> {
-    const base = businessName
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s]/g, '')
-      .trim()
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '') || 'negocio';
+  private buildSlugBase(businessName: string): string {
+    return (
+      businessName
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'negocio'
+    );
+  }
 
+  private async generateUniqueSlug(businessName: string): Promise<string> {
+    const base = this.buildSlugBase(businessName);
     const existing = await this.prisma.tenant.findUnique({ where: { slug: base } });
     if (!existing) return base;
 
@@ -188,5 +289,71 @@ export class AuthService {
       role: user.role,
     };
     return this.jwtService.sign(payload);
+  }
+
+  /** Crea servicios y un profesional de ejemplo según el industry del negocio. */
+  private async crearDatosDefault(
+    tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
+    tenantId: string,
+    industry: Industry,
+  ): Promise<void> {
+    if (industry === Industry.CLINIC) {
+      await tx.service.createMany({
+        data: [
+          { name: 'Consulta General', description: 'Medicina general', duration: 45, price: 50000, tenantId },
+          { name: 'Consulta Pediatría', description: 'Pediatría', duration: 45, price: 60000, tenantId },
+          { name: 'Toma de Muestras', description: 'Laboratorio clínico', duration: 20, price: 30000, tenantId },
+          { name: 'Electrocardiograma', description: 'ECG de 12 derivaciones', duration: 30, price: 80000, tenantId },
+        ],
+      });
+      const medico = await tx.professional.create({
+        data: { name: 'Médico General', specialty: 'Medicina General', tenantId },
+      });
+      // Horario L-V 8:00-17:00
+      await tx.schedule.createMany({
+        data: [1, 2, 3, 4, 5].map((dayOfWeek) => ({
+          dayOfWeek, startTime: '08:00', endTime: '17:00', professionalId: medico.id,
+        })),
+      });
+    }
+
+    if (industry === Industry.BEAUTY) {
+      await tx.service.createMany({
+        data: [
+          { name: 'Corte de cabello', description: 'Corte + lavado + secado', duration: 45, price: 45000, tenantId },
+          { name: 'Tinte completo', description: 'Coloración + tratamiento', duration: 120, price: 120000, tenantId },
+          { name: 'Manicure', description: 'Esmaltado tradicional o semipermanente', duration: 45, price: 30000, tenantId },
+          { name: 'Pedicure', description: 'Pedicure completo con esmaltado', duration: 60, price: 35000, tenantId },
+          { name: 'Facial básico', description: 'Limpieza facial e hidratación', duration: 60, price: 80000, tenantId },
+          { name: 'Depilación de cejas', description: 'Diseño y depilación', duration: 20, price: 15000, tenantId },
+        ],
+      });
+      const estilista = await tx.professional.create({
+        data: { name: 'Estilista', specialty: 'Colorimetría', tenantId },
+      });
+      // Horario L-S 9:00-18:00
+      await tx.schedule.createMany({
+        data: [1, 2, 3, 4, 5, 6].map((dayOfWeek) => ({
+          dayOfWeek, startTime: '09:00', endTime: '18:00', professionalId: estilista.id,
+        })),
+      });
+    }
+
+    if (industry === Industry.RESTAURANT) {
+      await tx.product.createMany({
+        data: [
+          { name: 'Plato del día', description: 'Consultar disponibilidad', price: 15000, stock: 50, minStock: 5, tenantId },
+          { name: 'Bebida', description: 'Gaseosa, jugo o agua', price: 3000, stock: 100, minStock: 10, tenantId },
+        ],
+      });
+    }
+
+    if (industry === Industry.TECH_STORE) {
+      await tx.product.createMany({
+        data: [
+          { name: 'Servicio técnico general', description: 'Diagnóstico y reparación', price: 50000, stock: 999, minStock: 0, tenantId },
+        ],
+      });
+    }
   }
 }
