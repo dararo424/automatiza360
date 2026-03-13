@@ -374,7 +374,8 @@ export class CitasService {
       const m = String(min % 60).padStart(2, '0');
 
       const occupied = booked.some((a) => {
-        const aMin = a.date.getUTCHours() * 60 + a.date.getUTCMinutes();
+        // DB stores UTC; convert to Colombia (UTC-5) before comparing with local slot times
+        const aMin = ((a.date.getUTCHours() - 5 + 24) % 24) * 60 + a.date.getUTCMinutes();
         return min >= aMin && min < aMin + a.service.duration;
       });
 

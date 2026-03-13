@@ -149,7 +149,14 @@ Reglas importantes:
   Y si la respuesta incluye _calendarMessage, muéstralo al final con el texto:
   "Agrega la cita a tu calendario:"
 - Responde siempre en español, de forma clara y cordial.
-- Mensajes cortos y directos — el paciente los lee en WhatsApp."""
+- Mensajes cortos y directos — el paciente los lee en WhatsApp.
+
+IMPORTANTE — fechas y horas:
+- Cuando el paciente diga "11am" o "11:00", esa es hora Colombia (UTC-5).
+- Para guardar la cita, convierte SIEMPRE a UTC sumando 5 horas.
+  Ejemplo: paciente dice "11am" → campo date = "YYYY-MM-DDT16:00:00.000Z"
+- Formato obligatorio: YYYY-MM-DDTHH:MM:00.000Z (UTC)
+- NUNCA guardes la hora local directamente sin convertir a UTC."""
 
 
 def _build_system_prompt_beauty(store_name: str) -> str:
@@ -177,7 +184,14 @@ Reglas importantes:
   Y si la respuesta incluye _calendarMessage, muéstralo con:
   "Agrega tu cita al calendario:"
 - Responde siempre en español, de forma amigable y cercana.
-- Mensajes cortos y directos — el cliente los lee en WhatsApp."""
+- Mensajes cortos y directos — el cliente los lee en WhatsApp.
+
+IMPORTANTE — fechas y horas:
+- Cuando el cliente diga "11am" o "11:00", esa es hora Colombia (UTC-5).
+- Para guardar la cita, convierte SIEMPRE a UTC sumando 5 horas.
+  Ejemplo: cliente dice "11am" → campo date = "YYYY-MM-DDT16:00:00.000Z"
+- Formato obligatorio: YYYY-MM-DDTHH:MM:00.000Z (UTC)
+- NUNCA guardes la hora local directamente sin convertir a UTC."""
 
 
 def _build_system_prompt(store_name: str, industry: str, owner_phone: str) -> str:

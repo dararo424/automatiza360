@@ -47,8 +47,10 @@ function CitaCard({
   });
 
   const hora = new Date(cita.date).toLocaleTimeString('es-CO', {
+    timeZone: 'America/Bogota',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: true,
   });
 
   const isActive =
