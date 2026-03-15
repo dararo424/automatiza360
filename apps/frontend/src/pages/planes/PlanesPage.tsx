@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import api from '../../api/axios';
-import { crearTransaccion } from '../../api/payments';
 
 interface Plan {
   key: 'STARTER' | 'PRO' | 'BUSINESS';
@@ -74,7 +73,8 @@ export function PlanesPage() {
     setLoadingPlan(plan);
 
     try {
-      const data = await crearTransaccion(plan);
+      const res = await api.post('/payments/crear-transaccion', { plan });
+      const data = res.data;
       console.log('[Wompi] data:', data);
       console.log('[Wompi] publicKey:', data.publicKey);
       console.log('[Wompi] firma:', data.firma);
@@ -85,7 +85,7 @@ export function PlanesPage() {
       }
 
       const checkout = new (window as any).WidgetCheckout({
-        currency: 'COP',
+        currency: data.moneda,
         amountInCents: data.monto,
         reference: data.referencia,
         publicKey: data.publicKey,
