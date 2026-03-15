@@ -31,18 +31,25 @@ export class PaymentsService {
     const firma = this.generarFirma(referencia, monto, 'COP');
     const redirectUrl = `${process.env.FRONTEND_URL}/pago-resultado`;
 
-    const checkoutUrl = new URL('https://checkout.wompi.co/p/');
-    checkoutUrl.searchParams.set('public-key', process.env.WOMPI_PUBLIC_KEY ?? '');
-    checkoutUrl.searchParams.set('currency', 'COP');
-    checkoutUrl.searchParams.set('amount-in-cents', String(monto));
-    checkoutUrl.searchParams.set('reference', referencia);
-    checkoutUrl.searchParams.set('signature:integrity', firma);
-    checkoutUrl.searchParams.set('redirect-url', redirectUrl);
+    const params = new URLSearchParams();
+    params.set('public-key', process.env.WOMPI_PUBLIC_KEY ?? '');
+    params.set('currency', 'COP');
+    params.set('amount-in-cents', String(monto));
+    params.set('reference', referencia);
+    params.set('signature:integrity', firma);
+    params.set('redirect-url', redirectUrl);
+
+    const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`;
+    console.log('Checkout URL generada:', checkoutUrl);
 
     return {
-      checkoutUrl: checkoutUrl.toString(),
+      checkoutUrl,
+      publicKey: process.env.WOMPI_PUBLIC_KEY,
       referencia,
-      plan,
+      monto,
+      moneda: 'COP',
+      firma,
+      redirectUrl,
     };
   }
 
