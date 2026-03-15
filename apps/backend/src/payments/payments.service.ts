@@ -29,15 +29,19 @@ export class PaymentsService {
     });
 
     const firma = this.generarFirma(referencia, monto, 'COP');
+    const redirectUrl = `${process.env.FRONTEND_URL}/pago-resultado`;
+
+    const checkoutUrl = new URL('https://checkout.wompi.co/p/');
+    checkoutUrl.searchParams.set('public-key', process.env.WOMPI_PUBLIC_KEY ?? '');
+    checkoutUrl.searchParams.set('currency', 'COP');
+    checkoutUrl.searchParams.set('amount-in-cents', String(monto));
+    checkoutUrl.searchParams.set('reference', referencia);
+    checkoutUrl.searchParams.set('signature:integrity', firma);
+    checkoutUrl.searchParams.set('redirect-url', redirectUrl);
 
     return {
-      publicKey: process.env.WOMPI_PUBLIC_KEY,
+      checkoutUrl: checkoutUrl.toString(),
       referencia,
-      monto,
-      moneda: 'COP',
-      firma,
-      redirectUrl: `${process.env.FRONTEND_URL}/pago-resultado`,
-      customerEmail: tenant?.users[0]?.email ?? '',
       plan,
     };
   }

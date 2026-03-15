@@ -1,21 +1,32 @@
-import { useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../api/axios';
 
 export function PagoResultadoPage() {
-  const [params] = useSearchParams();
   const { refreshUser } = useAuth();
-  const refreshedRef = useRef(false);
-  const status = params.get('status');
-  const approved = status === 'approved';
+  const processedRef = useRef(false);
+  const [activando, setActivando] = useState(false);
 
-  // Recargar perfil del usuario para reflejar el nuevo subscriptionStatus
+  // Wompi redirige con: ?id=TX_ID&status=APPROVED&reference=A360-xxx
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get('status');       // APPROVED, DECLINED, VOIDED, ERROR
+  const referencia = params.get('reference');
+  const approved = status === 'APPROVED';
+
   useEffect(() => {
-    if (approved && !refreshedRef.current) {
-      refreshedRef.current = true;
-      void refreshUser();
-    }
-  }, [approved, refreshUser]);
+    if (!approved || !referencia || processedRef.current) return;
+    processedRef.current = true;
+    setActivando(true);
+
+    api
+      .post('/payments/activar-por-referencia', { referencia })
+      .then(() => refreshUser())
+      .catch(() => {
+        // El webhook activará el plan si falla aquí
+        console.log('[Pago] El webhook se encargará de activar el plan');
+      })
+      .finally(() => setActivando(false));
+  }, [approved, referencia, refreshUser]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
@@ -32,9 +43,10 @@ export function PagoResultadoPage() {
         <div className="flex flex-col gap-3">
           <button
             onClick={() => (window.location.href = '/dashboard')}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors"
+            disabled={activando}
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold rounded-xl transition-colors"
           >
-            Ir al dashboard
+            {activando ? 'Activando plan...' : 'Ir al dashboard'}
           </button>
           {!approved && (
             <button
