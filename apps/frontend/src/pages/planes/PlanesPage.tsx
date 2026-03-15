@@ -62,13 +62,40 @@ const PLANES: Plan[] = [
 export function PlanesPage() {
   const navigate = useNavigate();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const iniciarPago = async (plan: 'STARTER' | 'PRO' | 'BUSINESS') => {
+    console.log('[Wompi] iniciarPago llamado con plan:', plan);
+    setError(null);
     setLoadingPlan(plan);
-    try {
-      const data = await crearTransaccion(plan);
 
-      const checkout = new (window as any).WidgetCheckout({
+    try {
+      console.log('[Wompi] Llamando a POST /payments/crear-transaccion...');
+      const data = await crearTransaccion(plan);
+      console.log('[Wompi] Respuesta del backend:', data);
+
+      // Verificar que todos los campos necesarios están presentes
+      const camposFaltantes = (
+        ['publicKey', 'referencia', 'monto', 'moneda', 'firma', 'redirectUrl'] as const
+      ).filter((k) => !data[k]);
+
+      if (camposFaltantes.length > 0) {
+        const msg = `Faltan campos en la respuesta: ${camposFaltantes.join(', ')}`;
+        console.error('[Wompi]', msg);
+        alert(`[DEBUG] ${msg}\nRespuesta completa: ${JSON.stringify(data, null, 2)}`);
+        setError('Error al preparar el pago. Revisa la consola.');
+        return;
+      }
+
+      if (typeof (window as any).WidgetCheckout === 'undefined') {
+        const msg = 'WidgetCheckout no está disponible. El script de Wompi no cargó.';
+        console.error('[Wompi]', msg);
+        alert(`[DEBUG] ${msg}`);
+        setError(msg);
+        return;
+      }
+
+      const params = {
         currency: data.moneda,
         amountInCents: data.monto,
         reference: data.referencia,
@@ -76,9 +103,13 @@ export function PlanesPage() {
         signature: { integrity: data.firma },
         redirectUrl: data.redirectUrl,
         customerData: { email: data.customerEmail },
-      });
+      };
+      console.log('[Wompi] Abriendo WidgetCheckout con params:', params);
+
+      const checkout = new (window as any).WidgetCheckout(params);
 
       checkout.open((result: any) => {
+        console.log('[Wompi] Resultado del checkout:', result);
         const status = result?.transaction?.status;
         if (status === 'APPROVED') {
           navigate('/pago-resultado?status=approved');
@@ -86,8 +117,14 @@ export function PlanesPage() {
           navigate('/pago-resultado?status=declined');
         }
       });
-    } catch (err) {
-      console.error('Error iniciando pago:', err);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ??
+        err?.message ??
+        'Error desconocido al iniciar el pago';
+      console.error('[Wompi] Error:', err);
+      alert(`[DEBUG] Error al iniciar pago:\n${msg}`);
+      setError(msg);
     } finally {
       setLoadingPlan(null);
     }
@@ -101,6 +138,12 @@ export function PlanesPage() {
           Activa tu suscripción y sigue usando Automatiza360 sin límites
         </p>
       </div>
+
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {PLANES.map((plan) => (

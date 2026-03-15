@@ -43,7 +43,7 @@ export class PaymentsService {
   }
 
   generarFirma(referencia: string, monto: number, moneda: string): string {
-    const cadena = `${referencia}${monto}${moneda}${process.env.WOMPI_EVENTS_SECRET}`;
+    const cadena = `${referencia}${monto}${moneda}${process.env.WOMPI_INTEGRITY_SECRET}`;
     return crypto.createHash('sha256').update(cadena).digest('hex');
   }
 
