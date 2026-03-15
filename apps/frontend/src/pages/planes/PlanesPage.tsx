@@ -58,45 +58,68 @@ const PLANES: Plan[] = [
   },
 ];
 
+/** Carga el script de Wompi dinámicamente (solo una vez). */
+function cargarScriptWompi(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if ((window as any).WidgetCheckout) {
+      resolve();
+      return;
+    }
+    const existing = document.getElementById('wompi-script');
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', reject);
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'wompi-script';
+    script.src = 'https://checkout.wompi.co/widget.js';
+    script.setAttribute('data-render', 'false');
+    script.onload = () => resolve();
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
+}
+
 export function PlanesPage() {
   const pagandoRef = useRef(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const iniciarPago = async (plan: 'STARTER' | 'PRO' | 'BUSINESS') => {
-    // Bug 1: evitar doble inicialización del widget
     if (pagandoRef.current) return;
     pagandoRef.current = true;
-
-    console.log('[Wompi] iniciarPago:', plan);
     setError(null);
     setLoadingPlan(plan);
 
     try {
-      const res = await api.post('/payments/crear-transaccion', { plan });
-      const data = res.data;
-      console.log('[Wompi] data:', data);
-      console.log('[Wompi] publicKey:', data.publicKey);
-      console.log('[Wompi] firma:', data.firma);
+      // 1. Cargar script de Wompi solo cuando el usuario hace clic
+      await cargarScriptWompi();
 
-      if (!data.publicKey) {
-        setError('No se recibió publicKey del servidor. Verifica la configuración de Wompi.');
+      // 2. Obtener datos del backend (incluye publicKey)
+      const res = await api.post('/payments/crear-transaccion', { plan });
+      const { publicKey, referencia, monto, moneda, firma, redirectUrl } = res.data;
+
+      console.log('[Wompi] publicKey:', publicKey, 'referencia:', referencia);
+
+      if (!publicKey) {
+        setError('No se recibió publicKey del servidor. Verifica WOMPI_PUBLIC_KEY en Railway.');
         return;
       }
 
+      // 3. Abrir widget con publicKey del backend
       const checkout = new (window as any).WidgetCheckout({
-        currency: data.moneda,
-        amountInCents: data.monto,
-        reference: data.referencia,
-        publicKey: data.publicKey,
-        signature: { integrity: data.firma },
-        redirectUrl: data.redirectUrl,
+        currency: moneda,
+        amountInCents: monto,
+        reference: referencia,
+        publicKey: publicKey,
+        signature: { integrity: firma },
+        redirectUrl: redirectUrl,
       });
 
-      // Bug 2: manejar null cuando el usuario cierra el widget
       checkout.open(async (result: any) => {
         if (!result || !result.transaction) {
-          console.log('[Wompi] Pago cancelado o widget cerrado sin completar');
+          // Usuario cerró el widget sin pagar
           pagandoRef.current = false;
           setLoadingPlan(null);
           return;
@@ -106,18 +129,16 @@ export function PlanesPage() {
         console.log('[Wompi] Resultado:', transaction.status, transaction.reference);
 
         if (transaction.status === 'APPROVED') {
-          // Bug 3: activar plan directamente como fallback al webhook
           try {
             await api.post('/payments/activar-por-referencia', {
               referencia: transaction.reference,
             });
           } catch (e) {
-            console.error('[Wompi] Error activando plan:', e);
-            // El webhook lo activará igual, continuar
+            console.log('[Wompi] El webhook se encargará de activar el plan');
           }
           window.location.href = '/pago-resultado?status=approved';
         } else {
-          window.location.href = `/pago-resultado?status=${transaction.status.toLowerCase()}`;
+          window.location.href = '/pago-resultado?status=declined';
         }
       });
     } catch (err: any) {
@@ -130,8 +151,6 @@ export function PlanesPage() {
       pagandoRef.current = false;
       setLoadingPlan(null);
     } finally {
-      // Solo liberar si NO estamos esperando el callback del widget
-      // (el widget llama al callback asíncronamente, no dentro de este try)
       setLoadingPlan(null);
     }
   };
@@ -188,7 +207,7 @@ export function PlanesPage() {
 
             <button
               onClick={() => iniciarPago(plan.key)}
-              disabled={loadingPlan !== null || pagandoRef.current}
+              disabled={loadingPlan !== null}
               className={`mt-6 w-full py-3 rounded-xl font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
                 plan.destacado
                   ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
