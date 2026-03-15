@@ -5,25 +5,52 @@ const PLANES = [
   {
     id: 'STARTER' as const,
     nombre: 'Starter',
-    precio: '$149.000',
-    descripcion: 'Ideal para negocios que empiezan',
-    features: ['1 usuario', 'Bot de WhatsApp', 'Módulos básicos', 'Soporte por email'],
+    precio: '$79.000',
+    precioUSD: '≈ USD $19',
+    descripcion: 'Ideal para comenzar a automatizar',
+    features: [
+      '1 número de WhatsApp',
+      'Bot IA con Google Gemini',
+      'Hasta 500 conversaciones/mes',
+      'Dashboard básico',
+      '1 agente humano',
+      'Soporte por email',
+    ],
     popular: false,
   },
   {
     id: 'PRO' as const,
     nombre: 'Pro',
-    precio: '$299.000',
+    precio: '$242.000',
+    precioUSD: '≈ USD $59',
     descripcion: 'Para negocios en crecimiento',
-    features: ['Hasta 5 usuarios', 'Bot de WhatsApp avanzado', 'Todos los módulos', 'Reportes y analytics', 'Soporte prioritario'],
+    features: [
+      '1 número de WhatsApp',
+      'Bot IA con Google Gemini',
+      'Hasta 2.000 conversaciones/mes',
+      'Dashboard completo + analytics',
+      'Hasta 3 agentes humanos',
+      'Catálogo de productos/servicios',
+      'Soporte prioritario',
+    ],
     popular: true,
   },
   {
     id: 'BUSINESS' as const,
     nombre: 'Business',
-    precio: '$599.000',
+    precio: '$529.000',
+    precioUSD: '≈ USD $129',
     descripcion: 'Solución completa para empresas',
-    features: ['Usuarios ilimitados', 'Multi-sucursal', 'API personalizada', 'Integraciones avanzadas', 'Soporte dedicado 24/7'],
+    features: [
+      'Hasta 3 números de WhatsApp',
+      'Bot IA con Google Gemini',
+      'Conversaciones ilimitadas',
+      'Dashboard avanzado + reportes',
+      'Agentes humanos ilimitados',
+      'Multi-sucursal',
+      'API personalizada',
+      'Soporte dedicado 24/7',
+    ],
     popular: false,
   },
 ];
@@ -68,10 +95,11 @@ export function PlanesPage() {
             )}
             <h2>{plan.nombre}</h2>
             <p style={{ color: '#6b7280' }}>{plan.descripcion}</p>
-            <h3 style={{ fontSize: '2rem', margin: '1rem 0' }}>
+            <h3 style={{ fontSize: '2rem', margin: '0.5rem 0 0' }}>
               {plan.precio}
               <span style={{ fontSize: '1rem', fontWeight: 'normal' }}>/mes</span>
             </h3>
+            <p style={{ color: '#9ca3af', fontSize: '0.875rem', margin: '0 0 1rem' }}>{plan.precioUSD}/mes</p>
             <ul style={{ listStyle: 'none', padding: 0, marginBottom: '1.5rem' }}>
               {plan.features.map((f) => (
                 <li key={f}>✓ {f}</li>

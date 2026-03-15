@@ -6,9 +6,9 @@ import { PrismaService } from '../prisma/prisma.service';
 type PlanKey = 'STARTER' | 'PRO' | 'BUSINESS';
 
 const PRECIOS: Record<PlanKey, number> = {
-  STARTER: 14900000,   // $149.000 en centavos
-  PRO: 29900000,       // $299.000 en centavos
-  BUSINESS: 59900000,  // $599.000 en centavos
+  STARTER: 7900000,    // $79.000 COP en centavos
+  PRO: 24200000,       // $242.000 COP en centavos
+  BUSINESS: 52900000,  // $529.000 COP en centavos
 };
 
 @Injectable()
