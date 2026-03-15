@@ -1,99 +1,86 @@
-import { useEffect, useRef, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
-type PagoStatus = 'verificando' | 'approved' | 'declined' | 'error';
-
 export function PagoResultadoPage() {
-  const { refreshUser } = useAuth();
-  const processedRef = useRef(false);
-  const [pagoStatus, setPagoStatus] = useState<PagoStatus>('verificando');
-
-  // Wompi redirige con: ?id=12053958-1773582262-21520&env=test
-  const params = new URLSearchParams(window.location.search);
-  const transactionId = params.get('id');
+  const [status, setStatus] = useState<'loading' | 'approved' | 'declined' | 'error'>('loading');
+  const [plan, setPlan] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (!transactionId || processedRef.current) return;
-    processedRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const transactionId = params.get('id');     // Wompi envía "id"
+    const statusParam = params.get('status');   // fallback si viene directo
 
-    const verificarPago = async () => {
+    if (statusParam === 'approved') {
+      setStatus('approved');
+      setTimeout(() => navigate('/dashboard'), 3000);
+      return;
+    }
+
+    if (!transactionId) {
+      setStatus('error');
+      return;
+    }
+
+    const verificar = async () => {
       try {
         const res = await api.get(`/payments/verificar/${transactionId}`);
-        const { status, reference } = res.data;
+        const { status: txStatus, reference } = res.data;
 
-        if (status === 'APPROVED') {
+        if (txStatus === 'APPROVED') {
           try {
-            await api.post('/payments/activar-por-referencia', { referencia: reference });
+            const activar = await api.post('/payments/activar-por-referencia', {
+              referencia: reference,
+            });
+            setPlan(activar.data.plan);
           } catch (e) {
-            console.log('[Pago] Webhook ya activó el plan');
+            // El webhook ya lo activó, no es error
           }
-          await refreshUser();
-          setPagoStatus('approved');
-          setTimeout(() => { window.location.href = '/dashboard'; }, 3000);
+          setStatus('approved');
+          setTimeout(() => navigate('/dashboard'), 3000);
         } else {
-          setPagoStatus('declined');
+          setStatus('declined');
         }
       } catch (e) {
-        console.error('[Pago] Error verificando transacción:', e);
-        setPagoStatus('error');
+        console.error('Error verificando pago:', e);
+        setStatus('error');
       }
     };
 
-    void verificarPago();
-  }, [transactionId, refreshUser]);
+    void verificar();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const UI: Record<PagoStatus, { icon: string; title: string; msg: string }> = {
-    verificando: {
-      icon: '⏳',
-      title: 'Verificando tu pago...',
-      msg: 'Estamos confirmando la transacción con Wompi.',
-    },
-    approved: {
-      icon: '✅',
-      title: '¡Pago exitoso!',
-      msg: 'Tu plan ya está activo. Redirigiendo al dashboard...',
-    },
-    declined: {
-      icon: '❌',
-      title: 'Pago no procesado',
-      msg: 'El pago no fue aprobado. Puedes intentarlo de nuevo.',
-    },
-    error: {
-      icon: '⚠️',
-      title: 'Error al verificar',
-      msg: 'No pudimos verificar el pago. Revisa tu historial de Wompi o contacta soporte.',
-    },
-  };
+  if (status === 'loading') {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <div>Verificando tu pago...</div>
+      </div>
+    );
+  }
 
-  const { icon, title, msg } = UI[pagoStatus];
+  if (status === 'approved') {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ fontSize: '4rem' }}>✅</div>
+        <h2>¡Pago exitoso!</h2>
+        {plan && <p>Plan <strong>{plan}</strong> activado correctamente.</p>}
+        <p style={{ color: '#6b7280' }}>Redirigiendo al dashboard en 3 segundos...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <div className="bg-white rounded-2xl shadow-lg p-10 max-w-md w-full text-center">
-        <div className="text-6xl mb-4">{icon}</div>
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">{title}</h1>
-        <p className="text-slate-500 mb-8">{msg}</p>
-
-        {pagoStatus !== 'verificando' && (
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={() => (window.location.href = '/dashboard')}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors"
-            >
-              Ir al dashboard
-            </button>
-            {(pagoStatus === 'declined' || pagoStatus === 'error') && (
-              <button
-                onClick={() => (window.location.href = '/planes')}
-                className="w-full py-3 border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition-colors"
-              >
-                Intentar de nuevo
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ fontSize: '4rem' }}>❌</div>
+      <h2>Pago no procesado</h2>
+      <p>El pago no fue procesado. Puedes intentarlo de nuevo cuando quieras.</p>
+      <button
+        onClick={() => navigate('/planes')}
+        style={{ padding: '0.75rem 2rem', background: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+      >
+        Intentar de nuevo
+      </button>
     </div>
   );
 }
