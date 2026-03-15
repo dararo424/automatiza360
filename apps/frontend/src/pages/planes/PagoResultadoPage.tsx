@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 
 export function PagoResultadoPage() {
   const [status, setStatus] = useState<'loading' | 'approved' | 'declined' | 'error'>('loading');
   const [plan, setPlan] = useState<string | null>(null);
   const navigate = useNavigate();
-
-  const irAlDashboard = () => { window.location.href = '/dashboard'; };
+  const { refreshProfile } = useAuth();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -16,7 +16,7 @@ export function PagoResultadoPage() {
 
     if (statusParam === 'approved') {
       setStatus('approved');
-      setTimeout(() => irAlDashboard(), 3000);
+      setTimeout(() => navigate('/dashboard'), 2000);
       return;
     }
 
@@ -39,8 +39,9 @@ export function PagoResultadoPage() {
           } catch (e) {
             // El webhook ya lo activó, no es error
           }
+          await refreshProfile();
           setStatus('approved');
-          setTimeout(() => irAlDashboard(), 3000);
+          setTimeout(() => navigate('/dashboard'), 2000);
         } else {
           setStatus('declined');
         }
