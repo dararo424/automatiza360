@@ -95,18 +95,21 @@ export function PlanesPage() {
         return;
       }
 
-      const params = {
-        currency: data.moneda,
+      // Log explícito de data justo antes del widget
+      console.log('[Wompi] data completo:', data);
+      console.log('[Wompi] data.publicKey:', data.publicKey);
+      console.log('[Wompi] data.firma:', data.firma);
+      console.log('[Wompi] data.referencia:', data.referencia);
+      console.log('[Wompi] data.monto:', data.monto);
+
+      const checkout = new (window as any).WidgetCheckout({
+        currency: 'COP',
         amountInCents: data.monto,
         reference: data.referencia,
         publicKey: data.publicKey,
         signature: { integrity: data.firma },
         redirectUrl: data.redirectUrl,
-        customerData: { email: data.customerEmail },
-      };
-      console.log('[Wompi] Abriendo WidgetCheckout con params:', params);
-
-      const checkout = new (window as any).WidgetCheckout(params);
+      });
 
       checkout.open((result: any) => {
         console.log('[Wompi] Resultado del checkout:', result);
