@@ -51,6 +51,9 @@ export function Pricing() {
                   <span className={`text-sm ml-1 ${isPopular ? 'text-green-800' : 'text-slate-400'}`}>
                     {t.pricing.currency}{t.pricing.period}
                   </span>
+                  <p className={`text-xs mt-1 ${isPopular ? 'text-green-800' : 'text-slate-500'}`}>
+                    {(plan as unknown as { priceUSD: string }).priceUSD}/mes
+                  </p>
                 </div>
 
                 <ul className="space-y-3 flex-1 mb-8">
