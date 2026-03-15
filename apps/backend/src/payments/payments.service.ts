@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { Role, SubscriptionStatus } from '@prisma/client';
+import { Plan, Role, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 type PlanKey = 'STARTER' | 'PRO' | 'BUSINESS';
@@ -89,6 +89,7 @@ export class PaymentsService {
               subscriptionPlan: intent.plan,
               subscriptionEndsAt: proximoMes,
               trialEndsAt: null,
+              plan: intent.plan as Plan,
             },
           }),
         ]);
@@ -151,6 +152,7 @@ export class PaymentsService {
           subscriptionStatus: SubscriptionStatus.ACTIVE,
           subscriptionPlan: intent.plan,
           subscriptionEndsAt: proximoMes,
+          plan: intent.plan as Plan,
         },
       }),
     ]);
