@@ -45,6 +45,7 @@ export interface Tenant {
   industry: Industry;
   active: boolean;
   subscriptionStatus?: SubscriptionStatus;
+  subscriptionPlan?: string | null;
   trialEndsAt?: string | null;
 }
 

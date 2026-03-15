@@ -67,7 +67,12 @@ export function Sidebar() {
 
   const unreadCount = notificaciones?.filter((n) => !n.read).length ?? 0;
   const navItems = getNavItems(industry);
-  const planColor = PLAN_COLORS[user?.tenant?.plan ?? ''] ?? 'bg-slate-600';
+  const planActual = user?.tenant?.subscriptionPlan || user?.tenant?.plan || 'STARTER';
+  const planColor = PLAN_COLORS[planActual] ?? 'bg-slate-600';
+  const mostrarTrial =
+    user?.tenant?.subscriptionStatus !== 'ACTIVE' &&
+    !!user?.tenant?.trialEndsAt &&
+    new Date(user.tenant.trialEndsAt) > new Date();
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 h-full">
@@ -78,7 +83,7 @@ export function Sidebar() {
         </div>
         <p className="text-sm font-medium text-slate-200 truncate">{user?.tenant?.name}</p>
         <span className={`mt-1 inline-block text-xs px-2 py-0.5 rounded-full text-white ${planColor}`}>
-          {user?.tenant?.plan}
+          {planActual}
         </span>
       </div>
 
@@ -123,7 +128,7 @@ export function Sidebar() {
       </nav>
 
       {/* Trial banner */}
-      {trialInfo?.status === 'TRIAL' && (
+      {mostrarTrial && trialInfo && (
         <div
           className={`mx-3 mb-3 rounded-lg px-3 py-2.5 text-xs ${
             trialInfo.daysRemaining <= 3

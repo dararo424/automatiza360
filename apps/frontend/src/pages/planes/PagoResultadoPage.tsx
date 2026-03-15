@@ -7,6 +7,8 @@ export function PagoResultadoPage() {
   const [plan, setPlan] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const irAlDashboard = () => { window.location.href = '/dashboard'; };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const transactionId = params.get('id');     // Wompi envía "id"
@@ -14,7 +16,7 @@ export function PagoResultadoPage() {
 
     if (statusParam === 'approved') {
       setStatus('approved');
-      setTimeout(() => navigate('/dashboard'), 3000);
+      setTimeout(() => irAlDashboard(), 3000);
       return;
     }
 
@@ -38,7 +40,7 @@ export function PagoResultadoPage() {
             // El webhook ya lo activó, no es error
           }
           setStatus('approved');
-          setTimeout(() => navigate('/dashboard'), 3000);
+          setTimeout(() => irAlDashboard(), 3000);
         } else {
           setStatus('declined');
         }

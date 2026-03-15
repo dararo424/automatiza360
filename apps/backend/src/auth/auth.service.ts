@@ -232,7 +232,7 @@ export class AuthService {
   }
 
   async getPerfil(userId: string) {
-    return this.prisma.user.findUnique({
+    const usuario = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -251,11 +251,26 @@ export class AuthService {
             industry: true,
             active: true,
             subscriptionStatus: true,
+            subscriptionPlan: true,
+            subscriptionEndsAt: true,
             trialEndsAt: true,
           },
         },
       },
     });
+
+    if (!usuario) return null;
+
+    return {
+      ...usuario,
+      tenant: {
+        ...usuario.tenant,
+        // subscriptionPlan toma precedencia sobre plan si existe
+        plan: usuario.tenant!.subscriptionPlan ?? usuario.tenant!.plan,
+        subscriptionStatus: usuario.tenant!.subscriptionStatus,
+        subscriptionPlan: usuario.tenant!.subscriptionPlan,
+      },
+    };
   }
 
   private buildSlugBase(businessName: string): string {
