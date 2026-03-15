@@ -32,8 +32,8 @@ export function App() {
             <Route path="/notificaciones" element={<NotificacionesPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/planes" element={<PlanesPage />} />
+            <Route path="/pago-resultado" element={<PagoResultadoPage />} />
           </Route>
-          <Route path="/pago-resultado" element={<PagoResultadoPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

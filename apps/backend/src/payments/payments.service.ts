@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Role, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -103,6 +103,33 @@ export class PaymentsService {
       .update(cadena)
       .digest('hex');
     return firmaCalculada === firmaRecibida;
+  }
+
+  async activarPorReferencia(tenantId: string, referencia: string) {
+    const intent = await this.prisma.paymentIntent.findFirst({
+      where: { referencia, tenantId },
+    });
+    if (!intent) throw new NotFoundException('Referencia no encontrada');
+
+    const proximoMes = new Date();
+    proximoMes.setMonth(proximoMes.getMonth() + 1);
+
+    await this.prisma.$transaction([
+      this.prisma.paymentIntent.update({
+        where: { id: intent.id },
+        data: { status: 'APPROVED' },
+      }),
+      this.prisma.tenant.update({
+        where: { id: intent.tenantId },
+        data: {
+          subscriptionStatus: SubscriptionStatus.ACTIVE,
+          subscriptionPlan: intent.plan,
+          subscriptionEndsAt: proximoMes,
+        },
+      }),
+    ]);
+
+    return { ok: true, plan: intent.plan };
   }
 
   async getSubscripcion(tenantId: string) {

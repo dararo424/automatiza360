@@ -33,6 +33,15 @@ export class PaymentsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('activar-por-referencia')
+  activarPorReferencia(
+    @CurrentUser() user: { tenantId: string },
+    @Body('referencia') referencia: string,
+  ) {
+    return this.payments.activarPorReferencia(user.tenantId, referencia);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('subscripcion')
   getSubscripcion(@CurrentUser() user: { tenantId: string }) {
     return this.payments.getSubscripcion(user.tenantId);

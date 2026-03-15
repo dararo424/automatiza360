@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import api from '../../api/axios';
 import { crearTransaccion } from '../../api/payments';
 
 interface Plan {
@@ -60,47 +60,29 @@ const PLANES: Plan[] = [
 ];
 
 export function PlanesPage() {
-  const navigate = useNavigate();
+  const pagandoRef = useRef(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const iniciarPago = async (plan: 'STARTER' | 'PRO' | 'BUSINESS') => {
-    console.log('[Wompi] iniciarPago llamado con plan:', plan);
+    // Bug 1: evitar doble inicialización del widget
+    if (pagandoRef.current) return;
+    pagandoRef.current = true;
+
+    console.log('[Wompi] iniciarPago:', plan);
     setError(null);
     setLoadingPlan(plan);
 
     try {
-      console.log('[Wompi] Llamando a POST /payments/crear-transaccion...');
       const data = await crearTransaccion(plan);
-      console.log('[Wompi] Respuesta del backend:', data);
+      console.log('[Wompi] data:', data);
+      console.log('[Wompi] publicKey:', data.publicKey);
+      console.log('[Wompi] firma:', data.firma);
 
-      // Verificar que todos los campos necesarios están presentes
-      const camposFaltantes = (
-        ['publicKey', 'referencia', 'monto', 'moneda', 'firma', 'redirectUrl'] as const
-      ).filter((k) => !data[k]);
-
-      if (camposFaltantes.length > 0) {
-        const msg = `Faltan campos en la respuesta: ${camposFaltantes.join(', ')}`;
-        console.error('[Wompi]', msg);
-        alert(`[DEBUG] ${msg}\nRespuesta completa: ${JSON.stringify(data, null, 2)}`);
-        setError('Error al preparar el pago. Revisa la consola.');
+      if (!data.publicKey) {
+        setError('No se recibió publicKey del servidor. Verifica la configuración de Wompi.');
         return;
       }
-
-      if (typeof (window as any).WidgetCheckout === 'undefined') {
-        const msg = 'WidgetCheckout no está disponible. El script de Wompi no cargó.';
-        console.error('[Wompi]', msg);
-        alert(`[DEBUG] ${msg}`);
-        setError(msg);
-        return;
-      }
-
-      // Log explícito de data justo antes del widget
-      console.log('[Wompi] data completo:', data);
-      console.log('[Wompi] data.publicKey:', data.publicKey);
-      console.log('[Wompi] data.firma:', data.firma);
-      console.log('[Wompi] data.referencia:', data.referencia);
-      console.log('[Wompi] data.monto:', data.monto);
 
       const checkout = new (window as any).WidgetCheckout({
         currency: 'COP',
@@ -111,13 +93,31 @@ export function PlanesPage() {
         redirectUrl: data.redirectUrl,
       });
 
-      checkout.open((result: any) => {
-        console.log('[Wompi] Resultado del checkout:', result);
-        const status = result?.transaction?.status;
-        if (status === 'APPROVED') {
-          navigate('/pago-resultado?status=approved');
+      // Bug 2: manejar null cuando el usuario cierra el widget
+      checkout.open(async (result: any) => {
+        if (!result || !result.transaction) {
+          console.log('[Wompi] Pago cancelado o widget cerrado sin completar');
+          pagandoRef.current = false;
+          setLoadingPlan(null);
+          return;
+        }
+
+        const { transaction } = result;
+        console.log('[Wompi] Resultado:', transaction.status, transaction.reference);
+
+        if (transaction.status === 'APPROVED') {
+          // Bug 3: activar plan directamente como fallback al webhook
+          try {
+            await api.post('/payments/activar-por-referencia', {
+              referencia: transaction.reference,
+            });
+          } catch (e) {
+            console.error('[Wompi] Error activando plan:', e);
+            // El webhook lo activará igual, continuar
+          }
+          window.location.href = '/pago-resultado?status=approved';
         } else {
-          navigate('/pago-resultado?status=declined');
+          window.location.href = `/pago-resultado?status=${transaction.status.toLowerCase()}`;
         }
       });
     } catch (err: any) {
@@ -126,9 +126,12 @@ export function PlanesPage() {
         err?.message ??
         'Error desconocido al iniciar el pago';
       console.error('[Wompi] Error:', err);
-      alert(`[DEBUG] Error al iniciar pago:\n${msg}`);
       setError(msg);
+      pagandoRef.current = false;
+      setLoadingPlan(null);
     } finally {
+      // Solo liberar si NO estamos esperando el callback del widget
+      // (el widget llama al callback asíncronamente, no dentro de este try)
       setLoadingPlan(null);
     }
   };
@@ -185,7 +188,7 @@ export function PlanesPage() {
 
             <button
               onClick={() => iniciarPago(plan.key)}
-              disabled={loadingPlan !== null}
+              disabled={loadingPlan !== null || pagandoRef.current}
               className={`mt-6 w-full py-3 rounded-xl font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
                 plan.destacado
                   ? 'bg-indigo-600 hover:bg-indigo-700 text-white'

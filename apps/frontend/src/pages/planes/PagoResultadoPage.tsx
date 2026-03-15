@@ -1,10 +1,21 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export function PagoResultadoPage() {
   const [params] = useSearchParams();
-  const navigate = useNavigate();
+  const { refreshUser } = useAuth();
+  const refreshedRef = useRef(false);
   const status = params.get('status');
   const approved = status === 'approved';
+
+  // Recargar perfil del usuario para reflejar el nuevo subscriptionStatus
+  useEffect(() => {
+    if (approved && !refreshedRef.current) {
+      refreshedRef.current = true;
+      void refreshUser();
+    }
+  }, [approved, refreshUser]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
@@ -20,14 +31,14 @@ export function PagoResultadoPage() {
         </p>
         <div className="flex flex-col gap-3">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => (window.location.href = '/dashboard')}
             className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors"
           >
             Ir al dashboard
           </button>
           {!approved && (
             <button
-              onClick={() => navigate('/planes')}
+              onClick={() => (window.location.href = '/planes')}
               className="w-full py-3 border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition-colors"
             >
               Intentar de nuevo

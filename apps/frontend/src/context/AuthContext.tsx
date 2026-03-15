@@ -8,6 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -37,6 +38,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     navigate('/dashboard');
   }, [navigate]);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const profile = await getPerfil();
+      setUser(profile);
+    } catch {
+      // silencioso — si falla no cerrar sesión
+    }
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     setUser(null);
@@ -44,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [navigate]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
