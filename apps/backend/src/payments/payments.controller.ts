@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Headers,
+  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -33,12 +34,15 @@ export class PaymentsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('verificar/:transactionId')
+  verificarTransaccion(@Param('transactionId') transactionId: string) {
+    return this.payments.verificarTransaccion(transactionId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('activar-por-referencia')
-  activarPorReferencia(
-    @CurrentUser() user: { tenantId: string },
-    @Body('referencia') referencia: string,
-  ) {
-    return this.payments.activarPorReferencia(user.tenantId, referencia);
+  activarPorReferencia(@Body('referencia') referencia: string) {
+    return this.payments.activarPorReferencia(referencia);
   }
 
   @UseGuards(JwtAuthGuard)

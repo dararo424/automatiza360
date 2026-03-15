@@ -116,9 +116,24 @@ export class PaymentsService {
     return firmaCalculada === firmaRecibida;
   }
 
-  async activarPorReferencia(tenantId: string, referencia: string) {
+  async verificarTransaccion(transactionId: string) {
+    const wompiUrl = process.env.WOMPI_BASE_URL ?? 'https://sandbox.wompi.co/v1';
+    const response = await fetch(`${wompiUrl}/transactions/${transactionId}`, {
+      headers: { Authorization: `Bearer ${process.env.WOMPI_PRIVATE_KEY}` },
+    });
+    const data = await response.json();
+    const tx = data.data;
+    return {
+      status: tx.status as string,
+      reference: tx.reference as string,
+      amount: tx.amount_in_cents as number,
+      currency: tx.currency as string,
+    };
+  }
+
+  async activarPorReferencia(referencia: string) {
     const intent = await this.prisma.paymentIntent.findFirst({
-      where: { referencia, tenantId },
+      where: { referencia },
     });
     if (!intent) throw new NotFoundException('Referencia no encontrada');
 
