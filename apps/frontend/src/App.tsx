@@ -13,6 +13,10 @@ import { NotificacionesPage } from './pages/notificaciones/NotificacionesPage';
 import { AgendaPage } from './pages/agenda/AgendaPage';
 import { PlanesPage } from './pages/planes/PlanesPage';
 import { PagoResultadoPage } from './pages/planes/PagoResultadoPage';
+import { AdminLayout } from './pages/admin/AdminLayout';
+import { AdminPage } from './pages/admin/AdminPage';
+import { AdminTenantsPage } from './pages/admin/AdminTenantsPage';
+import { AdminTenantDetailPage } from './pages/admin/AdminTenantDetailPage';
 
 export function App() {
   return (
@@ -33,6 +37,11 @@ export function App() {
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/planes" element={<PlanesPage />} />
             <Route path="/pago-resultado" element={<PagoResultadoPage />} />
+          </Route>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/tenants" element={<AdminTenantsPage />} />
+            <Route path="/admin/tenants/:id" element={<AdminTenantDetailPage />} />
           </Route>
         </Routes>
       </AuthProvider>

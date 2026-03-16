@@ -148,6 +148,14 @@ export function Sidebar() {
       <div className="p-4 border-t border-slate-700">
         <p className="text-sm font-medium text-slate-200 truncate">{user?.name}</p>
         <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+        {user?.role === 'SUPERADMIN' && (
+          <NavLink
+            to="/admin"
+            className="mt-2 block text-xs text-red-400 hover:text-red-300 transition-colors"
+          >
+            ⚙️ Panel Admin →
+          </NavLink>
+        )}
         <button
           onClick={logout}
           className="mt-3 w-full text-left text-xs text-slate-400 hover:text-red-400 transition-colors"

@@ -6,7 +6,7 @@ export type AppointmentStatus =
   | 'COMPLETED'
   | 'NO_SHOW';
 export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'SUSPENDED' | 'CANCELLED';
-export type Role = 'OWNER' | 'ADMIN' | 'STAFF';
+export type Role = 'OWNER' | 'ADMIN' | 'STAFF' | 'SUPERADMIN';
 export type OrderStatus =
   | 'PENDING'
   | 'CONFIRMED'

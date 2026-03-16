@@ -15,6 +15,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { CitasModule } from './citas/citas.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { PaymentsModule } from './payments/payments.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { PaymentsModule } from './payments/payments.module';
     CitasModule,
     CalendarModule,
     PaymentsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

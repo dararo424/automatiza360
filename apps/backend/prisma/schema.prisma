@@ -288,6 +288,7 @@ enum Role {
   OWNER
   ADMIN
   STAFF
+  SUPERADMIN
 }
 
 enum OrderStatus {
