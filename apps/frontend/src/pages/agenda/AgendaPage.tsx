@@ -50,7 +50,7 @@ export function AgendaPage() {
   return (
     <div className="space-y-4">
       {/* Page header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-slate-800">Agenda</h2>
           <p className="text-sm text-slate-500">
@@ -59,13 +59,13 @@ export function AgendaPage() {
         </div>
         <button
           onClick={() => { setCalendarCita(null); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
         >
           📅 Sincronizar calendario
         </button>
       </div>
 
-      {/* Two-column layout */}
+      {/* Two-column layout: stacked on mobile, side-by-side on lg */}
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4 items-start">
         {/* Left: calendar */}
         <div className="flex flex-col gap-3">

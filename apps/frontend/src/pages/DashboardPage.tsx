@@ -143,69 +143,115 @@ function RecentActivity({
           Ver todas →
         </Link>
       </div>
-      <div className="overflow-x-auto">
-        {type === 'order' ? (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-100">
-                <th className="px-4 py-3 font-medium">Cliente</th>
-                <th className="px-4 py-3 font-medium">Total</th>
-                <th className="px-4 py-3 font-medium">Estado</th>
-                <th className="px-4 py-3 font-medium">Fecha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {m.ultimasOrdenes.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-400">No hay órdenes recientes</td>
+      {type === 'order' ? (
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-500 border-b border-slate-100">
+                  <th className="px-4 py-3 font-medium">Cliente</th>
+                  <th className="px-4 py-3 font-medium">Total</th>
+                  <th className="px-4 py-3 font-medium">Estado</th>
+                  <th className="px-4 py-3 font-medium">Fecha</th>
                 </tr>
-              ) : (
-                m.ultimasOrdenes.map((o) => (
-                  <tr key={o.id} className="border-b border-slate-50 hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-700">{o.clienteNombre}</td>
-                    <td className="px-4 py-3 font-medium">${o.total.toLocaleString('es-CO')}</td>
-                    <td className="px-4 py-3"><Badge status={o.status} type="order" /></td>
-                    <td className="px-4 py-3 text-slate-500">{new Date(o.createdAt).toLocaleDateString('es-CO')}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-100">
-                <th className="px-4 py-3 font-medium">Paciente / Cliente</th>
-                <th className="px-4 py-3 font-medium">Servicio</th>
-                <th className="px-4 py-3 font-medium">Fecha / Hora</th>
-                <th className="px-4 py-3 font-medium">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {m.ultimasCitas.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-400">No hay citas recientes</td>
+              </thead>
+              <tbody>
+                {m.ultimasOrdenes.length === 0 ? (
+                  <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">No hay órdenes recientes</td></tr>
+                ) : (
+                  m.ultimasOrdenes.map((o) => (
+                    <tr key={o.id} className="border-b border-slate-50 hover:bg-slate-50">
+                      <td className="px-4 py-3 text-slate-700">{o.clienteNombre}</td>
+                      <td className="px-4 py-3 font-medium">${o.total.toLocaleString('es-CO')}</td>
+                      <td className="px-4 py-3"><Badge status={o.status} type="order" /></td>
+                      <td className="px-4 py-3 text-slate-500">{new Date(o.createdAt).toLocaleDateString('es-CO')}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {m.ultimasOrdenes.length === 0 ? (
+              <p className="px-4 py-8 text-center text-slate-400 text-sm">No hay órdenes recientes</p>
+            ) : (
+              m.ultimasOrdenes.map((o) => (
+                <div key={o.id} className="px-4 py-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-800 text-sm">{o.clienteNombre}</span>
+                    <Badge status={o.status} type="order" />
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>${o.total.toLocaleString('es-CO')}</span>
+                    <span>{new Date(o.createdAt).toLocaleDateString('es-CO')}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-500 border-b border-slate-100">
+                  <th className="px-4 py-3 font-medium">Paciente / Cliente</th>
+                  <th className="px-4 py-3 font-medium">Servicio</th>
+                  <th className="px-4 py-3 font-medium">Fecha / Hora</th>
+                  <th className="px-4 py-3 font-medium">Estado</th>
                 </tr>
-              ) : (
-                m.ultimasCitas.map((c) => (
-                  <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-700">{c.clienteName}</td>
-                    <td className="px-4 py-3 text-slate-600">{c.serviceName}</td>
-                    <td className="px-4 py-3 text-slate-500">
-                      {new Date(c.date).toLocaleString('es-CO', {
-                        timeZone: 'America/Bogota',
-                        day: '2-digit', month: '2-digit',
-                        hour: '2-digit', minute: '2-digit',
-                      })}
-                    </td>
-                    <td className="px-4 py-3"><AppointmentBadge status={c.status} /></td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {m.ultimasCitas.length === 0 ? (
+                  <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">No hay citas recientes</td></tr>
+                ) : (
+                  m.ultimasCitas.map((c) => (
+                    <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50">
+                      <td className="px-4 py-3 text-slate-700">{c.clienteName}</td>
+                      <td className="px-4 py-3 text-slate-600">{c.serviceName}</td>
+                      <td className="px-4 py-3 text-slate-500">
+                        {new Date(c.date).toLocaleString('es-CO', {
+                          timeZone: 'America/Bogota',
+                          day: '2-digit', month: '2-digit',
+                          hour: '2-digit', minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="px-4 py-3"><AppointmentBadge status={c.status} /></td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {m.ultimasCitas.length === 0 ? (
+              <p className="px-4 py-8 text-center text-slate-400 text-sm">No hay citas recientes</p>
+            ) : (
+              m.ultimasCitas.map((c) => (
+                <div key={c.id} className="px-4 py-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-800 text-sm">{c.clienteName}</span>
+                    <AppointmentBadge status={c.status} />
+                  </div>
+                  <p className="text-xs text-slate-500">{c.serviceName}</p>
+                  <p className="text-xs text-slate-400">
+                    {new Date(c.date).toLocaleString('es-CO', {
+                      timeZone: 'America/Bogota',
+                      day: '2-digit', month: '2-digit',
+                      hour: '2-digit', minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

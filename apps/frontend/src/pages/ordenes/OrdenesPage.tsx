@@ -106,25 +106,24 @@ export function OrdenesPage() {
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">
         {isLoading ? (
           <div className="h-64"><LoadingSpinner /></div>
+        ) : ordenes.length === 0 ? (
+          <p className="px-4 py-10 text-center text-slate-400 text-sm">No hay órdenes</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-slate-500 border-b border-slate-200">
-                  <th className="px-4 py-3 font-medium">#</th>
-                  <th className="px-4 py-3 font-medium">Teléfono</th>
-                  <th className="px-4 py-3 font-medium">Estado</th>
-                  <th className="px-4 py-3 font-medium">Total</th>
-                  <th className="px-4 py-3 font-medium">Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ordenes.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-slate-400">No hay órdenes</td>
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-slate-500 border-b border-slate-200">
+                    <th className="px-4 py-3 font-medium">#</th>
+                    <th className="px-4 py-3 font-medium">Teléfono</th>
+                    <th className="px-4 py-3 font-medium">Estado</th>
+                    <th className="px-4 py-3 font-medium">Total</th>
+                    <th className="px-4 py-3 font-medium">Fecha</th>
                   </tr>
-                ) : (
-                  ordenes.map((o) => (
+                </thead>
+                <tbody>
+                  {ordenes.map((o) => (
                     <tr
                       key={o.id}
                       className="border-b border-slate-50 hover:bg-slate-50 cursor-pointer"
@@ -136,11 +135,31 @@ export function OrdenesPage() {
                       <td className="px-4 py-3 font-medium">${o.total.toFixed(2)}</td>
                       <td className="px-4 py-3 text-slate-500">{new Date(o.createdAt).toLocaleDateString('es')}</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {ordenes.map((o) => (
+                <button
+                  key={o.id}
+                  className="w-full text-left px-4 py-3 space-y-1.5 hover:bg-slate-50 active:bg-slate-100"
+                  onClick={() => setSelected(o)}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-semibold text-slate-800 text-sm">#{o.number}</span>
+                    <Badge status={o.status} type="order" />
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>{o.phone ?? '—'}</span>
+                    <span>{new Date(o.createdAt).toLocaleDateString('es')}</span>
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">${o.total.toFixed(2)}</p>
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

@@ -174,27 +174,26 @@ export function ProductosPage() {
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">
         {isLoading ? (
           <div className="h-64"><LoadingSpinner /></div>
+        ) : productos.length === 0 ? (
+          <p className="px-4 py-10 text-center text-slate-400 text-sm">No hay productos</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-slate-500 border-b border-slate-200">
-                  <th className="px-4 py-3 font-medium">Nombre</th>
-                  <th className="px-4 py-3 font-medium">Precio</th>
-                  <th className="px-4 py-3 font-medium">Costo</th>
-                  <th className="px-4 py-3 font-medium">Stock</th>
-                  <th className="px-4 py-3 font-medium">Stock mín.</th>
-                  <th className="px-4 py-3 font-medium">Estado</th>
-                  <th className="px-4 py-3 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {productos.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-slate-400">No hay productos</td>
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-slate-500 border-b border-slate-200">
+                    <th className="px-4 py-3 font-medium">Nombre</th>
+                    <th className="px-4 py-3 font-medium">Precio</th>
+                    <th className="px-4 py-3 font-medium">Costo</th>
+                    <th className="px-4 py-3 font-medium">Stock</th>
+                    <th className="px-4 py-3 font-medium">Stock mín.</th>
+                    <th className="px-4 py-3 font-medium">Estado</th>
+                    <th className="px-4 py-3 font-medium"></th>
                   </tr>
-                ) : (
-                  productos.map((p) => (
+                </thead>
+                <tbody>
+                  {productos.map((p) => (
                     <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-800">
                         {p.name}
@@ -209,20 +208,47 @@ export function ProductosPage() {
                       <td className="px-4 py-3"><StockBadge producto={p} /></td>
                       <td className="px-4 py-3">
                         <button
-                          onClick={() => {
-                            if (confirm(`¿Eliminar "${p.name}"?`)) eliminar(p.id);
-                          }}
+                          onClick={() => { if (confirm(`¿Eliminar "${p.name}"?`)) eliminar(p.id); }}
                           className="text-xs text-red-500 hover:text-red-700"
                         >
                           Eliminar
                         </button>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {productos.map((p) => (
+                <div key={p.id} className="px-4 py-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-800 text-sm truncate">{p.name}</p>
+                      {p.description && (
+                        <p className="text-xs text-slate-400 truncate">{p.description}</p>
+                      )}
+                    </div>
+                    <StockBadge producto={p} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 text-xs text-slate-500">
+                    <span><span className="font-medium text-slate-700">Precio:</span> ${p.price.toFixed(2)}</span>
+                    <span><span className="font-medium text-slate-700">Stock:</span> {p.stock}</span>
+                    <span><span className="font-medium text-slate-700">Mín:</span> {p.minStock}</span>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => { if (confirm(`¿Eliminar "${p.name}"?`)) eliminar(p.id); }}
+                      className="text-xs text-red-500 hover:text-red-700 py-1"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
