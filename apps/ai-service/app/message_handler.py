@@ -7,6 +7,7 @@ the Twilio number that received the message (to_number).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 
@@ -62,7 +63,12 @@ async def handle_message(phone: str, text: str, to_number: str = "default") -> s
         key = _session_key(to_number, phone)
         _sessions.pop(key, None)
         logger.info("Session reset for %s on %s", phone, to_number)
-        return "¡Conversación reiniciada! 🔄\n¿En qué puedo ayudarte hoy?"
+        reset_reply = "¡Conversación reiniciada! 🔄\n¿En qué puedo ayudarte hoy?"
+        clean_phone_reset = phone.replace("whatsapp:", "").strip()
+        backend_client_reset = get_client(config.bot_email, config.bot_password)
+        asyncio.create_task(backend_client_reset.ingest_message(clean_phone_reset, text, "INBOUND"))
+        asyncio.create_task(backend_client_reset.ingest_message(clean_phone_reset, reset_reply, "OUTBOUND"))
+        return reset_reply
 
     # ── Owner phone per tenant ────────────────────────────────────────────────
     # Lookup order:
@@ -75,8 +81,16 @@ async def handle_message(phone: str, text: str, to_number: str = "default") -> s
     backend_client = get_client(config.bot_email, config.bot_password)
     session = _get_session(to_number, phone)
 
+    # Número limpio sin prefijo "whatsapp:"
+    clean_phone = phone.replace("whatsapp:", "").strip()
+
+    # Registrar mensaje entrante (fire-and-forget — no bloquea la respuesta)
+    asyncio.create_task(
+        backend_client.ingest_message(clean_phone, text, "INBOUND")
+    )
+
     try:
-        return await run(phone, text, session, backend_client, owner_phone)
+        reply = await run(phone, text, session, backend_client, owner_phone)
     except Exception as exc:
         logger.error(
             "Agent error for %s on %s: %s", phone, to_number, exc, exc_info=True
@@ -85,3 +99,10 @@ async def handle_message(phone: str, text: str, to_number: str = "default") -> s
             "⚠️ Ocurrió un error inesperado. "
             "Por favor intenta de nuevo en unos momentos."
         )
+
+    # Registrar respuesta del bot (fire-and-forget)
+    asyncio.create_task(
+        backend_client.ingest_message(clean_phone, reply, "OUTBOUND")
+    )
+
+    return reply

@@ -179,6 +179,34 @@ class BackendClient:
         result = await self._request("GET", f"/citas/cliente?phone={phone}")
         return result  # type: ignore[return-value]
 
+    # ── Conversaciones (bandeja WhatsApp) ─────────────────────────────────────
+
+    async def ingest_message(
+        self,
+        client_phone: str,
+        body: str,
+        direction: str,
+        client_name: str | None = None,
+    ) -> dict | None:
+        """
+        Registra un mensaje en la bandeja de conversaciones.
+        direction: "INBOUND" | "OUTBOUND"
+        Silencia errores para no interrumpir el flujo del bot.
+        """
+        try:
+            payload: dict = {
+                "clientPhone": client_phone,
+                "body": body,
+                "direction": direction,
+            }
+            if client_name:
+                payload["clientName"] = client_name
+            result = await self._request("POST", "/conversaciones/ingest", json=payload)
+            return result  # type: ignore[return-value]
+        except Exception as exc:
+            logger.warning("ingest_message failed (%s): %s", direction, exc)
+            return None
+
 
 # ── Client cache ───────────────────────────────────────────────────────────────
 
