@@ -135,8 +135,6 @@ function RecentActivity({
   type: 'order' | 'appointment';
   linkTo: string;
 }) {
-  const items = type === 'order' ? m.ultimasOrdenes : m.ultimasCitas;
-
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200">
       <div className="p-4 border-b border-slate-200 flex items-center justify-between">
