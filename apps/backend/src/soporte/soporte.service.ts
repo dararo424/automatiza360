@@ -48,7 +48,7 @@ export class SoporteService {
 
     try {
       const response = await this.anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001' as string,
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages,
