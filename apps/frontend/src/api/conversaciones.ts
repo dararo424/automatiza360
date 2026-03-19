@@ -7,6 +7,8 @@ export interface Conversation {
   lastMessage?: string;
   lastMessageAt?: string;
   unreadCount: number;
+  needsAttention?: boolean;
+  escalatedAt?: string;
   _count: { messages: number };
 }
 
@@ -45,3 +47,6 @@ export const ingestMessage = (data: {
   body: string;
   direction: 'INBOUND' | 'OUTBOUND';
 }): Promise<any> => api.post('/conversaciones/ingest', data).then((r) => r.data);
+
+export const escalarConversacion = (id: string): Promise<any> =>
+  api.patch(`/conversaciones/${id}/escalar`).then((r) => r.data);

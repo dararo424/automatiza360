@@ -119,6 +119,59 @@ export class DashboardService {
     };
   }
 
+  async getTendencias(tenantId: string, days: number = 30): Promise<Array<{ date: string; ordenes: number; citas: number; ingresos: number }>> {
+    const now = new Date();
+    const since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+    const [orders, appointments] = await Promise.all([
+      this.prisma.order.findMany({
+        where: {
+          tenantId,
+          createdAt: { gte: since },
+          status: { notIn: ['CANCELLED'] },
+        },
+        select: { createdAt: true, total: true },
+      }),
+      this.prisma.appointment.findMany({
+        where: {
+          tenantId,
+          date: { gte: since },
+          status: { notIn: ['CANCELLED'] },
+        },
+        select: { date: true },
+      }),
+    ]);
+
+    const result: Map<string, { ordenes: number; citas: number; ingresos: number }> = new Map();
+
+    for (let d = 0; d < days; d++) {
+      const day = new Date(since.getTime() + d * 24 * 60 * 60 * 1000);
+      const key = day.toISOString().substring(0, 10);
+      result.set(key, { ordenes: 0, citas: 0, ingresos: 0 });
+    }
+
+    for (const order of orders) {
+      const key = order.createdAt.toISOString().substring(0, 10);
+      const entry = result.get(key);
+      if (entry) {
+        entry.ordenes += 1;
+        entry.ingresos += order.total;
+      }
+    }
+
+    for (const appt of appointments) {
+      const key = appt.date.toISOString().substring(0, 10);
+      const entry = result.get(key);
+      if (entry) {
+        entry.citas += 1;
+      }
+    }
+
+    return Array.from(result.entries())
+      .map(([date, data]) => ({ date, ...data }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
   async getBotMetricas(tenantId: string) {
     const now = new Date();
     const offsetMs = 5 * 60 * 60 * 1000;

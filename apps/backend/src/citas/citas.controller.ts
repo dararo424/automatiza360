@@ -24,6 +24,14 @@ import { ActualizarEstadoCitaDto } from './dto/actualizar-estado-cita.dto';
 export class CitasController {
   constructor(private readonly citasService: CitasService) {}
 
+  @Get('exportar')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="citas.csv"')
+  async exportar(@CurrentUser() user: any, @Res({ passthrough: false }) res: Response) {
+    const csv = await this.citasService.exportarCsv(user.tenantId);
+    res.send(csv);
+  }
+
   @Get('servicios')
   listarServicios(@CurrentUser() user: any) {
     return this.citasService.listarServicios(user.tenantId);

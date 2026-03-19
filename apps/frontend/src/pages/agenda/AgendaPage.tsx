@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCitasDelMes, getCitasDelDia } from '../../api/citas';
+
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
+
+async function downloadCsv(url: string, filename: string) {
+  const token = localStorage.getItem('token');
+  const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const blob = await resp.blob();
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+}
 import { CalendarioMes } from './components/CalendarioMes';
 import { CitasDelDia } from './components/CitasDelDia';
 import { ModalSincronizarCalendario } from './components/ModalSincronizarCalendario';
@@ -57,12 +69,20 @@ export function AgendaPage() {
             Gestiona las citas de tu consultorio
           </p>
         </div>
-        <button
-          onClick={() => { setCalendarCita(null); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
-        >
-          📅 Sincronizar calendario
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => downloadCsv(`${API_BASE}/citas/exportar`, 'citas.csv')}
+            className="flex items-center gap-1.5 px-3 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition-colors shrink-0"
+          >
+            ⬇ Exportar CSV
+          </button>
+          <button
+            onClick={() => { setCalendarCita(null); setShowModal(true); }}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
+          >
+            📅 Sincronizar calendario
+          </button>
+        </div>
       </div>
 
       {/* Two-column layout: stacked on mobile, side-by-side on lg */}

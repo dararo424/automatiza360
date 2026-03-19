@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { SupportChat } from '../support/SupportChat';
 import { getTrialInfo } from '../../api/subscriptions';
 
 function SuspendedModal({ onLogout }: { onLogout: () => void }) {
@@ -76,6 +77,8 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      <SupportChat />
     </div>
   );
 }

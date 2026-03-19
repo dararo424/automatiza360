@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MessageDirection, Plan } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { IngestMessageDto } from './dto/ingest-message.dto';
 
 const PLAN_LIMITS: Record<Plan, number> = {
@@ -11,7 +12,10 @@ const PLAN_LIMITS: Record<Plan, number> = {
 
 @Injectable()
 export class ConversacionesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
+  ) {}
 
   async ingestMessage(tenantId: string, dto: IngestMessageDto) {
     const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
@@ -71,6 +75,8 @@ export class ConversacionesService {
         lastMessage: true,
         lastMessageAt: true,
         unreadCount: true,
+        needsAttention: true,
+        escalatedAt: true,
         _count: { select: { messages: true } },
       },
     });
@@ -103,5 +109,53 @@ export class ConversacionesService {
       limit: limit === Infinity ? null : limit,
       plan: tenant.plan,
     };
+  }
+
+  async escalarConversacionPorTelefono(tenantId: string, phone: string) {
+    const clean = phone.replace('whatsapp:', '').trim();
+    const conversation = await this.prisma.conversation.findFirst({
+      where: { tenantId, clientPhone: { contains: clean } },
+    });
+    if (!conversation) {
+      return { updated: false, reason: 'not_found' };
+    }
+    return this.escalarConversacion(tenantId, conversation.id);
+  }
+
+  async escalarConversacion(tenantId: string, id: string) {
+    const updated = await this.prisma.conversation.updateMany({
+      where: { id, tenantId },
+      data: { needsAttention: true, escalatedAt: new Date() },
+    });
+
+    const conversation = await this.prisma.conversation.findFirst({
+      where: { id, tenantId },
+    });
+
+    if (conversation) {
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        include: {
+          users: {
+            where: { role: 'OWNER' },
+            select: { email: true },
+            take: 1,
+          },
+        },
+      });
+
+      const ownerEmail = tenant?.users[0]?.email;
+      if (ownerEmail && tenant) {
+        this.emailService
+          .sendEscalacion(ownerEmail, {
+            storeName: tenant.name,
+            clientPhone: conversation.clientPhone,
+            lastMessage: conversation.lastMessage ?? '',
+          })
+          .catch(() => {});
+      }
+    }
+
+    return { updated, conversation };
   }
 }

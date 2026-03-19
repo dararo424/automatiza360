@@ -26,7 +26,11 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(cd E:/Proyectos/automatiza360 && rm apps/landing/vercel.json)",
-      "Bash(cd \"E:/Proyectos/automatiza360/apps/backend\" && npx tsx src/seeds/create-superadmin.ts 2>&1)"
+      "Bash(cd \"E:/Proyectos/automatiza360/apps/backend\" && npx tsx src/seeds/create-superadmin.ts 2>&1)",
+      "Bash(ls E:/Proyectos/automatiza360/apps/frontend/ && echo \"---\" && find E:/Proyectos/automatiza360 -maxdepth 3 -name \"railway*\" -o -name \"nixpacks*\" 2>/dev/null | grep -v node_modules | grep -v \".git\")",
+      "Bash(find /e/Proyectos/automatiza360/apps/frontend/src -iname *layout* -o -iname *sidebar* -o -iname *navbar* -o -iname *topbar*)",
+      "Bash(grep -r lucide e:/Proyectos/automatiza360/apps/frontend/src/ --include=*.tsx -l)",
+      "Bash(pnpm exec:*)"
     ]
   }
 }

@@ -167,6 +167,18 @@ function NuevoTicketForm({ onClose }: { onClose: () => void }) {
   );
 }
 
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
+
+async function downloadCsv(url: string, filename: string) {
+  const token = localStorage.getItem('token');
+  const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const blob = await resp.blob();
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+}
+
 export function TicketsPage() {
   const [estado, setEstado] = useState<TicketStatus | ''>('');
   const [selected, setSelected] = useState<Ticket | null>(null);
@@ -179,7 +191,7 @@ export function TicketsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <select
           value={estado}
           onChange={(e) => setEstado(e.target.value as TicketStatus | '')}
@@ -189,12 +201,20 @@ export function TicketsPage() {
             <option key={e.value} value={e.value}>{e.label}</option>
           ))}
         </select>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-        >
-          + Nuevo Ticket
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => downloadCsv(`${API_BASE}/tickets/exportar`, 'tickets.csv')}
+            className="flex items-center gap-1.5 px-3 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm rounded-lg transition-colors"
+          >
+            ⬇ Exportar CSV
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+          >
+            + Nuevo Ticket
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">

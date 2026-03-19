@@ -373,4 +373,23 @@ async def run(
         logger.warning("Gemini returned no text (phone=%s tenant=%s)", phone, client.bot_email)
         reply = "Lo siento, no pude procesar tu mensaje en este momento. Intenta de nuevo."
 
+    # Escalation detection: check user message for human-agent request phrases
+    escalation_phrases = [
+        "hablar con humano",
+        "quiero hablar con alguien",
+        "agente humano",
+        "no entiendo",
+        "ayuda humana",
+        "hablar con una persona",
+        "quiero hablar con una persona",
+        "atención humana",
+    ]
+    text_lower = text.lower()
+    needs_escalation = any(phrase in text_lower for phrase in escalation_phrases)
+
+    if needs_escalation:
+        clean_phone = phone.replace("whatsapp:", "").strip()
+        logger.info("Escalation triggered for phone=%s tenant=%s", clean_phone, client.bot_email)
+        await client.escalar_conversacion_por_telefono(clean_phone)
+
     return reply

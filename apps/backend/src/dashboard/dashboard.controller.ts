@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { DashboardService } from './dashboard.service';
@@ -16,5 +16,13 @@ export class DashboardController {
   @Get('bot-metricas')
   getBotMetricas(@CurrentUser() user: { tenantId: string }) {
     return this.dashboard.getBotMetricas(user.tenantId);
+  }
+
+  @Get('tendencias')
+  getTendencias(
+    @CurrentUser() user: { tenantId: string },
+    @Query('days') days?: string,
+  ) {
+    return this.dashboard.getTendencias(user.tenantId, days ? parseInt(days, 10) : 30);
   }
 }

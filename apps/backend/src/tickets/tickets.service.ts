@@ -56,6 +56,37 @@ export class TicketsService {
     return this.prisma.ticket.update({ where: { id }, data: dto });
   }
 
+  async exportarCsv(tenantId: string): Promise<string> {
+    const tickets = await this.prisma.ticket.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const escape = (v: string | number | null | undefined) => {
+      const s = String(v ?? '');
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
+
+    const header = 'Numero,Estado,Cliente,Telefono,Dispositivo,Problema,Diagnostico,Precio,Fecha';
+    const rows = tickets.map((t) =>
+      [
+        escape(t.number),
+        escape(t.status),
+        escape(t.clientName),
+        escape(t.clientPhone),
+        escape(t.device),
+        escape(t.issue),
+        escape(t.diagnosis ?? ''),
+        escape(t.price ?? ''),
+        escape(t.createdAt.toISOString()),
+      ].join(','),
+    );
+
+    return [header, ...rows].join('\n');
+  }
+
   async actualizarEstado(
     id: string,
     dto: ActualizarEstadoTicketDto,

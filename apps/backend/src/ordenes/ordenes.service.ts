@@ -142,6 +142,38 @@ export class OrdenesService {
     });
   }
 
+  async exportarCsv(tenantId: string): Promise<string> {
+    const orders = await this.prisma.order.findMany({
+      where: { tenantId },
+      include: { items: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const escape = (v: string | number | null | undefined) => {
+      const s = String(v ?? '');
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
+
+    const header = 'Numero,Estado,Total,Cliente,Fecha,Items';
+    const rows = orders.map((o) => {
+      const items = o.items
+        .map((i) => `${i.quantity}x ${i.name}`)
+        .join(' | ');
+      return [
+        escape(o.number),
+        escape(o.status),
+        escape(o.total),
+        escape(o.phone ?? ''),
+        escape(o.createdAt.toISOString()),
+        escape(items),
+      ].join(',');
+    });
+
+    return [header, ...rows].join('\n');
+  }
+
   async actualizarEstado(
     id: string,
     dto: ActualizarEstadoDto,

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ConversacionesService } from './conversaciones.service';
@@ -32,5 +33,15 @@ export class ConversacionesController {
   @Patch(':id/leer')
   leer(@CurrentUser() user: any, @Param('id') id: string) {
     return this.svc.markRead(user.tenantId, id);
+  }
+
+  @Patch(':id/escalar')
+  escalar(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.svc.escalarConversacion(user.tenantId, id);
+  }
+
+  @Post('escalar-por-telefono')
+  escalarPorTelefono(@CurrentUser() user: any, @Body() body: { phone: string }) {
+    return this.svc.escalarConversacionPorTelefono(user.tenantId, body.phone);
   }
 }

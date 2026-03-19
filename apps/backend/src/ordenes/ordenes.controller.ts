@@ -2,12 +2,15 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Param,
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { OrderStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -29,6 +32,14 @@ export class OrdenesController {
   @Post('bot')
   crearDesdeBot(@Body() dto: CrearOrdenBotDto, @CurrentUser() user: any) {
     return this.ordenesService.crearDesdeBot(dto, user.tenantId);
+  }
+
+  @Get('exportar')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="ordenes.csv"')
+  async exportar(@CurrentUser() user: any, @Res({ passthrough: false }) res: Response) {
+    const csv = await this.ordenesService.exportarCsv(user.tenantId);
+    res.send(csv);
   }
 
   @Get()

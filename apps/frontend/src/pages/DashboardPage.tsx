@@ -1,7 +1,18 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { OnboardingChecklist } from '../components/onboarding/OnboardingChecklist';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import { useAuth } from '../context/AuthContext';
-import { getMetricasDashboard } from '../api/dashboard';
+import { getMetricasDashboard, getTendencias } from '../api/dashboard';
 import { StatCard } from '../components/ui/StatCard';
 import { Badge } from '../components/ui/Badge';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -26,6 +37,81 @@ function AppointmentBadge({ status }: { status: string }) {
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${APPOINTMENT_COLORS[status] ?? 'bg-gray-100 text-gray-800'}`}>
       {APPOINTMENT_LABELS[status] ?? status}
     </span>
+  );
+}
+
+function TendenciasChart({ showCitas = false, showOrdenes = true }: { showCitas?: boolean; showOrdenes?: boolean }) {
+  const { data: tendencias = [], isLoading } = useQuery({
+    queryKey: ['dashboard-tendencias'],
+    queryFn: () => getTendencias(30),
+    staleTime: 5 * 60_000,
+  });
+
+  if (isLoading) return <div className="h-48 flex items-center justify-center text-slate-400 text-sm">Cargando tendencias...</div>;
+  if (!tendencias.length) return null;
+
+  const chartData = tendencias.map((d) => ({
+    ...d,
+    fecha: new Date(d.date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }),
+    ingresosK: Math.round(d.ingresos / 1000),
+  }));
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+      <h2 className="text-base font-semibold text-slate-800 mb-4">Tendencias — últimos 30 días</h2>
+      <ResponsiveContainer width="100%" height={240}>
+        <LineChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+          <XAxis
+            dataKey="fecha"
+            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            interval={4}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+          <Tooltip
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+            formatter={(value: number, name: string) => {
+              if (name === 'Ingresos (k)') return [`$${value}k`, name];
+              return [value, name];
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          {showOrdenes && (
+            <Line
+              type="monotone"
+              dataKey="ordenes"
+              name="Órdenes"
+              stroke="#6366f1"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+          )}
+          {showCitas && (
+            <Line
+              type="monotone"
+              dataKey="citas"
+              name="Citas"
+              stroke="#22c55e"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+          )}
+          <Line
+            type="monotone"
+            dataKey="ingresosK"
+            name="Ingresos (k)"
+            stroke="#f59e0b"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -58,6 +144,7 @@ function RestaurantDashboard() {
         <StatCard title="Stock bajo (< 5 uds)" value={m.productosStockBajo} colorClass="border-red-400" emoji="⚠️" />
       </div>
 
+      <TendenciasChart showOrdenes showCitas={false} />
       <RecentActivity m={m} type="order" linkTo="/ordenes" />
     </div>
   );
@@ -87,6 +174,7 @@ function TechStoreDashboard() {
         <StatCard title="Conversaciones este mes" value={m.conversacionesMes} colorClass="border-purple-500" emoji="💬" />
       </div>
 
+      <TendenciasChart showOrdenes showCitas={false} />
       <RecentActivity m={m} type="order" linkTo="/ordenes" />
     </div>
   );
@@ -121,6 +209,7 @@ function ClinicBeautyDashboard() {
         />
       </div>
 
+      <TendenciasChart showOrdenes={false} showCitas />
       <RecentActivity m={m} type="appointment" linkTo="/agenda" />
     </div>
   );
@@ -256,7 +345,7 @@ function RecentActivity({
   );
 }
 
-export function DashboardPage() {
+function DashboardContent() {
   const { user } = useAuth();
   const industry = user?.tenant?.industry;
 
@@ -266,4 +355,13 @@ export function DashboardPage() {
 
   // OTHER / fallback — muestra métricas genéricas
   return <RestaurantDashboard />;
+}
+
+export function DashboardPage() {
+  return (
+    <div className="space-y-6">
+      <OnboardingChecklist />
+      <DashboardContent />
+    </div>
+  );
 }

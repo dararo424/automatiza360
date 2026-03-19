@@ -257,17 +257,19 @@ model Appointment {
 
 // Conversaciones WhatsApp (bandeja de mensajes)
 model Conversation {
-  id           String    @id @default(cuid())
-  clientPhone  String
-  clientName   String?
-  lastMessage  String?
-  lastMessageAt DateTime?
-  unreadCount  Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  tenantId     String
-  tenant       Tenant    @relation(fields: [tenantId], references: [id])
-  messages     Message[]
+  id              String    @id @default(cuid())
+  clientPhone     String
+  clientName      String?
+  lastMessage     String?
+  lastMessageAt   DateTime?
+  unreadCount     Int       @default(0)
+  needsAttention  Boolean   @default(false)
+  escalatedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  messages        Message[]
 
   @@unique([tenantId, clientPhone])
 }

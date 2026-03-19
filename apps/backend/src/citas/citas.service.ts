@@ -318,6 +318,35 @@ export class CitasService {
     });
   }
 
+  async exportarCsv(tenantId: string): Promise<string> {
+    const citas = await this.prisma.appointment.findMany({
+      where: { tenantId },
+      include: { service: true, professional: true },
+      orderBy: { date: 'asc' },
+    });
+
+    const escape = (v: string | null | undefined) => {
+      const s = String(v ?? '');
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
+
+    const header = 'Cliente,Telefono,Servicio,Profesional,Fecha,Estado';
+    const rows = citas.map((c) =>
+      [
+        escape(c.clientName),
+        escape(c.clientPhone),
+        escape(c.service.name),
+        escape(c.professional?.name ?? ''),
+        escape(c.date.toISOString()),
+        escape(c.status),
+      ].join(','),
+    );
+
+    return [header, ...rows].join('\n');
+  }
+
   async citasCliente(phone: string, tenantId: string) {
     const clean = phone.replace('whatsapp:', '').trim();
     return this.prisma.appointment.findMany({

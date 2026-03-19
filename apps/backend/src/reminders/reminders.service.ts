@@ -1,14 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { AppointmentStatus, Industry } from '@prisma/client';
+import { AppointmentStatus, Industry, SubscriptionStatus } from '@prisma/client';
 import * as twilio from 'twilio';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class RemindersService {
   private readonly logger = new Logger(RemindersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
+  ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
   async sendAppointmentReminders(): Promise<void> {
@@ -75,6 +79,67 @@ export class RemindersService {
     }
 
     this.logger.log('Envío de recordatorios completado.');
+  }
+
+  /** Día 1 de cada mes a las 00:05 — resetea el contador de conversaciones */
+  @Cron('5 0 1 * *')
+  async resetConversationCounts(): Promise<void> {
+    this.logger.log('Reseteando contadores mensuales de conversaciones...');
+    const result = await this.prisma.tenant.updateMany({
+      data: { conversationCountMonth: 0 },
+    });
+    this.logger.log(`Contadores reseteados para ${result.count} tenants.`);
+  }
+
+  @Cron('0 9 * * *')
+  async sendTrialExpiryEmails(): Promise<void> {
+    this.logger.log('Revisando tenants con trial próximo a vencer...');
+
+    const now = new Date();
+    const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const in1Day = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
+
+    const tenants = await this.prisma.tenant.findMany({
+      where: {
+        subscriptionStatus: SubscriptionStatus.TRIAL,
+        trialEndsAt: { lte: in3Days, gte: now },
+      },
+      include: {
+        users: {
+          where: { role: 'OWNER' },
+          select: { email: true },
+          take: 1,
+        },
+      },
+    });
+
+    this.logger.log(`Tenants con trial por vencer: ${tenants.length}`);
+
+    for (const tenant of tenants) {
+      const ownerEmail = tenant.users[0]?.email;
+      if (!ownerEmail || !tenant.trialEndsAt) continue;
+
+      const msRemaining = tenant.trialEndsAt.getTime() - now.getTime();
+      const daysRemaining = Math.ceil(msRemaining / (24 * 60 * 60 * 1000));
+
+      if (daysRemaining !== 3 && daysRemaining !== 1) continue;
+
+      try {
+        await this.emailService.sendTrialExpirando(ownerEmail, {
+          storeName: tenant.name,
+          daysRemaining,
+        });
+        this.logger.log(
+          `Email de trial enviado a ${ownerEmail} (${tenant.name}) — ${daysRemaining} día(s) restantes`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Error enviando email de trial a ${ownerEmail}: ${(error as Error).message}`,
+        );
+      }
+    }
+
+    this.logger.log('Revisión de trials completada.');
   }
 
   private normalizePhone(phone: string): string {

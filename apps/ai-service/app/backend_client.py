@@ -181,6 +181,18 @@ class BackendClient:
 
     # ── Conversaciones (bandeja WhatsApp) ─────────────────────────────────────
 
+    async def escalar_conversacion_por_telefono(self, phone: str) -> dict | None:
+        """Escala la conversación del cliente al equipo humano."""
+        try:
+            clean = phone.replace("whatsapp:", "").strip()
+            result = await self._request(
+                "POST", "/conversaciones/escalar-por-telefono", json={"phone": clean}
+            )
+            return result  # type: ignore[return-value]
+        except Exception as exc:
+            logger.warning("escalar_conversacion_por_telefono failed: %s", exc)
+            return None
+
     async def ingest_message(
         self,
         client_phone: str,

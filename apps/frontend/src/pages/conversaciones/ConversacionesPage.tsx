@@ -4,6 +4,7 @@ import {
   getConversaciones,
   getConversacion,
   marcarLeida,
+  escalarConversacion,
   type Conversation,
   type Message,
 } from '../../api/conversaciones';
@@ -44,10 +45,17 @@ export function ConversacionesPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['conversaciones'] }),
   });
 
+  const escalarMutation = useMutation({
+    mutationFn: (id: string) => escalarConversacion(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['conversaciones'] }),
+  });
+
   function handleSelect(conv: Conversation) {
     setSelected(conv.id);
     if (conv.unreadCount > 0) leerMutation.mutate(conv.id);
   }
+
+  const selectedConv = conversaciones.find((c) => c.id === selected);
 
   return (
     <div className="flex h-full">
@@ -72,9 +80,14 @@ export function ConversacionesPage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-white font-medium text-sm truncate">
-                      {c.clientName || c.clientPhone}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-white font-medium text-sm truncate">
+                        {c.clientName || c.clientPhone}
+                      </p>
+                      {c.needsAttention && (
+                        <span className="shrink-0 w-2 h-2 rounded-full bg-red-500" title="Necesita atención" />
+                      )}
+                    </div>
                     <p className="text-slate-500 text-xs truncate mt-0.5">{c.lastMessage || '—'}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
@@ -102,12 +115,26 @@ export function ConversacionesPage() {
             >
               ←
             </button>
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-white font-semibold">
                 {detalle?.clientName || detalle?.clientPhone}
               </p>
               <p className="text-slate-400 text-xs">{detalle?.clientPhone}</p>
             </div>
+            {selectedConv && !selectedConv.needsAttention && (
+              <button
+                onClick={() => escalarMutation.mutate(selected)}
+                disabled={escalarMutation.isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-xs font-medium rounded-lg transition-colors shrink-0"
+              >
+                ⚡ Escalar
+              </button>
+            )}
+            {selectedConv?.needsAttention && (
+              <span className="px-2.5 py-1 bg-red-900/50 text-red-400 text-xs font-medium rounded-lg border border-red-700 shrink-0">
+                Escalado
+              </span>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {detalle?.messages.map((m: Message) => (

@@ -80,6 +80,18 @@ function OrdenModal({ orden, onClose }: { orden: Orden; onClose: () => void }) {
   );
 }
 
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
+
+async function downloadCsv(url: string, filename: string) {
+  const token = localStorage.getItem('token');
+  const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const blob = await resp.blob();
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+}
+
 export function OrdenesPage() {
   const [estado, setEstado] = useState<OrderStatus | ''>('');
   const [selected, setSelected] = useState<Orden | null>(null);
@@ -91,7 +103,7 @@ export function OrdenesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
         <select
           value={estado}
           onChange={(e) => setEstado(e.target.value as OrderStatus | '')}
@@ -101,6 +113,12 @@ export function OrdenesPage() {
             <option key={e.value} value={e.value}>{e.label}</option>
           ))}
         </select>
+        <button
+          onClick={() => downloadCsv(`${API_BASE}/ordenes/exportar`, 'ordenes.csv')}
+          className="flex items-center gap-1.5 px-3 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm rounded-lg transition-colors"
+        >
+          ⬇ Exportar CSV
+        </button>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">

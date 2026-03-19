@@ -48,3 +48,14 @@ export interface BotMetricas {
 export function getBotMetricas(): Promise<BotMetricas> {
   return api.get('/dashboard/bot-metricas').then((r) => r.data);
 }
+
+export interface TendenciaDia {
+  date: string;
+  ordenes: number;
+  citas: number;
+  ingresos: number;
+}
+
+export function getTendencias(days: number = 30): Promise<TendenciaDia[]> {
+  return api.get(`/dashboard/tendencias?days=${days}`).then((r) => r.data);
+}

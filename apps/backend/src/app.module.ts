@@ -3,6 +3,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { EmailModule } from './email/email.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductosModule } from './productos/productos.module';
@@ -23,11 +24,13 @@ import { ConversacionesModule } from './conversaciones/conversaciones.module';
 import { ContactosModule } from './contactos/contactos.module';
 import { ReferidosModule } from './referidos/referidos.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
+import { SoporteModule } from './soporte/soporte.module';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
     PrismaModule,
+    EmailModule,
     RemindersModule,
     AuthModule,
     ProductosModule,
@@ -48,6 +51,7 @@ import { ApiKeysModule } from './api-keys/api-keys.module';
     ContactosModule,
     ReferidosModule,
     ApiKeysModule,
+    SoporteModule,
   ],
   controllers: [AppController],
   providers: [AppService],
