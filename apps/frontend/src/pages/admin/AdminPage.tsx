@@ -28,7 +28,7 @@ export function AdminPage() {
   const maxIndustria = Math.max(...(data.porIndustria?.map((g: any) => g.count) ?? [1]));
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold text-white mb-6">Panel de Administración</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">

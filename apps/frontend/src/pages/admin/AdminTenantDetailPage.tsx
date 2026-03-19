@@ -33,7 +33,7 @@ export function AdminTenantDetailPage() {
   if (!tenant) return <div className="p-8 text-red-400">Tenant no encontrado</div>;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <Link to="/admin/tenants" className="text-slate-400 hover:text-white">← Tenants</Link>
         <span className="text-slate-600">/</span>
@@ -88,12 +88,12 @@ export function AdminTenantDetailPage() {
         <h2 className="text-white font-semibold mb-3">Usuarios ({tenant.users?.length ?? 0})</h2>
         <div className="space-y-2">
           {tenant.users?.map((u: any) => (
-            <div key={u.id} className="flex items-center justify-between text-sm">
-              <div>
+            <div key={u.id} className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between text-sm">
+              <div className="min-w-0">
                 <span className="text-white">{u.name}</span>
-                <span className="text-slate-400 ml-2">{u.email}</span>
+                <span className="text-slate-400 ml-2 text-xs truncate">{u.email}</span>
               </div>
-              <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">{u.role}</span>
+              <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded self-start sm:self-auto">{u.role}</span>
             </div>
           ))}
         </div>
