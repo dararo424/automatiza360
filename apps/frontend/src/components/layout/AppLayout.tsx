@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
@@ -34,6 +35,7 @@ function SuspendedModal({ onLogout }: { onLogout: () => void }) {
 
 export function AppLayout() {
   const { user, isLoading, logout } = useAuth();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const { data: trialInfo } = useQuery({
     queryKey: ['trial-info'],
@@ -57,9 +59,19 @@ export function AppLayout() {
   return (
     <div className="flex h-screen overflow-hidden">
       {trialInfo?.status === 'SUSPENDED' && <SuspendedModal onLogout={logout} />}
-      <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <TopBar />
+
+      {/* Mobile overlay */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      <Sidebar isMobileOpen={isMobileOpen} onClose={() => setIsMobileOpen(false)} />
+
+      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+        <TopBar onMenuToggle={() => setIsMobileOpen((v) => !v)} isMobileOpen={isMobileOpen} />
         <main className="flex-1 overflow-y-auto bg-slate-50 p-6">
           <Outlet />
         </main>

@@ -47,7 +47,12 @@ function getNavItems(industry: Industry): NavItem[] {
   return base;
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  isMobileOpen: boolean;
+  onClose: () => void;
+}
+
+export function Sidebar({ isMobileOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const industry = user?.tenant?.industry ?? 'OTHER';
 
@@ -75,7 +80,14 @@ export function Sidebar() {
     new Date(user.tenant.trialEndsAt) > new Date();
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 h-full">
+    <aside
+      className={[
+        'w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 h-full',
+        'fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out',
+        isMobileOpen ? 'translate-x-0' : '-translate-x-full',
+        'md:relative md:translate-x-0 md:z-auto',
+      ].join(' ')}
+    >
       {/* Header */}
       <div className="p-5 border-b border-slate-700">
         <div className="flex items-center gap-2 mb-2">
@@ -93,6 +105,7 @@ export function Sidebar() {
           <NavLink
             key={item.to}
             to={item.to}
+            onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
@@ -109,6 +122,7 @@ export function Sidebar() {
         {/* Notifications always last */}
         <NavLink
           to="/notificaciones"
+          onClick={onClose}
           className={({ isActive }) =>
             `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               isActive
@@ -140,7 +154,7 @@ export function Sidebar() {
             {trialInfo.daysRemaining <= 3 ? '⚠️' : '🎉'} Trial gratis:{' '}
             {trialInfo.daysRemaining === 0 ? 'último día' : `${trialInfo.daysRemaining} días restantes`}
           </p>
-          <NavLink to="/planes" className="mt-1 underline hover:no-underline font-medium">Activar plan →</NavLink>
+          <NavLink to="/planes" onClick={onClose} className="mt-1 underline hover:no-underline font-medium">Activar plan →</NavLink>
         </div>
       )}
 
@@ -151,6 +165,7 @@ export function Sidebar() {
         {user?.role === 'SUPERADMIN' && (
           <NavLink
             to="/admin"
+            onClick={onClose}
             className="mt-2 block text-xs text-red-400 hover:text-red-300 transition-colors"
           >
             ⚙️ Panel Admin →

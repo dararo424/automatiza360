@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const PAGE_TITLES: Record<string, string> = {
@@ -18,7 +19,12 @@ const ROL_LABELS: Record<string, string> = {
   STAFF: 'Personal',
 };
 
-export function TopBar() {
+interface TopBarProps {
+  onMenuToggle: () => void;
+  isMobileOpen: boolean;
+}
+
+export function TopBar({ onMenuToggle, isMobileOpen }: TopBarProps) {
   const { user } = useAuth();
   const { pathname } = useLocation();
 
@@ -33,8 +39,17 @@ export function TopBar() {
     : '?';
 
   return (
-    <header className="bg-white border-b border-slate-200 shadow-sm h-16 flex items-center justify-between px-6 flex-shrink-0">
-      <h1 className="text-xl font-semibold text-slate-800">{title}</h1>
+    <header className="bg-white border-b border-slate-200 shadow-sm h-16 flex items-center justify-between px-4 md:px-6 flex-shrink-0">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onMenuToggle}
+          className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          aria-label="Menú"
+        >
+          {isMobileOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+        <h1 className="text-xl font-semibold text-slate-800">{title}</h1>
+      </div>
       <div className="flex items-center gap-3">
         <div className="text-right hidden sm:block">
           <p className="text-sm font-medium text-slate-700">{user?.name}</p>
