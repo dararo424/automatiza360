@@ -118,4 +118,48 @@ export class DashboardService {
       })),
     };
   }
+
+  async getBotMetricas(tenantId: string) {
+    const now = new Date();
+    const offsetMs = 5 * 60 * 60 * 1000;
+    const nowColombia = new Date(now.getTime() - offsetMs);
+    const mesInicio = new Date(
+      Date.UTC(nowColombia.getUTCFullYear(), nowColombia.getUTCMonth(), 1) + offsetMs,
+    );
+
+    const [
+      totalConversaciones,
+      conversacionesMes,
+      totalMensajes,
+      mensajesMes,
+      mensajesEntrantes,
+      mensajesSalientes,
+      tenant,
+    ] = await Promise.all([
+      this.prisma.conversation.count({ where: { tenantId } }),
+      this.prisma.conversation.count({ where: { tenantId, createdAt: { gte: mesInicio } } }),
+      this.prisma.message.count({ where: { conversation: { tenantId } } }),
+      this.prisma.message.count({ where: { conversation: { tenantId }, createdAt: { gte: mesInicio } } }),
+      this.prisma.message.count({ where: { conversation: { tenantId }, direction: 'INBOUND', createdAt: { gte: mesInicio } } }),
+      this.prisma.message.count({ where: { conversation: { tenantId }, direction: 'OUTBOUND', createdAt: { gte: mesInicio } } }),
+      this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { conversationCountMonth: true, plan: true },
+      }),
+    ]);
+
+    return {
+      totalConversaciones,
+      conversacionesMes,
+      totalMensajes,
+      mensajesMes,
+      mensajesEntrantes,
+      mensajesSalientes,
+      tasaRespuesta: mensajesEntrantes > 0
+        ? Math.round((mensajesSalientes / mensajesEntrantes) * 100)
+        : 0,
+      usoCuotaMes: tenant?.conversationCountMonth ?? 0,
+      plan: tenant?.plan ?? 'STARTER',
+    };
+  }
 }

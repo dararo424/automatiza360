@@ -1,0 +1,26 @@
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ContactosService } from './contactos.service';
+import { UpsertContactDto } from './dto/upsert-contact.dto';
+
+@Controller('contactos')
+@UseGuards(JwtAuthGuard)
+export class ContactosController {
+  constructor(private readonly svc: ContactosService) {}
+
+  @Get()
+  list(@CurrentUser() user: any, @Query('search') search?: string) {
+    return this.svc.list(user.tenantId, search);
+  }
+
+  @Post()
+  upsert(@CurrentUser() user: any, @Body() dto: UpsertContactDto) {
+    return this.svc.upsert(user.tenantId, dto);
+  }
+
+  @Delete(':id')
+  remove(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.svc.remove(user.tenantId, id);
+  }
+}

@@ -12,4 +12,9 @@ export class SubscriptionsController {
   getTrialInfo(@CurrentUser() user: { tenantId: string }) {
     return this.subscriptionsService.getTrialInfo(user.tenantId);
   }
+
+  @Get('plan-info')
+  getPlanInfo(@CurrentUser() user: { tenantId: string }) {
+    return this.subscriptionsService.getPlanInfo(user.tenantId);
+  }
 }

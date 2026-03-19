@@ -12,4 +12,9 @@ export class DashboardController {
   getMetricas(@CurrentUser() user: { tenantId: string }) {
     return this.dashboard.getMetricas(user.tenantId);
   }
+
+  @Get('bot-metricas')
+  getBotMetricas(@CurrentUser() user: { tenantId: string }) {
+    return this.dashboard.getBotMetricas(user.tenantId);
+  }
 }

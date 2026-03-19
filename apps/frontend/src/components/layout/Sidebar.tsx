@@ -25,6 +25,9 @@ function getNavItems(industry: Industry): NavItem[] {
       ...base,
       { to: '/ordenes', label: 'Órdenes', emoji: '🍽️' },
       { to: '/productos', label: 'Productos', emoji: '📦' },
+      { to: '/menu-dia', label: 'Menú del día', emoji: '🍴' },
+      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
+      { to: '/contactos', label: 'Contactos', emoji: '👥' },
     ];
   }
 
@@ -34,6 +37,8 @@ function getNavItems(industry: Industry): NavItem[] {
       { to: '/tickets', label: 'Tickets', emoji: '🔧' },
       { to: '/cotizaciones', label: 'Cotizaciones', emoji: '📄' },
       { to: '/inventario', label: 'Inventario', emoji: '📦' },
+      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
+      { to: '/contactos', label: 'Contactos', emoji: '👥' },
     ];
   }
 
@@ -41,10 +46,16 @@ function getNavItems(industry: Industry): NavItem[] {
     return [
       ...base,
       { to: '/agenda', label: 'Agenda', emoji: '📅' },
+      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
+      { to: '/contactos', label: 'Contactos', emoji: '👥' },
     ];
   }
 
-  return base;
+  return [
+    ...base,
+    { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
+    { to: '/contactos', label: 'Contactos', emoji: '👥' },
+  ];
 }
 
 interface SidebarProps {
@@ -119,7 +130,7 @@ export function Sidebar({ isMobileOpen, onClose }: SidebarProps) {
           </NavLink>
         ))}
 
-        {/* Notifications always last */}
+        {/* Notifications */}
         <NavLink
           to="/notificaciones"
           onClick={onClose}
@@ -139,6 +150,32 @@ export function Sidebar({ isMobileOpen, onClose }: SidebarProps) {
             </span>
           )}
         </NavLink>
+
+        {/* Separador */}
+        <div className="border-t border-slate-700 my-1" />
+
+        {/* Gestión */}
+        {[
+          { to: '/equipo', label: 'Equipo', emoji: '👤' },
+          { to: '/mi-plan', label: 'Mi plan', emoji: '⭐' },
+          { to: '/api-keys', label: 'API Keys', emoji: '🔑' },
+        ].map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+              }`
+            }
+          >
+            <span>{item.emoji}</span>
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
       </nav>
 
       {/* Trial banner */}

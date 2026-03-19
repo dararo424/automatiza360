@@ -19,9 +19,10 @@ model Tenant {
   twilioNumber       String?
   ownerPhone         String?
   subscriptionPlan   String?
-  subscriptionEndsAt DateTime?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  subscriptionEndsAt     DateTime?
+  conversationCountMonth Int                @default(0)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
   users          User[]
   orders         Order[]
@@ -35,6 +36,10 @@ model Tenant {
   services       Service[]
   appointments   Appointment[]
   paymentIntents PaymentIntent[]
+  conversations  Conversation[]
+  contacts       Contact[]
+  referralCode   ReferralCode?
+  apiKeys        ApiKey[]
 }
 
 // Usuario dentro de un negocio
@@ -250,6 +255,81 @@ model Appointment {
   professional    Professional?     @relation(fields: [professionalId], references: [id])
 }
 
+// Conversaciones WhatsApp (bandeja de mensajes)
+model Conversation {
+  id           String    @id @default(cuid())
+  clientPhone  String
+  clientName   String?
+  lastMessage  String?
+  lastMessageAt DateTime?
+  unreadCount  Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id])
+  messages     Message[]
+
+  @@unique([tenantId, clientPhone])
+}
+
+model Message {
+  id             String           @id @default(cuid())
+  body           String
+  direction      MessageDirection
+  createdAt      DateTime         @default(now())
+  conversationId String
+  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+// CRM de contactos
+model Contact {
+  id        String   @id @default(cuid())
+  phone     String
+  name      String?
+  email     String?
+  notes     String?
+  tags      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, phone])
+}
+
+// Programa de referidos
+model ReferralCode {
+  id        String     @id @default(cuid())
+  code      String     @unique
+  tenantId  String     @unique
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  referrals Referral[]
+  createdAt DateTime   @default(now())
+}
+
+model Referral {
+  id             String       @id @default(cuid())
+  referredTenantId String     @unique
+  status         String       @default("PENDING")
+  rewardGiven    Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  referralCodeId String
+  referralCode   ReferralCode @relation(fields: [referralCodeId], references: [id])
+}
+
+// API pública (plan BUSINESS)
+model ApiKey {
+  id        String   @id @default(cuid())
+  name      String
+  keyHash   String   @unique
+  keyPrefix String
+  active    Boolean  @default(true)
+  lastUsed  DateTime?
+  createdAt DateTime @default(now())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
 model PaymentIntent {
   id                 String   @id @default(cuid())
   tenantId           String
@@ -326,4 +406,9 @@ enum AppointmentStatus {
   CANCELLED
   COMPLETED
   NO_SHOW
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
 }

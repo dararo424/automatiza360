@@ -66,4 +66,27 @@ export class MenuDiaService {
       orderBy: { fecha: 'desc' },
     });
   }
+
+  async toggleActivo(id: string, tenantId: string) {
+    const menu = await this.prisma.menuDia.findFirst({ where: { id, tenantId } });
+    if (!menu) return null;
+    return this.prisma.menuDia.update({
+      where: { id },
+      data: { activo: !menu.activo },
+      include: { platos: true },
+    });
+  }
+
+  eliminar(id: string, tenantId: string) {
+    return this.prisma.menuDia.deleteMany({ where: { id, tenantId } });
+  }
+
+  async togglePlato(platoId: string) {
+    const plato = await this.prisma.platoMenuDia.findUnique({ where: { id: platoId } });
+    if (!plato) return null;
+    return this.prisma.platoMenuDia.update({
+      where: { id: platoId },
+      data: { disponible: !plato.disponible },
+    });
+  }
 }

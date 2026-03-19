@@ -1,0 +1,219 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  getContactos,
+  upsertContacto,
+  eliminarContacto,
+  type Contacto,
+} from '../../api/contactos';
+
+function ContactoModal({
+  contacto,
+  onClose,
+}: {
+  contacto?: Contacto;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [phone, setPhone] = useState(contacto?.phone ?? '');
+  const [name, setName] = useState(contacto?.name ?? '');
+  const [email, setEmail] = useState(contacto?.email ?? '');
+  const [notes, setNotes] = useState(contacto?.notes ?? '');
+  const [tags, setTags] = useState(contacto?.tags ?? '');
+
+  const mutation = useMutation({
+    mutationFn: () => upsertContacto({ phone, name, email, notes, tags }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contactos'] });
+      onClose();
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md">
+        <h2 className="text-white font-bold mb-4">{contacto ? 'Editar contacto' : 'Nuevo contacto'}</h2>
+        <div className="space-y-3">
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Teléfono *"
+            className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg border border-slate-600 focus:outline-none text-sm"
+            required
+          />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nombre"
+            className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg border border-slate-600 focus:outline-none text-sm"
+          />
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            type="email"
+            className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg border border-slate-600 focus:outline-none text-sm"
+          />
+          <input
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="Etiquetas (ej: cliente, vip)"
+            className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg border border-slate-600 focus:outline-none text-sm"
+          />
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notas"
+            rows={2}
+            className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg border border-slate-600 focus:outline-none text-sm resize-none"
+          />
+        </div>
+        <div className="flex gap-3 mt-4">
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={!phone || mutation.isPending}
+            className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold py-2 rounded-lg text-sm transition-colors"
+          >
+            {mutation.isPending ? 'Guardando...' : 'Guardar'}
+          </button>
+          <button onClick={onClose} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition-colors">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ContactosPage() {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [modal, setModal] = useState<{ open: boolean; contacto?: Contacto }>({ open: false });
+
+  const { data: contactos = [], isLoading } = useQuery({
+    queryKey: ['contactos', search],
+    queryFn: () => getContactos(search || undefined),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => eliminarContacto(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contactos'] }),
+  });
+
+  return (
+    <div className="p-4 md:p-8 max-w-4xl mx-auto">
+      {modal.open && (
+        <ContactoModal
+          contacto={modal.contacto}
+          onClose={() => setModal({ open: false })}
+        />
+      )}
+
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <h1 className="text-2xl font-bold text-white">Contactos ({contactos.length})</h1>
+        <button
+          onClick={() => setModal({ open: true })}
+          className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+        >
+          + Nuevo contacto
+        </button>
+      </div>
+
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Buscar por nombre, teléfono o email..."
+        className="w-full bg-slate-800 text-white px-4 py-2 rounded-lg border border-slate-600 focus:outline-none mb-4"
+      />
+
+      {isLoading ? (
+        <div className="text-slate-400">Cargando...</div>
+      ) : contactos.length === 0 ? (
+        <div className="text-center py-12 text-slate-500">
+          <p className="text-4xl mb-3">👥</p>
+          <p>{search ? 'No se encontraron contactos' : 'No hay contactos aún'}</p>
+        </div>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block bg-slate-800 rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="border-b border-slate-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-slate-400 font-medium">Nombre</th>
+                  <th className="px-4 py-3 text-left text-slate-400 font-medium">Teléfono</th>
+                  <th className="px-4 py-3 text-left text-slate-400 font-medium">Email</th>
+                  <th className="px-4 py-3 text-left text-slate-400 font-medium">Etiquetas</th>
+                  <th className="px-4 py-3 text-left text-slate-400 font-medium">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contactos.map((c: Contacto) => (
+                  <tr key={c.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                    <td className="px-4 py-3 text-white">{c.name || '—'}</td>
+                    <td className="px-4 py-3 text-slate-300 font-mono text-xs">{c.phone}</td>
+                    <td className="px-4 py-3 text-slate-400 text-xs">{c.email || '—'}</td>
+                    <td className="px-4 py-3">
+                      {c.tags ? (
+                        <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full">{c.tags}</span>
+                      ) : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setModal({ open: true, contacto: c })}
+                          className="text-xs bg-indigo-700 hover:bg-indigo-600 text-white px-2 py-1 rounded"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => { if (confirm('¿Eliminar contacto?')) deleteMutation.mutate(c.id); }}
+                          className="text-xs bg-red-800 hover:bg-red-700 text-red-200 px-2 py-1 rounded"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {contactos.map((c: Contacto) => (
+              <div key={c.id} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="text-white font-semibold">{c.name || c.phone}</p>
+                    <p className="text-slate-400 text-xs font-mono">{c.phone}</p>
+                  </div>
+                  {c.tags && (
+                    <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full">{c.tags}</span>
+                  )}
+                </div>
+                {c.email && <p className="text-slate-400 text-xs mb-2">{c.email}</p>}
+                {c.notes && <p className="text-slate-500 text-xs mb-3 italic">{c.notes}</p>}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => setModal({ open: true, contacto: c })}
+                    className="flex-1 text-xs bg-indigo-700 hover:bg-indigo-600 text-white py-1.5 rounded-lg"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => { if (confirm('¿Eliminar?')) deleteMutation.mutate(c.id); }}
+                    className="flex-1 text-xs bg-red-800 hover:bg-red-700 text-red-200 py-1.5 rounded-lg"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

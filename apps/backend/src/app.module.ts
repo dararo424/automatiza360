@@ -19,6 +19,10 @@ import { CalendarModule } from './calendar/calendar.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AdminModule } from './admin/admin.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ConversacionesModule } from './conversaciones/conversaciones.module';
+import { ContactosModule } from './contactos/contactos.module';
+import { ReferidosModule } from './referidos/referidos.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
 
 @Module({
   imports: [
@@ -40,6 +44,10 @@ import { DashboardModule } from './dashboard/dashboard.module';
     PaymentsModule,
     AdminModule,
     DashboardModule,
+    ConversacionesModule,
+    ContactosModule,
+    ReferidosModule,
+    ApiKeysModule,
   ],
   controllers: [AppController],
   providers: [AppService],

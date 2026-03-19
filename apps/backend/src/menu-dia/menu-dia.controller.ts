@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { MenuDiaService } from './menu-dia.service';
@@ -24,5 +24,23 @@ export class MenuDiaController {
   @Get()
   listar(@CurrentUser() user: any) {
     return this.menuDiaService.listar(user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/toggle')
+  toggleActivo(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.menuDiaService.toggleActivo(id, user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  eliminar(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.menuDiaService.eliminar(id, user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('plato/:platoId/toggle')
+  togglePlato(@Param('platoId') platoId: string) {
+    return this.menuDiaService.togglePlato(platoId);
   }
 }

@@ -13,6 +13,12 @@ import { NotificacionesPage } from './pages/notificaciones/NotificacionesPage';
 import { AgendaPage } from './pages/agenda/AgendaPage';
 import { PlanesPage } from './pages/planes/PlanesPage';
 import { PagoResultadoPage } from './pages/planes/PagoResultadoPage';
+import { ConversacionesPage } from './pages/conversaciones/ConversacionesPage';
+import { PlanPortalPage } from './pages/plan/PlanPortalPage';
+import { MenuDiaPage } from './pages/menu-dia/MenuDiaPage';
+import { ContactosPage } from './pages/contactos/ContactosPage';
+import { EquipoPage } from './pages/equipo/EquipoPage';
+import { ApiKeysPage } from './pages/api-keys/ApiKeysPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminPage } from './pages/admin/AdminPage';
 import { AdminTenantsPage } from './pages/admin/AdminTenantsPage';
@@ -37,6 +43,12 @@ export function App() {
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/planes" element={<PlanesPage />} />
             <Route path="/pago-resultado" element={<PagoResultadoPage />} />
+            <Route path="/conversaciones" element={<ConversacionesPage />} />
+            <Route path="/mi-plan" element={<PlanPortalPage />} />
+            <Route path="/menu-dia" element={<MenuDiaPage />} />
+            <Route path="/contactos" element={<ContactosPage />} />
+            <Route path="/equipo" element={<EquipoPage />} />
+            <Route path="/api-keys" element={<ApiKeysPage />} />
           </Route>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminPage />} />

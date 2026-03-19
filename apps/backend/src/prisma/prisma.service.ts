@@ -30,6 +30,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get service() { return this.client.service; }
   get appointment() { return this.client.appointment; }
   get paymentIntent() { return this.client.paymentIntent; }
+  get conversation() { return this.client.conversation; }
+  get message() { return this.client.message; }
+  get contact() { return this.client.contact; }
+  get referralCode() { return this.client.referralCode; }
+  get referral() { return this.client.referral; }
+  get apiKey() { return this.client.apiKey; }
 
   // Transaction support
   $transaction: PrismaClient['$transaction'] = (...args: any[]) =>

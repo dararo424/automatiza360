@@ -32,3 +32,19 @@ export interface DashboardMetricas {
 export function getMetricasDashboard(): Promise<DashboardMetricas> {
   return api.get('/dashboard/metricas').then((r) => r.data);
 }
+
+export interface BotMetricas {
+  totalConversaciones: number;
+  conversacionesMes: number;
+  totalMensajes: number;
+  mensajesMes: number;
+  mensajesEntrantes: number;
+  mensajesSalientes: number;
+  tasaRespuesta: number;
+  usoCuotaMes: number;
+  plan: string;
+}
+
+export function getBotMetricas(): Promise<BotMetricas> {
+  return api.get('/dashboard/bot-metricas').then((r) => r.data);
+}
