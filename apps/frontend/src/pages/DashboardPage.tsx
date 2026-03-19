@@ -72,7 +72,7 @@ function TendenciasChart({ showCitas = false, showOrdenes = true }: { showCitas?
           <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
           <Tooltip
             contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
-            formatter={(value: number, name: string) => {
+            formatter={(value, name) => {
               if (name === 'Ingresos (k)') return [`$${value}k`, name];
               return [value, name];
             }}
