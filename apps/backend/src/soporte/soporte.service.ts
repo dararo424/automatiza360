@@ -48,7 +48,7 @@ export class SoporteService {
 
     try {
       const response = await this.anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-haiku-4-5-20251001' as string,
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages,
@@ -56,8 +56,8 @@ export class SoporteService {
 
       const block = response.content[0];
       respuesta = block.type === 'text' ? block.text : '';
-    } catch (err) {
-      this.logger.error('Error calling Anthropic API', err);
+    } catch (err: any) {
+      this.logger.error('Error calling Anthropic API: %s', err?.message ?? err);
       respuesta = 'Lo siento, no pude procesar tu consulta en este momento. Por favor intenta de nuevo.';
     }
 
