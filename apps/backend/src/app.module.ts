@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { RemindersModule } from './reminders/reminders.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductosModule } from './productos/productos.module';
 import { OrdenesModule } from './ordenes/ordenes.module';
@@ -20,7 +22,9 @@ import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     PrismaModule,
+    RemindersModule,
     AuthModule,
     ProductosModule,
     OrdenesModule,
