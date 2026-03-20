@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { OrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrearGastoDto } from './dto/crear-gasto.dto';
 
@@ -39,7 +40,7 @@ export class GastosService {
     const ordenes = await this.prisma.order.findMany({
       where: {
         tenantId,
-        status: { in: ['DELIVERED', 'COMPLETED'] as any },
+        status: OrderStatus.DELIVERED,
       },
       select: { total: true },
     });
