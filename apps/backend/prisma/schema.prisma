@@ -21,28 +21,36 @@ model Tenant {
   subscriptionPlan   String?
   subscriptionEndsAt     DateTime?
   conversationCountMonth Int                @default(0)
+  // Public profile fields
+  descripcion       String?
+  horario           String?
+  logoUrl           String?
+  direccion         String?
+  ciudad            String?
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
 
-  users          User[]
-  orders         Order[]
-  products       Product[]
-  tickets        Ticket[]
-  cotizaciones   Cotizacion[]
-  notificaciones Notificacion[]
-  suppliers      Supplier[]
-  menusDia       MenuDia[]
-  professionals  Professional[]
-  services       Service[]
-  appointments   Appointment[]
-  paymentIntents PaymentIntent[]
-  conversations  Conversation[]
-  contacts       Contact[]
-  referralCode   ReferralCode?
-  apiKeys        ApiKey[]
-  gastos         Gasto[]
-  campañas       Campaña[]
-  garantias      Garantia[]
+  users                User[]
+  orders               Order[]
+  products             Product[]
+  tickets              Ticket[]
+  cotizaciones         Cotizacion[]
+  notificaciones       Notificacion[]
+  suppliers            Supplier[]
+  menusDia             MenuDia[]
+  professionals        Professional[]
+  services             Service[]
+  appointments         Appointment[]
+  paymentIntents       PaymentIntent[]
+  conversations        Conversation[]
+  contacts             Contact[]
+  referralCode         ReferralCode?
+  apiKeys              ApiKey[]
+  gastos               Gasto[]
+  campañas             Campaña[]
+  garantias            Garantia[]
+  automaciones         Automacion[]
+  automacionEjecuciones AutomacionEjecucion[]
 }
 
 // Usuario dentro de un negocio
@@ -451,6 +459,50 @@ model Campaña {
   enviadaAt    DateTime?
   createdAt    DateTime      @default(now())
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
+}
+
+// Flujos de automatización WhatsApp
+enum AutomacionTrigger {
+  ORDER_DELIVERED
+  APPOINTMENT_COMPLETED
+  NEW_CONTACT
+}
+
+model Automacion {
+  id          String                @id @default(uuid())
+  tenantId    String
+  nombre      String
+  trigger     AutomacionTrigger
+  activa      Boolean               @default(true)
+  pasos       AutomacionPaso[]
+  ejecuciones AutomacionEjecucion[]
+  createdAt   DateTime              @default(now())
+  tenant      Tenant                @relation(fields: [tenantId], references: [id])
+}
+
+model AutomacionPaso {
+  id           String     @id @default(uuid())
+  automacionId String
+  orden        Int
+  tipo         String     // "WAIT" | "SEND_WHATSAPP"
+  config       Json       // { days: 2 } or { mensaje: "Hola {nombre}, ..." }
+  automacion   Automacion @relation(fields: [automacionId], references: [id], onDelete: Cascade)
+}
+
+model AutomacionEjecucion {
+  id            String     @id @default(uuid())
+  automacionId  String
+  tenantId      String
+  contactPhone  String
+  contactNombre String?
+  pasoActual    Int        @default(0)
+  scheduledAt   DateTime
+  ejecutadaAt   DateTime?
+  status        String     @default("PENDIENTE") // "PENDIENTE" | "COMPLETADA" | "ERROR"
+  metadata      Json?
+  automacion    Automacion @relation(fields: [automacionId], references: [id])
+  tenant        Tenant     @relation(fields: [tenantId], references: [id])
+  createdAt     DateTime   @default(now())
 }
 
 // Garantías de productos (tienda tech)

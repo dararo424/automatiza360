@@ -17,6 +17,11 @@ const PLAN_COLORS: Record<string, string> = {
   BUSINESS: 'bg-amber-600',
 };
 
+const COMMON_BOTTOM: NavItem[] = [
+  { to: '/automaciones', label: 'Automatizaciones', emoji: '⚡' },
+  { to: '/configuracion', label: 'Configuración', emoji: '⚙️' },
+];
+
 function getNavItems(industry: Industry): NavItem[] {
   const base: NavItem[] = [{ to: '/dashboard', label: 'Dashboard', emoji: '🏠' }];
 
@@ -30,6 +35,7 @@ function getNavItems(industry: Industry): NavItem[] {
       { to: '/contactos', label: 'Contactos', emoji: '👥' },
       { to: '/campañas', label: 'Campañas', emoji: '📢' },
       { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      ...COMMON_BOTTOM,
     ];
   }
 
@@ -44,6 +50,7 @@ function getNavItems(industry: Industry): NavItem[] {
       { to: '/contactos', label: 'Contactos', emoji: '👥' },
       { to: '/campañas', label: 'Campañas', emoji: '📢' },
       { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      ...COMMON_BOTTOM,
     ];
   }
 
@@ -55,6 +62,7 @@ function getNavItems(industry: Industry): NavItem[] {
       { to: '/contactos', label: 'Contactos', emoji: '👥' },
       { to: '/campañas', label: 'Campañas', emoji: '📢' },
       { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      ...COMMON_BOTTOM,
     ];
   }
 
@@ -64,6 +72,7 @@ function getNavItems(industry: Industry): NavItem[] {
     { to: '/contactos', label: 'Contactos', emoji: '👥' },
     { to: '/campañas', label: 'Campañas', emoji: '📢' },
     { to: '/gastos', label: 'Gastos', emoji: '💳' },
+    ...COMMON_BOTTOM,
   ];
 }
 

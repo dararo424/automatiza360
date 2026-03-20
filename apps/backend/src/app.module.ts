@@ -28,6 +28,8 @@ import { SoporteModule } from './soporte/soporte.module';
 import { GastosModule } from './gastos/gastos.module';
 import { CampañasModule } from './campañas/campañas.module';
 import { GarantiasModule } from './garantias/garantias.module';
+import { PerfilModule } from './perfil/perfil.module';
+import { AutomacionesModule } from './automaciones/automaciones.module';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { GarantiasModule } from './garantias/garantias.module';
     GastosModule,
     CampañasModule,
     GarantiasModule,
+    PerfilModule,
+    AutomacionesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

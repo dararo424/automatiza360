@@ -27,6 +27,9 @@ import { GastosPage } from './pages/gastos/GastosPage';
 import { CampañasPage } from './pages/campañas/CampañasPage';
 import { GarantiasPage } from './pages/garantias/GarantiasPage';
 import { MenuPublicoPage } from './pages/menu-publico/MenuPublicoPage';
+import { PerfilPublicoPage } from './pages/perfil-publico/PerfilPublicoPage';
+import { ConfiguracionPage } from './pages/configuracion/ConfiguracionPage';
+import { AutomacionesPage } from './pages/automaciones/AutomacionesPage';
 
 export function App() {
   return (
@@ -36,6 +39,7 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/menu/:slug" element={<MenuPublicoPage />} />
+          <Route path="/negocio/:slug" element={<PerfilPublicoPage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -57,6 +61,8 @@ export function App() {
             <Route path="/gastos" element={<GastosPage />} />
             <Route path="/campañas" element={<CampañasPage />} />
             <Route path="/garantias" element={<GarantiasPage />} />
+            <Route path="/configuracion" element={<ConfiguracionPage />} />
+            <Route path="/automaciones" element={<AutomacionesPage />} />
           </Route>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminPage />} />

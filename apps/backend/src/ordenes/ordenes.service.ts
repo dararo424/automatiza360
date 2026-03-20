@@ -4,9 +4,10 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { OrderStatus } from '@prisma/client';
+import { AutomacionTrigger, OrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ContactosService } from '../contactos/contactos.service';
+import { AutomacionesService } from '../automaciones/automaciones.service';
 import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { CrearOrdenBotDto } from './dto/crear-orden-bot.dto';
 import { ActualizarEstadoDto } from './dto/actualizar-estado.dto';
@@ -31,6 +32,7 @@ export class OrdenesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly contactosService: ContactosService,
+    private readonly automacionesService: AutomacionesService,
   ) {}
 
   async crear(dto: CrearOrdenDto, tenantId: string) {
@@ -178,6 +180,15 @@ export class OrdenesService {
     return [header, ...rows].join('\n');
   }
 
+  async generarLinkPago(tenantId: string, orderId: string): Promise<{ url: string }> {
+    const orden = await this.buscarUno(orderId, tenantId);
+    const publicKey = process.env.WOMPI_PUBLIC_KEY;
+    if (!publicKey) throw new BadRequestException('WOMPI_PUBLIC_KEY no configurada');
+    const amountInCents = Math.round(orden.total * 100);
+    const url = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=COP&amount-in-cents=${amountInCents}&reference=${orderId}`;
+    return { url };
+  }
+
   async actualizarEstado(
     id: string,
     dto: ActualizarEstadoDto,
@@ -207,6 +218,19 @@ export class OrdenesService {
           .agregarPuntos(tenantId, orden.phone, puntos)
           .catch((err) => this.logger.error('Error agregando puntos de fidelización: %s', err?.message ?? err));
       }
+
+      // Trigger automaciones
+      this.automacionesService
+        .dispararTrigger(
+          tenantId,
+          AutomacionTrigger.ORDER_DELIVERED,
+          orden.phone,
+          undefined,
+          { orderId: id },
+        )
+        .catch((err) =>
+          this.logger.error('Error disparando automatización ORDER_DELIVERED: %s', err?.message ?? err),
+        );
     }
 
     return updated;

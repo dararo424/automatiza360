@@ -50,6 +50,11 @@ export class OrdenesController {
     return this.ordenesService.listar(user.tenantId, estado);
   }
 
+  @Get(':id/link-pago')
+  generarLinkPago(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.ordenesService.generarLinkPago(user.tenantId, id);
+  }
+
   @Get(':id')
   buscarUno(@Param('id') id: string, @CurrentUser() user: any) {
     return this.ordenesService.buscarUno(id, user.tenantId);

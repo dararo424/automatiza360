@@ -20,3 +20,6 @@ export function crearOrden(dto: {
 export function cambiarEstadoOrden(id: string, estado: OrderStatus): Promise<Orden> {
   return api.patch(`/ordenes/${id}/estado`, { estado }).then((r) => r.data);
 }
+
+export const getLinkPago = (id: string): Promise<{ url: string }> =>
+  api.get(`/ordenes/${id}/link-pago`).then((r) => r.data);

@@ -1,10 +1,17 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { AutomacionTrigger } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AutomacionesService } from '../automaciones/automaciones.service';
 import { UpsertContactDto } from './dto/upsert-contact.dto';
 
 @Injectable()
 export class ContactosService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ContactosService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly automacionesService: AutomacionesService,
+  ) {}
 
   async list(tenantId: string, search?: string) {
     return this.prisma.contact.findMany({
@@ -25,7 +32,12 @@ export class ContactosService {
   }
 
   async upsert(tenantId: string, dto: UpsertContactDto) {
-    return this.prisma.contact.upsert({
+    // Check if this is a new contact
+    const existing = await this.prisma.contact.findUnique({
+      where: { tenantId_phone: { tenantId, phone: dto.phone } },
+    });
+
+    const contact = await this.prisma.contact.upsert({
       where: { tenantId_phone: { tenantId, phone: dto.phone } },
       update: {
         name: dto.name,
@@ -42,6 +54,26 @@ export class ContactosService {
         tags: dto.tags,
       },
     });
+
+    // Trigger automaciones only for brand-new contacts
+    if (!existing) {
+      this.automacionesService
+        .dispararTrigger(
+          tenantId,
+          AutomacionTrigger.NEW_CONTACT,
+          dto.phone,
+          dto.name,
+          {},
+        )
+        .catch((err) =>
+          this.logger.error(
+            'Error disparando automatización NEW_CONTACT: %s',
+            err?.message ?? err,
+          ),
+        );
+    }
+
+    return contact;
   }
 
   async remove(tenantId: string, id: string) {

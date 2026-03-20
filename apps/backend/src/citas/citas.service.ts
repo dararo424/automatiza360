@@ -2,18 +2,23 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { AppointmentStatus } from '@prisma/client';
+import { AppointmentStatus, AutomacionTrigger } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CalendarService } from '../calendar/calendar.service';
+import { AutomacionesService } from '../automaciones/automaciones.service';
 import { CrearCitaBotDto } from './dto/crear-cita-bot.dto';
 
 @Injectable()
 export class CitasService {
+  private readonly logger = new Logger(CitasService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly calendar: CalendarService,
+    private readonly automacionesService: AutomacionesService,
   ) {}
 
   listarServicios(tenantId: string) {
@@ -171,6 +176,24 @@ export class CitasService {
       await this.prisma.notificacion.create({
         data: { type: 'CITA_ESTADO', ...notif, tenantId },
       });
+    }
+
+    // Trigger automaciones on COMPLETED
+    if (status === AppointmentStatus.COMPLETED) {
+      this.automacionesService
+        .dispararTrigger(
+          tenantId,
+          AutomacionTrigger.APPOINTMENT_COMPLETED,
+          cita.clientPhone,
+          cita.clientName,
+          { citaId: id },
+        )
+        .catch((err) =>
+          this.logger.error(
+            'Error disparando automatización APPOINTMENT_COMPLETED: %s',
+            err?.message ?? err,
+          ),
+        );
     }
 
     return updated;

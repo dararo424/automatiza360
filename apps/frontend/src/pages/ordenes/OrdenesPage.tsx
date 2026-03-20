@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getOrdenes, cambiarEstadoOrden } from '../../api/ordenes';
+import { getOrdenes, cambiarEstadoOrden, getLinkPago } from '../../api/ordenes';
 import { Badge } from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import type { Orden, OrderStatus } from '../../types';
@@ -14,6 +14,34 @@ const ESTADOS: { value: OrderStatus | ''; label: string }[] = [
   { value: 'DELIVERED', label: 'Entregado' },
   { value: 'CANCELLED', label: 'Cancelado' },
 ];
+
+function PagarBtn({ orden }: { orden: Orden }) {
+  const [loading, setLoading] = useState(false);
+  const noActiva = orden.status === 'DELIVERED' || orden.status === 'CANCELLED';
+  if (noActiva) return null;
+
+  const handlePagar = async () => {
+    setLoading(true);
+    try {
+      const { url } = await getLinkPago(orden.id);
+      window.open(url, '_blank');
+    } catch {
+      alert('No se pudo generar el link de pago');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); void handlePagar(); }}
+      disabled={loading}
+      className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-60"
+    >
+      {loading ? '...' : '💳 Pagar'}
+    </button>
+  );
+}
 
 function OrdenModal({ orden, onClose }: { orden: Orden; onClose: () => void }) {
   const qc = useQueryClient();
@@ -138,6 +166,7 @@ export function OrdenesPage() {
                     <th className="px-4 py-3 font-medium">Estado</th>
                     <th className="px-4 py-3 font-medium">Total</th>
                     <th className="px-4 py-3 font-medium">Fecha</th>
+                    <th className="px-4 py-3 font-medium"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -152,6 +181,7 @@ export function OrdenesPage() {
                       <td className="px-4 py-3"><Badge status={o.status} type="order" /></td>
                       <td className="px-4 py-3 font-medium">${o.total.toFixed(2)}</td>
                       <td className="px-4 py-3 text-slate-500">{new Date(o.createdAt).toLocaleDateString('es')}</td>
+                      <td className="px-4 py-3"><PagarBtn orden={o} /></td>
                     </tr>
                   ))}
                 </tbody>
