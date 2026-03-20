@@ -31,7 +31,9 @@
       "Bash(find /e/Proyectos/automatiza360/apps/frontend/src -iname *layout* -o -iname *sidebar* -o -iname *navbar* -o -iname *topbar*)",
       "Bash(grep -r lucide e:/Proyectos/automatiza360/apps/frontend/src/ --include=*.tsx -l)",
       "Bash(pnpm exec:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Read(//e/Proyectos/**)",
+      "Bash(pnpm tsc:*)"
     ]
   }
 }

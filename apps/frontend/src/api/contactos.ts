@@ -19,6 +19,9 @@ export const getContactos = (search?: string): Promise<Contacto[]> =>
 export const upsertContacto = (data: Partial<Contacto> & { phone: string }): Promise<Contacto> =>
   api.post('/contactos', data).then((r) => r.data);
 
+export const actualizarContacto = (id: string, data: Partial<Contacto> & { phone: string }): Promise<Contacto> =>
+  api.patch(`/contactos/${id}`, data).then((r) => r.data);
+
 export const eliminarContacto = (id: string): Promise<void> =>
   api.delete(`/contactos/${id}`).then((r) => r.data);
 

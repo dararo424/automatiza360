@@ -3,10 +3,32 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getContactos,
   upsertContacto,
+  actualizarContacto,
   eliminarContacto,
   canjearPuntos,
   type Contacto,
 } from '../../api/contactos';
+
+const PAISES = [
+  { nombre: 'Colombia', codigo: 'CO', prefijo: '+57' },
+  { nombre: 'México', codigo: 'MX', prefijo: '+52' },
+  { nombre: 'Argentina', codigo: 'AR', prefijo: '+54' },
+  { nombre: 'Chile', codigo: 'CL', prefijo: '+56' },
+  { nombre: 'Perú', codigo: 'PE', prefijo: '+51' },
+  { nombre: 'Ecuador', codigo: 'EC', prefijo: '+593' },
+  { nombre: 'Venezuela', codigo: 'VE', prefijo: '+58' },
+  { nombre: 'Bolivia', codigo: 'BO', prefijo: '+591' },
+  { nombre: 'Paraguay', codigo: 'PY', prefijo: '+595' },
+  { nombre: 'Uruguay', codigo: 'UY', prefijo: '+598' },
+  { nombre: 'Costa Rica', codigo: 'CR', prefijo: '+506' },
+  { nombre: 'Panamá', codigo: 'PA', prefijo: '+507' },
+  { nombre: 'Guatemala', codigo: 'GT', prefijo: '+502' },
+  { nombre: 'Honduras', codigo: 'HN', prefijo: '+504' },
+  { nombre: 'El Salvador', codigo: 'SV', prefijo: '+503' },
+  { nombre: 'República Dominicana', codigo: 'DO', prefijo: '+1809' },
+  { nombre: 'España', codigo: 'ES', prefijo: '+34' },
+  { nombre: 'Estados Unidos', codigo: 'US', prefijo: '+1' },
+];
 
 function CanjearModal({ contacto, onClose }: { contacto: Contacto; onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -56,6 +78,11 @@ function CanjearModal({ contacto, onClose }: { contacto: Contacto; onClose: () =
   );
 }
 
+function detectarPrefijo(phone: string) {
+  if (!phone) return PAISES[0];
+  return PAISES.find((p) => phone.startsWith(p.prefijo)) ?? PAISES[0];
+}
+
 function ContactoModal({
   contacto,
   onClose,
@@ -64,14 +91,26 @@ function ContactoModal({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [phone, setPhone] = useState(contacto?.phone ?? '');
+
+  const paisInicial = contacto ? detectarPrefijo(contacto.phone) : PAISES[0];
+  const numeroInicial = contacto
+    ? contacto.phone.replace(paisInicial.prefijo, '')
+    : '';
+
+  const [pais, setPais] = useState(paisInicial);
+  const [numero, setNumero] = useState(numeroInicial);
   const [name, setName] = useState(contacto?.name ?? '');
   const [email, setEmail] = useState(contacto?.email ?? '');
   const [notes, setNotes] = useState(contacto?.notes ?? '');
   const [tags, setTags] = useState(contacto?.tags ?? '');
 
+  const phone = `${pais.prefijo}${numero.replace(/\D/g, '')}`;
+
   const mutation = useMutation({
-    mutationFn: () => upsertContacto({ phone, name, email, notes, tags }),
+    mutationFn: () =>
+      contacto
+        ? actualizarContacto(contacto.id, { phone, name, email, notes, tags })
+        : upsertContacto({ phone, name, email, notes, tags }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contactos'] });
       onClose();
@@ -83,13 +122,39 @@ function ContactoModal({
       <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md">
         <h2 className="text-white font-bold mb-4">{contacto ? 'Editar contacto' : 'Nuevo contacto'}</h2>
         <div className="space-y-3">
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="Teléfono *"
-            className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg border border-slate-600 focus:outline-none text-sm"
-            required
-          />
+          <div>
+            <label className="text-slate-400 text-xs mb-1 block">País</label>
+            <select
+              value={pais.codigo}
+              onChange={(e) => {
+                const p = PAISES.find((x) => x.codigo === e.target.value)!;
+                setPais(p);
+              }}
+              className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg border border-slate-600 focus:outline-none text-sm"
+            >
+              {PAISES.map((p) => (
+                <option key={p.codigo} value={p.codigo}>
+                  {p.nombre} ({p.prefijo})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-slate-400 text-xs mb-1 block">Teléfono *</label>
+            <div className="flex gap-2">
+              <span className="bg-slate-600 text-slate-300 px-3 py-2 rounded-lg text-sm font-mono flex items-center">
+                {pais.prefijo}
+              </span>
+              <input
+                value={numero}
+                onChange={(e) => setNumero(e.target.value)}
+                placeholder="3001234567"
+                type="tel"
+                className="flex-1 bg-slate-700 text-white px-3 py-2 rounded-lg border border-slate-600 focus:outline-none text-sm"
+              />
+            </div>
+            <p className="text-slate-500 text-xs mt-1">Número completo: {phone}</p>
+          </div>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -117,10 +182,13 @@ function ContactoModal({
             className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg border border-slate-600 focus:outline-none text-sm resize-none"
           />
         </div>
+        {mutation.isError && (
+          <p className="text-red-400 text-xs mt-2">Error al guardar. Verifica los datos.</p>
+        )}
         <div className="flex gap-3 mt-4">
           <button
             onClick={() => mutation.mutate()}
-            disabled={!phone || mutation.isPending}
+            disabled={!numero || mutation.isPending}
             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold py-2 rounded-lg text-sm transition-colors"
           >
             {mutation.isPending ? 'Guardando...' : 'Guardar'}

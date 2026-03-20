@@ -76,6 +76,21 @@ export class ContactosService {
     return contact;
   }
 
+  async update(tenantId: string, id: string, dto: UpsertContactDto) {
+    const existing = await this.prisma.contact.findFirst({ where: { id, tenantId } });
+    if (!existing) throw new NotFoundException('Contacto no encontrado');
+    return this.prisma.contact.update({
+      where: { id },
+      data: {
+        phone: dto.phone,
+        name: dto.name,
+        email: dto.email,
+        notes: dto.notes,
+        tags: dto.tags,
+      },
+    });
+  }
+
   async remove(tenantId: string, id: string) {
     return this.prisma.contact.deleteMany({ where: { id, tenantId } });
   }
