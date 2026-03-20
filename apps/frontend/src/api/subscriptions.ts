@@ -18,3 +18,7 @@ export function getTrialInfo(): Promise<TrialInfo> {
 export function getPlanInfo(): Promise<PlanInfo> {
   return api.get('/subscriptions/plan-info').then((r) => r.data);
 }
+
+export function iniciarUpgrade(plan: string): Promise<{ url: string; referencia: string }> {
+  return api.post('/subscriptions/upgrade', { plan }).then((r) => r.data);
+}

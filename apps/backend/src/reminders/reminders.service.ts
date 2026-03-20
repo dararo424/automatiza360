@@ -14,6 +14,92 @@ export class RemindersService {
     private readonly emailService: EmailService,
   ) {}
 
+  @Cron('0 8 * * 1')
+  async sendWeeklyReport(): Promise<void> {
+    this.logger.log('Generando reportes ejecutivos semanales...');
+
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 7);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(now);
+    weekEnd.setHours(0, 0, 0, 0);
+
+    const prevWeekStart = new Date(weekStart);
+    prevWeekStart.setDate(weekStart.getDate() - 7);
+    const prevWeekEnd = new Date(weekStart);
+
+    const tenants = await this.prisma.tenant.findMany({
+      where: {
+        subscriptionStatus: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
+      },
+      include: {
+        users: { where: { role: 'OWNER' }, select: { email: true }, take: 1 },
+      },
+    });
+
+    this.logger.log(`Tenants para reporte: ${tenants.length}`);
+
+    for (const tenant of tenants) {
+      const ownerEmail = tenant.users[0]?.email;
+      if (!ownerEmail) continue;
+
+      try {
+        const [ordenesCur, ordenesPrev, citasCur, citasPrev, contactosCur, contactosPrev] =
+          await Promise.all([
+            this.prisma.order.aggregate({
+              where: { tenantId: tenant.id, createdAt: { gte: weekStart, lt: weekEnd } },
+              _count: { id: true },
+              _sum: { total: true },
+            }),
+            this.prisma.order.aggregate({
+              where: { tenantId: tenant.id, createdAt: { gte: prevWeekStart, lt: prevWeekEnd } },
+              _count: { id: true },
+              _sum: { total: true },
+            }),
+            this.prisma.appointment.count({
+              where: { tenantId: tenant.id, createdAt: { gte: weekStart, lt: weekEnd } },
+            }),
+            this.prisma.appointment.count({
+              where: { tenantId: tenant.id, createdAt: { gte: prevWeekStart, lt: prevWeekEnd } },
+            }),
+            this.prisma.contact.count({
+              where: { tenantId: tenant.id, createdAt: { gte: weekStart, lt: weekEnd } },
+            }),
+            this.prisma.contact.count({
+              where: { tenantId: tenant.id, createdAt: { gte: prevWeekStart, lt: prevWeekEnd } },
+            }),
+          ]);
+
+        const calcChange = (cur: number, prev: number) =>
+          prev === 0 ? 0 : ((cur - prev) / prev) * 100;
+
+        const semanaLabel = `${weekStart.toLocaleDateString('es-CO')} – ${weekEnd.toLocaleDateString('es-CO')}`;
+
+        await this.emailService.sendReporteEjecutivo(ownerEmail, {
+          storeName: tenant.name,
+          semana: semanaLabel,
+          ordenes: ordenesCur._count.id,
+          ingresos: ordenesCur._sum.total ?? 0,
+          citas: citasCur,
+          contactos: contactosCur,
+          ordenesChange: calcChange(ordenesCur._count.id, ordenesPrev._count.id),
+          ingresosChange: calcChange(ordenesCur._sum.total ?? 0, ordenesPrev._sum.total ?? 0),
+          citasChange: calcChange(citasCur, citasPrev),
+          contactosChange: calcChange(contactosCur, contactosPrev),
+        });
+
+        this.logger.log(`Reporte semanal enviado a ${ownerEmail} (${tenant.name})`);
+      } catch (error) {
+        this.logger.error(
+          `Error enviando reporte a ${ownerEmail}: ${(error as Error).message}`,
+        );
+      }
+    }
+
+    this.logger.log('Reportes semanales completados.');
+  }
+
   @Cron(CronExpression.EVERY_HOUR)
   async sendAppointmentReminders(): Promise<void> {
     this.logger.log('Iniciando envío de recordatorios de citas...');

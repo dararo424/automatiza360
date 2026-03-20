@@ -111,4 +111,69 @@ export class EmailService {
       `,
     });
   }
+
+  async sendReporteEjecutivo(
+    to: string,
+    data: {
+      storeName: string;
+      semana: string;
+      ordenes: number;
+      ingresos: number;
+      citas: number;
+      contactos: number;
+      ordenesChange: number;
+      ingresosChange: number;
+      citasChange: number;
+      contactosChange: number;
+    },
+  ) {
+    const fmt = (n: number) => n.toLocaleString('es-CO');
+    const fmtCOP = (n: number) => `$${n.toLocaleString('es-CO')} COP`;
+    const pct = (n: number) => {
+      if (n === 0) return '<span style="color:#64748b">Sin cambio</span>';
+      const color = n > 0 ? '#16a34a' : '#dc2626';
+      const arrow = n > 0 ? '▲' : '▼';
+      return `<span style="color:${color}">${arrow} ${Math.abs(n).toFixed(1)}%</span>`;
+    };
+
+    await this.send({
+      to,
+      subject: `Resumen semanal — ${data.storeName}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:24px;border-radius:12px;">
+          <h1 style="color:#0f172a;font-size:22px;margin-bottom:4px;">Resumen semanal de ${data.storeName}</h1>
+          <p style="color:#64748b;font-size:14px;margin-bottom:24px;">${data.semana}</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:8px;">
+            <tr>
+              <td style="background:#fff;border-radius:8px;padding:16px;border:1px solid #e2e8f0;">
+                <p style="color:#64748b;font-size:12px;margin:0 0 4px;">Ventas</p>
+                <p style="color:#0f172a;font-size:24px;font-weight:bold;margin:0;">${fmt(data.ordenes)}</p>
+                <p style="font-size:12px;margin:4px 0 0;">${pct(data.ordenesChange)} vs semana anterior</p>
+              </td>
+              <td style="background:#fff;border-radius:8px;padding:16px;border:1px solid #e2e8f0;">
+                <p style="color:#64748b;font-size:12px;margin:0 0 4px;">Ingresos</p>
+                <p style="color:#0f172a;font-size:24px;font-weight:bold;margin:0;">${fmtCOP(data.ingresos)}</p>
+                <p style="font-size:12px;margin:4px 0 0;">${pct(data.ingresosChange)} vs semana anterior</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#fff;border-radius:8px;padding:16px;border:1px solid #e2e8f0;">
+                <p style="color:#64748b;font-size:12px;margin:0 0 4px;">Citas agendadas</p>
+                <p style="color:#0f172a;font-size:24px;font-weight:bold;margin:0;">${fmt(data.citas)}</p>
+                <p style="font-size:12px;margin:4px 0 0;">${pct(data.citasChange)} vs semana anterior</p>
+              </td>
+              <td style="background:#fff;border-radius:8px;padding:16px;border:1px solid #e2e8f0;">
+                <p style="color:#64748b;font-size:12px;margin:0 0 4px;">Nuevos contactos</p>
+                <p style="color:#0f172a;font-size:24px;font-weight:bold;margin:0;">${fmt(data.contactos)}</p>
+                <p style="font-size:12px;margin:4px 0 0;">${pct(data.contactosChange)} vs semana anterior</p>
+              </td>
+            </tr>
+          </table>
+          <p style="color:#64748b;font-size:12px;margin-top:24px;text-align:center;">
+            Automatiza360 &mdash; <a href="${process.env.FRONTEND_URL ?? 'https://app.automatiza360.com'}/dashboard" style="color:#4f46e5;">Ver dashboard</a>
+          </p>
+        </div>
+      `,
+    });
+  }
 }

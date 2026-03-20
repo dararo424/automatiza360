@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SubscriptionsService } from './subscriptions.service';
@@ -16,5 +16,13 @@ export class SubscriptionsController {
   @Get('plan-info')
   getPlanInfo(@CurrentUser() user: { tenantId: string }) {
     return this.subscriptionsService.getPlanInfo(user.tenantId);
+  }
+
+  @Post('upgrade')
+  iniciarUpgrade(
+    @Body('plan') plan: string,
+    @CurrentUser() user: { tenantId: string },
+  ) {
+    return this.subscriptionsService.iniciarUpgrade(user.tenantId, plan);
   }
 }

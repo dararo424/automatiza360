@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Plan, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -93,5 +93,43 @@ export class SubscriptionsService {
         conversationLimit: limits.conversations,
       },
     };
+  }
+
+  async iniciarUpgrade(tenantId: string, nuevoPlan: string) {
+    const PLAN_PRECIOS: Record<string, number> = {
+      PRO: 14900000,      // $149,000 COP en centavos
+      BUSINESS: 29900000, // $299,000 COP en centavos
+    };
+
+    const monto = PLAN_PRECIOS[nuevoPlan];
+    if (!monto) throw new BadRequestException('Plan no válido para upgrade');
+
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { id: true, name: true },
+    });
+
+    const referencia = `upgrade-${tenant.id}-${nuevoPlan}-${Date.now()}`;
+
+    await this.prisma.paymentIntent.create({
+      data: {
+        tenantId,
+        plan: nuevoPlan,
+        referencia,
+        monto,
+        status: 'PENDING',
+      },
+    });
+
+    const wompiKey = process.env.WOMPI_PUBLIC_KEY ?? 'pub_test_placeholder';
+    const redirectUrl = encodeURIComponent(
+      `${process.env.FRONTEND_URL ?? 'https://app.automatiza360.com'}/pago-resultado`,
+    );
+    const url =
+      `https://checkout.wompi.co/p/?public-key=${wompiKey}` +
+      `&currency=COP&amount-in-cents=${monto}` +
+      `&reference=${referencia}&redirect-url=${redirectUrl}`;
+
+    return { url, referencia };
   }
 }

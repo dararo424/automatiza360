@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { SuperadminGuard } from './superadmin.guard';
 import { AdminService } from './admin.service';
 
@@ -38,5 +38,14 @@ export class AdminController {
   @Post('tenants/:id/extend-trial')
   extenderTrial(@Param('id') id: string, @Body('days') days: number) {
     return this.adminService.extenderTrial(id, days);
+  }
+
+  @Patch('tenants/:id/plan')
+  cambiarPlan(
+    @Param('id') id: string,
+    @Body('plan') plan: string,
+    @Body('status') status?: string,
+  ) {
+    return this.adminService.updateStatus(id, status ?? 'ACTIVE', plan);
   }
 }

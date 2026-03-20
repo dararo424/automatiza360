@@ -18,6 +18,9 @@ const PLAN_COLORS: Record<string, string> = {
 };
 
 const COMMON_BOTTOM: NavItem[] = [
+  { to: '/resenas', label: 'Reseñas', emoji: '⭐' },
+  { to: '/turnos', label: 'Turnos', emoji: '🗓️' },
+  { to: '/compras', label: 'Proveedores', emoji: '🚚' },
   { to: '/automaciones', label: 'Automatizaciones', emoji: '⚡' },
   { to: '/configuracion', label: 'Configuración', emoji: '⚙️' },
 ];

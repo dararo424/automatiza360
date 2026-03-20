@@ -16,6 +16,7 @@ import { getMetricasDashboard, getTendencias } from '../api/dashboard';
 import { StatCard } from '../components/ui/StatCard';
 import { Badge } from '../components/ui/Badge';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { getResenasStats } from '../api/resenas';
 
 const APPOINTMENT_COLORS: Record<string, string> = {
   SCHEDULED: 'bg-blue-100 text-blue-800',
@@ -346,6 +347,26 @@ function RecentActivity({
   );
 }
 
+function ResenasCard() {
+  const { data: stats } = useQuery({
+    queryKey: ['resenas-stats'],
+    queryFn: getResenasStats,
+  });
+
+  if (!stats || stats.total === 0) return null;
+
+  return (
+    <Link to="/resenas" className="block bg-slate-800 hover:bg-slate-700 rounded-xl p-4 transition-colors">
+      <p className="text-slate-400 text-xs mb-1">Reseñas de clientes</p>
+      <div className="flex items-center gap-2">
+        <span className="text-white font-bold text-2xl">{stats.promedio}</span>
+        <span className="text-yellow-400 text-lg">★</span>
+        <span className="text-slate-400 text-sm">({stats.total} reseña{stats.total !== 1 ? 's' : ''})</span>
+      </div>
+    </Link>
+  );
+}
+
 function DashboardContent() {
   const { user } = useAuth();
   const industry = user?.tenant?.industry;
@@ -363,6 +384,7 @@ export function DashboardPage() {
     <div className="space-y-6">
       <OnboardingChecklist />
       <DashboardContent />
+      <ResenasCard />
     </div>
   );
 }

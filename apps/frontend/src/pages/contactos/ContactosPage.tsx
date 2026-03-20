@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getContactos,
@@ -8,6 +8,7 @@ import {
   canjearPuntos,
   type Contacto,
 } from '../../api/contactos';
+import { importarContactos, type ImportResult } from '../../api/importacion';
 
 const PAISES = [
   { nombre: 'Colombia', codigo: 'CO', prefijo: '+57' },
@@ -202,11 +203,88 @@ function ContactoModal({
   );
 }
 
+function ImportarModal({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
+  const [error, setError] = useState('');
+
+  const mutation = useMutation({
+    mutationFn: (file: File) => importarContactos(file),
+    onSuccess: (data) => {
+      setResult(data);
+      qc.invalidateQueries({ queryKey: ['contactos'] });
+    },
+    onError: () => setError('Error al procesar el archivo. Verifica el formato.'),
+  });
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) mutation.mutate(file);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md">
+        <h2 className="text-white font-bold mb-2">Importar contactos desde CSV</h2>
+        <p className="text-slate-400 text-sm mb-4">
+          El archivo debe tener las columnas: <code className="text-indigo-300">telefono,nombre,email,notas,etiquetas</code>
+        </p>
+        <div className="bg-slate-700 rounded-lg p-3 mb-4 text-xs text-slate-300 font-mono">
+          telefono,nombre,email,notas,etiquetas<br />
+          +573001234567,Juan,juan@email.com,,cliente
+        </div>
+        {!result ? (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv"
+              onChange={handleFile}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={mutation.isPending}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white py-2 rounded-lg text-sm font-semibold mb-3"
+            >
+              {mutation.isPending ? 'Procesando...' : 'Seleccionar archivo CSV'}
+            </button>
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+          </>
+        ) : (
+          <div className="mb-4">
+            <p className="text-white font-semibold mb-2">Resultado</p>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-emerald-900 rounded-lg p-3">
+                <p className="text-emerald-300 text-2xl font-bold">{result.importados}</p>
+                <p className="text-emerald-400 text-xs">Importados</p>
+              </div>
+              <div className="bg-red-900 rounded-lg p-3">
+                <p className="text-red-300 text-2xl font-bold">{result.errores}</p>
+                <p className="text-red-400 text-xs">Errores</p>
+              </div>
+              <div className="bg-slate-700 rounded-lg p-3">
+                <p className="text-white text-2xl font-bold">{result.total}</p>
+                <p className="text-slate-400 text-xs">Total</p>
+              </div>
+            </div>
+          </div>
+        )}
+        <button onClick={onClose} className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition-colors">
+          {result ? 'Cerrar' : 'Cancelar'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ContactosPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState<{ open: boolean; contacto?: Contacto }>({ open: false });
   const [canjearModal, setCanjearModal] = useState<Contacto | null>(null);
+  const [importarModal, setImportarModal] = useState(false);
 
   const { data: contactos = [], isLoading } = useQuery({
     queryKey: ['contactos', search],
@@ -229,15 +307,26 @@ export function ContactosPage() {
       {canjearModal && (
         <CanjearModal contacto={canjearModal} onClose={() => setCanjearModal(null)} />
       )}
+      {importarModal && (
+        <ImportarModal onClose={() => setImportarModal(false)} />
+      )}
 
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-white">Contactos ({contactos.length})</h1>
-        <button
-          onClick={() => setModal({ open: true })}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
-        >
-          + Nuevo contacto
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setImportarModal(true)}
+            className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+          >
+            Importar CSV
+          </button>
+          <button
+            onClick={() => setModal({ open: true })}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+          >
+            + Nuevo contacto
+          </button>
+        </div>
       </div>
 
       <input

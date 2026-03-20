@@ -30,6 +30,10 @@ import { CampañasModule } from './campañas/campañas.module';
 import { GarantiasModule } from './garantias/garantias.module';
 import { PerfilModule } from './perfil/perfil.module';
 import { AutomacionesModule } from './automaciones/automaciones.module';
+import { ResenasModule } from './resenas/resenas.module';
+import { ImportacionModule } from './importacion/importacion.module';
+import { ComprasModule } from './compras/compras.module';
+import { TurnosModule } from './turnos/turnos.module';
 
 @Module({
   imports: [
@@ -62,6 +66,10 @@ import { AutomacionesModule } from './automaciones/automaciones.module';
     GarantiasModule,
     PerfilModule,
     AutomacionesModule,
+    ResenasModule,
+    ImportacionModule,
+    ComprasModule,
+    TurnosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -30,6 +30,9 @@ import { MenuPublicoPage } from './pages/menu-publico/MenuPublicoPage';
 import { PerfilPublicoPage } from './pages/perfil-publico/PerfilPublicoPage';
 import { ConfiguracionPage } from './pages/configuracion/ConfiguracionPage';
 import { AutomacionesPage } from './pages/automaciones/AutomacionesPage';
+import { ResenasPage } from './pages/resenas/ResenasPage';
+import { ComprasPage } from './pages/compras/ComprasPage';
+import { TurnosPage } from './pages/turnos/TurnosPage';
 
 export function App() {
   return (
@@ -63,6 +66,9 @@ export function App() {
             <Route path="/garantias" element={<GarantiasPage />} />
             <Route path="/configuracion" element={<ConfiguracionPage />} />
             <Route path="/automaciones" element={<AutomacionesPage />} />
+            <Route path="/resenas" element={<ResenasPage />} />
+            <Route path="/compras" element={<ComprasPage />} />
+            <Route path="/turnos" element={<TurnosPage />} />
           </Route>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminPage />} />

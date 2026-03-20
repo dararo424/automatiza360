@@ -51,6 +51,10 @@ model Tenant {
   garantias            Garantia[]
   automaciones         Automacion[]
   automacionEjecuciones AutomacionEjecucion[]
+  resenas              Resena[]
+  proveedoresCompra    Proveedor[]
+  ordenesCompra        OrdenCompra[]
+  turnos               Turno[]
 }
 
 // Usuario dentro de un negocio
@@ -65,6 +69,7 @@ model User {
 
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  turnos    Turno[]
 }
 
 // Pedidos (restaurante)
@@ -520,4 +525,76 @@ model Garantia {
   ticketId         String?
   createdAt        DateTime @default(now())
   tenant           Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// Reseñas y valoraciones
+model Resena {
+  id           String   @id @default(uuid())
+  tenantId     String
+  clientPhone  String
+  clientName   String?
+  rating       Int      // 1-5
+  comentario   String?
+  tipo         String   // "ORDER" | "APPOINTMENT"
+  referenciaId String?
+  createdAt    DateTime @default(now())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// Proveedores y órdenes de compra
+enum OrdenCompraStatus {
+  PENDIENTE
+  RECIBIDA
+  CANCELADA
+}
+
+model Proveedor {
+  id          String        @id @default(uuid())
+  tenantId    String
+  nombre      String
+  contacto    String?
+  telefono    String?
+  email       String?
+  notas       String?
+  createdAt   DateTime      @default(now())
+  ordenes     OrdenCompra[]
+  tenant      Tenant        @relation(fields: [tenantId], references: [id])
+}
+
+model OrdenCompra {
+  id          String            @id @default(uuid())
+  tenantId    String
+  proveedorId String
+  status      OrdenCompraStatus @default(PENDIENTE)
+  total       Float             @default(0)
+  notas       String?
+  esperadaAt  DateTime?
+  recibidaAt  DateTime?
+  createdAt   DateTime          @default(now())
+  items       OrdenCompraItem[]
+  proveedor   Proveedor         @relation(fields: [proveedorId], references: [id])
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+}
+
+model OrdenCompraItem {
+  id             String      @id @default(uuid())
+  ordenCompraId  String
+  nombre         String
+  cantidad       Int
+  precioUnitario Float
+  orden          OrdenCompra @relation(fields: [ordenCompraId], references: [id], onDelete: Cascade)
+}
+
+// Turnos del equipo
+model Turno {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String
+  fecha      DateTime
+  horaInicio String
+  horaFin    String
+  notas      String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
 }

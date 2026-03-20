@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { getPlanInfo } from '../../api/subscriptions';
+import { getPlanInfo, iniciarUpgrade } from '../../api/subscriptions';
 import { getMiCodigo, getReferrals } from '../../api/referidos';
 import { getBotMetricas } from '../../api/dashboard';
 
@@ -17,9 +18,21 @@ const PLAN_COLORS: Record<string, string> = {
 };
 
 export function PlanPortalPage() {
+  const [upgradeError, setUpgradeError] = useState('');
+
   const { data: planInfo, isLoading } = useQuery({
     queryKey: ['plan-info'],
     queryFn: getPlanInfo,
+  });
+
+  const upgradeMutation = useMutation({
+    mutationFn: (plan: string) => iniciarUpgrade(plan),
+    onSuccess: (data) => {
+      window.open(data.url, '_blank');
+    },
+    onError: () => {
+      setUpgradeError('No se pudo iniciar el proceso de pago. Inténtalo de nuevo.');
+    },
   });
 
   const { data: codigo } = useQuery({
@@ -80,6 +93,32 @@ export function PlanPortalPage() {
           </Link>
         </div>
       </div>
+
+      {/* Upgrade de plan */}
+      {planInfo.plan !== 'BUSINESS' && (
+        <div className="bg-slate-800 rounded-xl p-5 mb-6">
+          <h2 className="text-white font-semibold mb-3">Mejorar tu plan</h2>
+          {upgradeError && <p className="text-red-400 text-sm mb-3">{upgradeError}</p>}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {planInfo.plan === 'STARTER' && (
+              <button
+                onClick={() => upgradeMutation.mutate('PRO')}
+                disabled={upgradeMutation.isPending}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold px-4 py-3 rounded-xl text-sm transition-colors"
+              >
+                Mejorar a Pro — $149,000/mes
+              </button>
+            )}
+            <button
+              onClick={() => upgradeMutation.mutate('BUSINESS')}
+              disabled={upgradeMutation.isPending}
+              className="flex-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold px-4 py-3 rounded-xl text-sm transition-colors"
+            >
+              Mejorar a Business — $299,000/mes
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Uso de conversaciones */}
       <div className="bg-slate-800 rounded-xl p-5 mb-6">
