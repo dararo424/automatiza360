@@ -12,10 +12,10 @@ export interface Campaña {
 }
 
 export const getCampañas = (): Promise<Campaña[]> =>
-  api.get('/campañas').then((r) => r.data);
+  api.get('/campanas').then((r) => r.data);
 
 export const createCampaña = (data: { nombre: string; mensaje: string }): Promise<Campaña> =>
-  api.post('/campañas', data).then((r) => r.data);
+  api.post('/campanas', data).then((r) => r.data);
 
 export const enviarCampaña = (id: string): Promise<Campaña> =>
-  api.post(`/campañas/${id}/enviar`).then((r) => r.data);
+  api.post(`/campanas/${id}/enviar`).then((r) => r.data);

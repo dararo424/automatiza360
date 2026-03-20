@@ -4,7 +4,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CampañasService } from './campañas.service';
 import { CrearCampañaDto } from './dto/crear-campaña.dto';
 
-@Controller('campañas')
+@Controller('campanas')
 @UseGuards(JwtAuthGuard)
 export class CampañasController {
   constructor(private readonly svc: CampañasService) {}
