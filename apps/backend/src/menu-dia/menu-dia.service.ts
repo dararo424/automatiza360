@@ -89,4 +89,35 @@ export class MenuDiaService {
       data: { disponible: !plato.disponible },
     });
   }
+
+  async obtenerMenuPublico(tenantSlug: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug: tenantSlug } });
+    if (!tenant) return null;
+
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+
+    const menu = await this.prisma.menuDia.findFirst({
+      where: {
+        tenantId: tenant.id,
+        activo: true,
+        fecha: { gte: start, lte: end },
+      },
+      include: { platos: { where: { disponible: true } } },
+    });
+
+    return { tenant: { name: tenant.name, industry: tenant.industry }, menu };
+  }
+
+  async getQrConfigByTenantId(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenantSlug = tenant?.slug ?? '';
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+    return {
+      tenantSlug,
+      publicUrl: `${frontendUrl}/menu/${tenantSlug}`,
+    };
+  }
 }

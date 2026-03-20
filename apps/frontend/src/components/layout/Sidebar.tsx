@@ -28,6 +28,8 @@ function getNavItems(industry: Industry): NavItem[] {
       { to: '/menu-dia', label: 'Menú del día', emoji: '🍴' },
       { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
       { to: '/contactos', label: 'Contactos', emoji: '👥' },
+      { to: '/campañas', label: 'Campañas', emoji: '📢' },
+      { to: '/gastos', label: 'Gastos', emoji: '💳' },
     ];
   }
 
@@ -37,8 +39,11 @@ function getNavItems(industry: Industry): NavItem[] {
       { to: '/tickets', label: 'Tickets', emoji: '🔧' },
       { to: '/cotizaciones', label: 'Cotizaciones', emoji: '📄' },
       { to: '/inventario', label: 'Inventario', emoji: '📦' },
+      { to: '/garantias', label: 'Garantías', emoji: '🛡️' },
       { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
       { to: '/contactos', label: 'Contactos', emoji: '👥' },
+      { to: '/campañas', label: 'Campañas', emoji: '📢' },
+      { to: '/gastos', label: 'Gastos', emoji: '💳' },
     ];
   }
 
@@ -48,6 +53,8 @@ function getNavItems(industry: Industry): NavItem[] {
       { to: '/agenda', label: 'Agenda', emoji: '📅' },
       { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
       { to: '/contactos', label: 'Contactos', emoji: '👥' },
+      { to: '/campañas', label: 'Campañas', emoji: '📢' },
+      { to: '/gastos', label: 'Gastos', emoji: '💳' },
     ];
   }
 
@@ -55,6 +62,8 @@ function getNavItems(industry: Industry): NavItem[] {
     ...base,
     { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
     { to: '/contactos', label: 'Contactos', emoji: '👥' },
+    { to: '/campañas', label: 'Campañas', emoji: '📢' },
+    { to: '/gastos', label: 'Gastos', emoji: '💳' },
   ];
 }
 

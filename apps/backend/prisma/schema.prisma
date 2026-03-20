@@ -40,6 +40,9 @@ model Tenant {
   contacts       Contact[]
   referralCode   ReferralCode?
   apiKeys        ApiKey[]
+  gastos         Gasto[]
+  campañas       Campaña[]
+  garantias      Garantia[]
 }
 
 // Usuario dentro de un negocio
@@ -285,16 +288,18 @@ model Message {
 
 // CRM de contactos
 model Contact {
-  id        String   @id @default(cuid())
-  phone     String
-  name      String?
-  email     String?
-  notes     String?
-  tags      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  id          String   @id @default(cuid())
+  phone       String
+  name        String?
+  email       String?
+  notes       String?
+  tags        String?
+  puntos      Int      @default(0)
+  puntosUsados Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, phone])
 }
@@ -413,4 +418,54 @@ enum AppointmentStatus {
 enum MessageDirection {
   INBOUND
   OUTBOUND
+}
+
+// Gastos / egresos
+model Gasto {
+  id          String   @id @default(uuid())
+  tenantId    String
+  descripcion String
+  monto       Float
+  categoria   String
+  fecha       DateTime @default(now())
+  notas       String?
+  createdAt   DateTime @default(now())
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// Campañas masivas de WhatsApp
+enum CampañaStatus {
+  BORRADOR
+  ENVIANDO
+  ENVIADA
+  ERROR
+}
+
+model Campaña {
+  id           String        @id @default(uuid())
+  tenantId     String
+  nombre       String
+  mensaje      String
+  status       CampañaStatus @default(BORRADOR)
+  totalEnviado Int           @default(0)
+  enviadaAt    DateTime?
+  createdAt    DateTime      @default(now())
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+}
+
+// Garantías de productos (tienda tech)
+model Garantia {
+  id               String   @id @default(uuid())
+  tenantId         String
+  clienteNombre    String
+  clientePhone     String
+  producto         String
+  numeroSerie      String?
+  fechaCompra      DateTime
+  mesesGarantia    Int      @default(12)
+  fechaVencimiento DateTime
+  notas            String?
+  ticketId         String?
+  createdAt        DateTime @default(now())
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
 }

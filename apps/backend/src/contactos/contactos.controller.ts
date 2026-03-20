@@ -23,4 +23,13 @@ export class ContactosController {
   remove(@CurrentUser() user: any, @Param('id') id: string) {
     return this.svc.remove(user.tenantId, id);
   }
+
+  @Post(':id/canjear-puntos')
+  canjearPuntos(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() body: { puntos: number },
+  ) {
+    return this.svc.canjearPuntos(user.tenantId, id, body.puntos);
+  }
 }

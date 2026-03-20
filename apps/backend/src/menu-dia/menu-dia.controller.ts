@@ -9,6 +9,12 @@ export class MenuDiaController {
   constructor(private readonly menuDiaService: MenuDiaService) {}
 
   @UseGuards(JwtAuthGuard)
+  @Get('qr-config')
+  qrConfig(@CurrentUser() user: any) {
+    return this.menuDiaService.getQrConfigByTenantId(user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post()
   crearOActualizarHoy(@Body() dto: CrearMenuDiaDto, @CurrentUser() user: any) {
     return this.menuDiaService.crearOActualizarHoy(dto, user.tenantId);

@@ -23,6 +23,10 @@ import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminPage } from './pages/admin/AdminPage';
 import { AdminTenantsPage } from './pages/admin/AdminTenantsPage';
 import { AdminTenantDetailPage } from './pages/admin/AdminTenantDetailPage';
+import { GastosPage } from './pages/gastos/GastosPage';
+import { CampañasPage } from './pages/campañas/CampañasPage';
+import { GarantiasPage } from './pages/garantias/GarantiasPage';
+import { MenuPublicoPage } from './pages/menu-publico/MenuPublicoPage';
 
 export function App() {
   return (
@@ -31,6 +35,7 @@ export function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/menu/:slug" element={<MenuPublicoPage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -49,6 +54,9 @@ export function App() {
             <Route path="/contactos" element={<ContactosPage />} />
             <Route path="/equipo" element={<EquipoPage />} />
             <Route path="/api-keys" element={<ApiKeysPage />} />
+            <Route path="/gastos" element={<GastosPage />} />
+            <Route path="/campañas" element={<CampañasPage />} />
+            <Route path="/garantias" element={<GarantiasPage />} />
           </Route>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminPage />} />

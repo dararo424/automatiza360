@@ -7,6 +7,8 @@ export interface Contacto {
   email?: string;
   notes?: string;
   tags?: string;
+  puntos: number;
+  puntosUsados: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -19,3 +21,6 @@ export const upsertContacto = (data: Partial<Contacto> & { phone: string }): Pro
 
 export const eliminarContacto = (id: string): Promise<void> =>
   api.delete(`/contactos/${id}`).then((r) => r.data);
+
+export const canjearPuntos = (id: string, puntos: number): Promise<Contacto> =>
+  api.post(`/contactos/${id}/canjear-puntos`, { puntos }).then((r) => r.data);

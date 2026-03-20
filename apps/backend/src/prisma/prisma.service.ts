@@ -36,6 +36,9 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get referralCode() { return this.client.referralCode; }
   get referral() { return this.client.referral; }
   get apiKey() { return this.client.apiKey; }
+  get gasto() { return this.client.gasto; }
+  get campaña() { return this.client.campaña; }
+  get garantia() { return this.client.garantia; }
 
   // Transaction support
   $transaction: PrismaClient['$transaction'] = (...args: any[]) =>

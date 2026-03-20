@@ -25,6 +25,9 @@ import { ContactosModule } from './contactos/contactos.module';
 import { ReferidosModule } from './referidos/referidos.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { SoporteModule } from './soporte/soporte.module';
+import { GastosModule } from './gastos/gastos.module';
+import { CampañasModule } from './campañas/campañas.module';
+import { GarantiasModule } from './garantias/garantias.module';
 
 @Module({
   imports: [
@@ -52,6 +55,9 @@ import { SoporteModule } from './soporte/soporte.module';
     ReferidosModule,
     ApiKeysModule,
     SoporteModule,
+    GastosModule,
+    CampañasModule,
+    GarantiasModule,
   ],
   controllers: [AppController],
   providers: [AppService],

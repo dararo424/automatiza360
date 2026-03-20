@@ -4,8 +4,57 @@ import {
   getContactos,
   upsertContacto,
   eliminarContacto,
+  canjearPuntos,
   type Contacto,
 } from '../../api/contactos';
+
+function CanjearModal({ contacto, onClose }: { contacto: Contacto; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [puntos, setPuntos] = useState('');
+
+  const mutation = useMutation({
+    mutationFn: () => canjearPuntos(contacto.id, Number(puntos)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contactos'] });
+      onClose();
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="bg-slate-800 rounded-xl p-6 w-full max-w-sm">
+        <h2 className="text-white font-bold mb-1">Canjear puntos</h2>
+        <p className="text-slate-400 text-sm mb-4">
+          {contacto.name || contacto.phone} tiene <span className="text-yellow-400 font-bold">{contacto.puntos}</span> puntos disponibles.
+        </p>
+        <input
+          value={puntos}
+          onChange={(e) => setPuntos(e.target.value)}
+          type="number"
+          min="1"
+          max={contacto.puntos}
+          placeholder="Cantidad a canjear"
+          className="w-full bg-slate-700 text-white px-3 py-2 rounded-lg border border-slate-600 focus:outline-none text-sm mb-4"
+        />
+        {mutation.isError && (
+          <p className="text-red-400 text-xs mb-2">Puntos insuficientes o error.</p>
+        )}
+        <div className="flex gap-3">
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={!puntos || Number(puntos) < 1 || Number(puntos) > contacto.puntos || mutation.isPending}
+            className="flex-1 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white font-semibold py-2 rounded-lg text-sm"
+          >
+            {mutation.isPending ? 'Canjeando...' : 'Canjear'}
+          </button>
+          <button onClick={onClose} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ContactoModal({
   contacto,
@@ -89,6 +138,7 @@ export function ContactosPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState<{ open: boolean; contacto?: Contacto }>({ open: false });
+  const [canjearModal, setCanjearModal] = useState<Contacto | null>(null);
 
   const { data: contactos = [], isLoading } = useQuery({
     queryKey: ['contactos', search],
@@ -107,6 +157,9 @@ export function ContactosPage() {
           contacto={modal.contacto}
           onClose={() => setModal({ open: false })}
         />
+      )}
+      {canjearModal && (
+        <CanjearModal contacto={canjearModal} onClose={() => setCanjearModal(null)} />
       )}
 
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -144,6 +197,7 @@ export function ContactosPage() {
                   <th className="px-4 py-3 text-left text-slate-400 font-medium">Teléfono</th>
                   <th className="px-4 py-3 text-left text-slate-400 font-medium">Email</th>
                   <th className="px-4 py-3 text-left text-slate-400 font-medium">Etiquetas</th>
+                  <th className="px-4 py-3 text-left text-slate-400 font-medium">Puntos</th>
                   <th className="px-4 py-3 text-left text-slate-400 font-medium">Acciones</th>
                 </tr>
               </thead>
@@ -159,6 +213,9 @@ export function ContactosPage() {
                       ) : '—'}
                     </td>
                     <td className="px-4 py-3">
+                      <span className="text-yellow-400 font-semibold text-sm">★ {c.puntos ?? 0}</span>
+                    </td>
+                    <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button
                           onClick={() => setModal({ open: true, contacto: c })}
@@ -166,6 +223,14 @@ export function ContactosPage() {
                         >
                           Editar
                         </button>
+                        {(c.puntos ?? 0) > 0 && (
+                          <button
+                            onClick={() => setCanjearModal(c)}
+                            className="text-xs bg-yellow-700 hover:bg-yellow-600 text-yellow-100 px-2 py-1 rounded"
+                          >
+                            Canjear
+                          </button>
+                        )}
                         <button
                           onClick={() => { if (confirm('¿Eliminar contacto?')) deleteMutation.mutate(c.id); }}
                           className="text-xs bg-red-800 hover:bg-red-700 text-red-200 px-2 py-1 rounded"
@@ -194,14 +259,25 @@ export function ContactosPage() {
                   )}
                 </div>
                 {c.email && <p className="text-slate-400 text-xs mb-2">{c.email}</p>}
-                {c.notes && <p className="text-slate-500 text-xs mb-3 italic">{c.notes}</p>}
-                <div className="flex gap-2 pt-1">
+                {c.notes && <p className="text-slate-500 text-xs mb-2 italic">{c.notes}</p>}
+                {(c.puntos ?? 0) > 0 && (
+                  <p className="text-yellow-400 text-xs font-semibold mb-2">★ {c.puntos} puntos</p>
+                )}
+                <div className="flex gap-2 pt-1 flex-wrap">
                   <button
                     onClick={() => setModal({ open: true, contacto: c })}
                     className="flex-1 text-xs bg-indigo-700 hover:bg-indigo-600 text-white py-1.5 rounded-lg"
                   >
                     Editar
                   </button>
+                  {(c.puntos ?? 0) > 0 && (
+                    <button
+                      onClick={() => setCanjearModal(c)}
+                      className="flex-1 text-xs bg-yellow-700 hover:bg-yellow-600 text-yellow-100 py-1.5 rounded-lg"
+                    >
+                      Canjear
+                    </button>
+                  )}
                   <button
                     onClick={() => { if (confirm('¿Eliminar?')) deleteMutation.mutate(c.id); }}
                     className="flex-1 text-xs bg-red-800 hover:bg-red-700 text-red-200 py-1.5 rounded-lg"

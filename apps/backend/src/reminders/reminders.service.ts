@@ -142,6 +142,68 @@ export class RemindersService {
     this.logger.log('Revisión de trials completada.');
   }
 
+  @Cron('0 10 * * *')
+  async sendPostConsultaFollowUp(): Promise<void> {
+    this.logger.log('Iniciando seguimiento post-consulta...');
+
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(start.getDate() - 1);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+
+    const appointments = await this.prisma.appointment.findMany({
+      where: {
+        date: { gte: start, lte: end },
+        status: AppointmentStatus.COMPLETED,
+        tenant: {
+          industry: { in: [Industry.CLINIC, Industry.BEAUTY] },
+        },
+      },
+      include: {
+        tenant: true,
+      },
+    });
+
+    this.logger.log(`Citas completadas ayer para follow-up: ${appointments.length}`);
+
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+
+    if (!accountSid || !authToken || !whatsappNumber) {
+      this.logger.warn('Credenciales de Twilio no configuradas. Se omite follow-up post-consulta.');
+      return;
+    }
+
+    const client = twilio.default(accountSid, authToken);
+
+    for (const appointment of appointments) {
+      if (!appointment.clientPhone) continue;
+      try {
+        const toNumber = this.normalizePhone(appointment.clientPhone);
+        const message =
+          `¡Hola ${appointment.clientName}! 😊 Esperamos que tu consulta de ayer haya sido de tu satisfacción. ` +
+          `¿Cómo te encuentras? Si tienes alguna duda o necesitas algo, estamos aquí para ayudarte.`;
+
+        await client.messages.create({
+          from: `whatsapp:${whatsappNumber}`,
+          to: `whatsapp:${toNumber}`,
+          body: message,
+        });
+
+        this.logger.log(`Follow-up post-consulta enviado a ${toNumber} (cita ${appointment.id})`);
+      } catch (error) {
+        this.logger.error(
+          `Error enviando follow-up para cita ${appointment.id}: ${(error as Error).message}`,
+        );
+      }
+    }
+
+    this.logger.log('Follow-up post-consulta completado.');
+  }
+
   private normalizePhone(phone: string): string {
     const cleaned = phone.replace(/[\s\-]/g, '');
     return cleaned.startsWith('+') ? cleaned : `+57${cleaned}`;

@@ -8,6 +8,60 @@ import {
   eliminarMenu,
   type MenuDia,
 } from '../../api/menuDia';
+import { getQrConfig } from '../../api/menuPublico';
+
+function QrModal({ onClose }: { onClose: () => void }) {
+  const { data: qrConfig, isLoading } = useQuery({
+    queryKey: ['qr-config'],
+    queryFn: getQrConfig,
+  });
+
+  const [copied, setCopied] = useState(false);
+
+  function copyUrl() {
+    if (qrConfig?.publicUrl) {
+      navigator.clipboard.writeText(qrConfig.publicUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="bg-slate-800 rounded-xl p-6 w-full max-w-sm text-center">
+        <h2 className="text-white font-bold text-lg mb-4">Código QR del Menú</h2>
+        {isLoading ? (
+          <p className="text-slate-400">Cargando...</p>
+        ) : qrConfig ? (
+          <>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrConfig.publicUrl)}`}
+              alt="QR del menú"
+              className="mx-auto rounded-lg mb-4 border border-slate-600"
+              width={200}
+              height={200}
+            />
+            <p className="text-slate-300 text-xs break-all mb-4 bg-slate-900/50 rounded p-2">{qrConfig.publicUrl}</p>
+            <button
+              onClick={copyUrl}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded-lg text-sm transition-colors mb-2"
+            >
+              {copied ? '¡Copiado!' : 'Copiar enlace'}
+            </button>
+          </>
+        ) : (
+          <p className="text-slate-400">No se pudo obtener el enlace</p>
+        )}
+        <button
+          onClick={onClose}
+          className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm transition-colors"
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function PlatoRow({ plato, onToggle }: { plato: any; onToggle: () => void }) {
   return (
@@ -84,6 +138,7 @@ export function MenuDiaPage() {
   const queryClient = useQueryClient();
   const [nuevosPlatos, setNuevosPlatos] = useState<any[]>([]);
   const [creando, setCreando] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
   const { data: menus = [], isLoading } = useQuery({
     queryKey: ['menus-dia'],
@@ -121,8 +176,16 @@ export function MenuDiaPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
+      {showQr && <QrModal onClose={() => setShowQr(false)} />}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-white">Menú del Día</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowQr(true)}
+            className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+          >
+            Ver QR
+          </button>
         {!creando && !menuHoy && (
           <button
             onClick={() => setCreando(true)}
@@ -131,6 +194,7 @@ export function MenuDiaPage() {
             + Crear menú de hoy
           </button>
         )}
+        </div>
       </div>
 
       {/* Formulario crear menú */}

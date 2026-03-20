@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { ContactosService } from '../contactos/contactos.service';
 import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { CrearOrdenBotDto } from './dto/crear-orden-bot.dto';
 import { ActualizarEstadoDto } from './dto/actualizar-estado.dto';
@@ -27,7 +28,10 @@ const STATUS_MESSAGES: Partial<Record<OrderStatus, string>> = {
 export class OrdenesService {
   private readonly logger = new Logger(OrdenesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly contactosService: ContactosService,
+  ) {}
 
   async crear(dto: CrearOrdenDto, tenantId: string) {
     const productIds = [...new Set(dto.items.map((i) => i.productId))];
@@ -190,6 +194,19 @@ export class OrdenesService {
       this.sendWhatsAppNotification(orden.phone, orden.number, dto.estado).catch(
         (err) => this.logger.error('WhatsApp notification error: %s', err?.message ?? err),
       );
+    }
+
+    // Add loyalty points when order is delivered/completed
+    if (
+      (dto.estado === OrderStatus.DELIVERED || (dto.estado as string) === 'COMPLETED') &&
+      orden.phone
+    ) {
+      const puntos = Math.floor(orden.total / 10000);
+      if (puntos > 0) {
+        this.contactosService
+          .agregarPuntos(tenantId, orden.phone, puntos)
+          .catch((err) => this.logger.error('Error agregando puntos de fidelización: %s', err?.message ?? err));
+      }
     }
 
     return updated;
