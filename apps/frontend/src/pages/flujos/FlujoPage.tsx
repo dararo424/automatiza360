@@ -2,11 +2,6 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getFlujos, updateFlujos } from '../../api/flujos';
 
-const PLAN_LIMITS: Record<string, number> = {
-  STARTER: 2,
-  PRO: 4,
-  BUSINESS: 6,
-};
 
 export function FlujoPage() {
   const queryClient = useQueryClient();
