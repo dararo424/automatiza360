@@ -29,6 +29,40 @@ export function PerfilPublicoPage() {
     enabled: !!slug,
   });
 
+  // SEO meta tags — must be before any conditional returns
+  useEffect(() => {
+    if (!perfil) return;
+    document.title = `${perfil.nombre} | Automatiza360`;
+
+    const setMeta = (name: string, content: string) => {
+      let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement;
+      if (!el) {
+        el = document.createElement('meta');
+        el.name = name;
+        document.head.appendChild(el);
+      }
+      el.content = content;
+    };
+    const setOg = (property: string, content: string) => {
+      let el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute('property', property);
+        document.head.appendChild(el);
+      }
+      el.content = content;
+    };
+
+    setMeta('description', perfil.descripcion || `${perfil.nombre} - Pide por WhatsApp`);
+    setOg('og:title', perfil.nombre);
+    setOg('og:description', perfil.descripcion || `${perfil.nombre} - Pide por WhatsApp`);
+    setOg('og:type', 'business.business');
+
+    return () => {
+      document.title = 'Automatiza360';
+    };
+  }, [perfil]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -48,45 +82,6 @@ export function PerfilPublicoPage() {
       </div>
     );
   }
-
-  // SEO meta tags
-  useEffect(() => {
-    if (!perfil) return;
-    document.title = `${perfil.nombre} | Automatiza360`;
-
-    const setMeta = (name: string, content: string) => {
-      let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement;
-      if (!el) {
-        el = document.createElement('meta');
-        el.name = name;
-        document.head.appendChild(el);
-      }
-      el.content = content;
-    };
-    const setOg = (property: string, content: string) => {
-      let el = document.querySelector(
-        `meta[property="${property}"]`,
-      ) as HTMLMetaElement;
-      if (!el) {
-        el = document.createElement('meta');
-        el.setAttribute('property', property);
-        document.head.appendChild(el);
-      }
-      el.content = content;
-    };
-
-    setMeta('description', perfil.descripcion || `${perfil.nombre} - Pide por WhatsApp`);
-    setOg('og:title', perfil.nombre);
-    setOg(
-      'og:description',
-      perfil.descripcion || `${perfil.nombre} - Pide por WhatsApp`,
-    );
-    setOg('og:type', 'business.business');
-
-    return () => {
-      document.title = 'Automatiza360';
-    };
-  }, [perfil]);
 
   const waLink = perfil.whatsappNumber
     ? `https://wa.me/${perfil.whatsappNumber.replace(/\D/g, '')}?text=Hola%2C+vi+tu+perfil+en+Automatiza360`
