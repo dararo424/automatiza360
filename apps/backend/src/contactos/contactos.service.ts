@@ -106,6 +106,35 @@ export class ContactosService {
     });
   }
 
+  async getHistorial(tenantId: string, id: string) {
+    const contacto = await this.prisma.contact.findFirst({ where: { id, tenantId } });
+    if (!contacto) throw new NotFoundException('Contacto no encontrado');
+
+    const phone = contacto.phone;
+
+    const [ordenes, citas] = await Promise.all([
+      this.prisma.order.findMany({
+        where: {
+          tenantId,
+          OR: [{ phone: { contains: phone } }, { notes: { contains: phone } }],
+        },
+        include: { items: true },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+      this.prisma.appointment.findMany({
+        where: { tenantId, clientPhone: { contains: phone } },
+        include: { service: true, professional: true },
+        orderBy: { date: 'desc' },
+        take: 50,
+      }),
+    ]);
+
+    const totalGastado = ordenes.reduce((sum, o) => sum + o.total, 0);
+
+    return { ordenes, citas, totalGastado };
+  }
+
   async canjearPuntos(tenantId: string, id: string, puntos: number) {
     const contacto = await this.prisma.contact.findFirst({
       where: { id, tenantId },

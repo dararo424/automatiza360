@@ -27,6 +27,8 @@ model Tenant {
   logoUrl           String?
   direccion         String?
   ciudad            String?
+  latitud           Float?
+  longitud          Float?
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
 
@@ -55,6 +57,8 @@ model Tenant {
   proveedoresCompra    Proveedor[]
   ordenesCompra        OrdenCompra[]
   turnos               Turno[]
+  cupones              Cupon[]
+  pushSubscriptions    PushSubscription[]
 }
 
 // Usuario dentro de un negocio
@@ -583,6 +587,41 @@ model OrdenCompraItem {
   cantidad       Int
   precioUnitario Float
   orden          OrdenCompra @relation(fields: [ordenCompraId], references: [id], onDelete: Cascade)
+}
+
+// Cupones de descuento
+enum CuponTipo {
+  PORCENTAJE
+  VALOR_FIJO
+}
+
+model Cupon {
+  id               String    @id @default(uuid())
+  tenantId         String
+  codigo           String
+  tipo             CuponTipo
+  valor            Float
+  minCompra        Float     @default(0)
+  maxUsos          Int?
+  usosActuales     Int       @default(0)
+  activo           Boolean   @default(true)
+  fechaVencimiento DateTime?
+  createdAt        DateTime  @default(now())
+  tenant           Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, codigo])
+}
+
+// Push subscriptions para PWA
+model PushSubscription {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  createdAt  DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
 }
 
 // Turnos del equipo

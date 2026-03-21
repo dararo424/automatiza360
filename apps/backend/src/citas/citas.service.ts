@@ -9,6 +9,7 @@ import { AppointmentStatus, AutomacionTrigger } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CalendarService } from '../calendar/calendar.service';
 import { AutomacionesService } from '../automaciones/automaciones.service';
+import { PushService } from '../push/push.service';
 import { CrearCitaBotDto } from './dto/crear-cita-bot.dto';
 
 @Injectable()
@@ -19,6 +20,7 @@ export class CitasService {
     private readonly prisma: PrismaService,
     private readonly calendar: CalendarService,
     private readonly automacionesService: AutomacionesService,
+    private readonly pushService: PushService,
   ) {}
 
   listarServicios(tenantId: string) {
@@ -319,6 +321,16 @@ export class CitasService {
         endDateTime,
       }),
     };
+
+    // Push notification — fire and forget
+    this.pushService
+      .sendToTenant(
+        tenantId,
+        'Nueva cita',
+        `${dto.clientName} agendó una cita`,
+        '/agenda',
+      )
+      .catch((err) => this.logger.error('Push error: %s', err?.message ?? err));
 
     return { ...cita, calendarLinks };
   }

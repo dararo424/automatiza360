@@ -53,4 +53,8 @@ export class CrearOrdenBotDto {
   @IsString()
   @IsOptional()
   notas?: string;
+
+  @IsString()
+  @IsOptional()
+  cuponCodigo?: string;
 }

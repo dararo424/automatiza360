@@ -27,3 +27,25 @@ export const eliminarContacto = (id: string): Promise<void> =>
 
 export const canjearPuntos = (id: string, puntos: number): Promise<Contacto> =>
   api.post(`/contactos/${id}/canjear-puntos`, { puntos }).then((r) => r.data);
+
+export interface HistorialContacto {
+  ordenes: Array<{
+    id: string;
+    number: number;
+    status: string;
+    total: number;
+    createdAt: string;
+    items: Array<{ name: string; quantity: number; price: number }>;
+  }>;
+  citas: Array<{
+    id: string;
+    date: string;
+    status: string;
+    service: { name: string };
+    professional?: { name: string } | null;
+  }>;
+  totalGastado: number;
+}
+
+export const getHistorial = (id: string): Promise<HistorialContacto> =>
+  api.get(`/contactos/${id}/historial`).then((r) => r.data);

@@ -18,6 +18,8 @@ export function ConfiguracionPage() {
     logoUrl: '',
     direccion: '',
     ciudad: '',
+    latitud: '',
+    longitud: '',
   });
 
   const [copied, setCopied] = useState(false);
@@ -30,12 +32,19 @@ export function ConfiguracionPage() {
         logoUrl: perfil.logoUrl ?? '',
         direccion: perfil.direccion ?? '',
         ciudad: perfil.ciudad ?? '',
+        latitud: perfil.latitud != null ? String(perfil.latitud) : '',
+        longitud: perfil.longitud != null ? String(perfil.longitud) : '',
       });
     }
   }, [perfil]);
 
   const { mutate, isPending, isSuccess } = useMutation({
-    mutationFn: () => actualizarPerfil(form),
+    mutationFn: () =>
+      actualizarPerfil({
+        ...form,
+        latitud: form.latitud !== '' ? parseFloat(form.latitud) : undefined,
+        longitud: form.longitud !== '' ? parseFloat(form.longitud) : undefined,
+      }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['mi-perfil'] });
     },
@@ -158,6 +167,49 @@ export function ConfiguracionPage() {
             placeholder="Bogotá"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-medium text-slate-700">
+              Ubicación en mapa (coordenadas)
+            </label>
+            <a
+              href="https://www.openstreetmap.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-indigo-600 hover:text-indigo-800"
+            >
+              Buscar coordenadas en OpenStreetMap ↗
+            </a>
+          </div>
+          <p className="text-xs text-slate-500 mb-2">
+            Ej: Cali, Colombia → Latitud: 3.4516, Longitud: -76.5320
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Latitud</label>
+              <input
+                type="number"
+                step="any"
+                value={form.latitud}
+                onChange={(e) => setForm((f) => ({ ...f, latitud: e.target.value }))}
+                placeholder="3.4516"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Longitud</label>
+              <input
+                type="number"
+                step="any"
+                value={form.longitud}
+                onChange={(e) => setForm((f) => ({ ...f, longitud: e.target.value }))}
+                placeholder="-76.5320"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 pt-2">

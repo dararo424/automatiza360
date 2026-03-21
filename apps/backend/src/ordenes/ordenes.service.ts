@@ -8,6 +8,8 @@ import { AutomacionTrigger, OrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ContactosService } from '../contactos/contactos.service';
 import { AutomacionesService } from '../automaciones/automaciones.service';
+import { CuponesService } from '../cupones/cupones.service';
+import { PushService } from '../push/push.service';
 import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { CrearOrdenBotDto } from './dto/crear-orden-bot.dto';
 import { ActualizarEstadoDto } from './dto/actualizar-estado.dto';
@@ -33,6 +35,8 @@ export class OrdenesService {
     private readonly prisma: PrismaService,
     private readonly contactosService: ContactosService,
     private readonly automacionesService: AutomacionesService,
+    private readonly cuponesService: CuponesService,
+    private readonly pushService: PushService,
   ) {}
 
   async crear(dto: CrearOrdenDto, tenantId: string) {
@@ -115,9 +119,19 @@ export class OrdenesService {
       }
     }
 
-    const total = dto.items.reduce((sum, item) => {
+    let total = dto.items.reduce((sum, item) => {
       return sum + productMap.get(item.nombre_producto.toLowerCase())!.price * item.cantidad;
     }, 0);
+
+    let descuento = 0;
+    if (dto.cuponCodigo) {
+      const validacion = await this.cuponesService.validar(tenantId, dto.cuponCodigo, total);
+      if (validacion.valido && validacion.descuento) {
+        descuento = validacion.descuento;
+        total = Math.max(0, total - descuento);
+        await this.cuponesService.aplicar(tenantId, dto.cuponCodigo);
+      }
+    }
 
     const notesPartes = [
       `Cliente: ${dto.nombre_cliente}`,
@@ -125,8 +139,9 @@ export class OrdenesService {
       `Dirección: ${dto.direccion_entrega}`,
     ];
     if (dto.notas) notesPartes.push(`Notas: ${dto.notas}`);
+    if (descuento > 0) notesPartes.push(`Descuento: $${descuento.toLocaleString('es-CO')}`);
 
-    return this.prisma.$transaction(async (tx) => {
+    const orden = await this.prisma.$transaction(async (tx) => {
       const count = await tx.order.count({ where: { tenantId } });
       return tx.order.create({
         data: {
@@ -146,6 +161,18 @@ export class OrdenesService {
         include: { items: true },
       });
     });
+
+    // Push notification — fire and forget
+    this.pushService
+      .sendToTenant(
+        tenantId,
+        'Nueva orden',
+        `${dto.nombre_cliente || dto.telefono || 'Cliente'} realizó un pedido`,
+        '/ordenes',
+      )
+      .catch((err) => this.logger.error('Push error: %s', err?.message ?? err));
+
+    return orden;
   }
 
   async exportarCsv(tenantId: string): Promise<string> {

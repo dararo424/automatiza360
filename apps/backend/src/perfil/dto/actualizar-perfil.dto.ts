@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class ActualizarPerfilDto {
   @IsOptional()
@@ -20,4 +20,12 @@ export class ActualizarPerfilDto {
   @IsOptional()
   @IsString()
   ciudad?: string;
+
+  @IsOptional()
+  @IsNumber()
+  latitud?: number;
+
+  @IsOptional()
+  @IsNumber()
+  longitud?: number;
 }

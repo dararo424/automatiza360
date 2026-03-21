@@ -10,6 +10,8 @@ export interface PerfilTenant {
   logoUrl?: string;
   direccion?: string;
   ciudad?: string;
+  latitud?: number | null;
+  longitud?: number | null;
   ownerPhone?: string;
 }
 

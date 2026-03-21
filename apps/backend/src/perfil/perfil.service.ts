@@ -23,6 +23,8 @@ export class PerfilService {
       logoUrl: tenant.logoUrl,
       direccion: tenant.direccion,
       ciudad: tenant.ciudad,
+      latitud: tenant.latitud,
+      longitud: tenant.longitud,
       whatsappNumber: tenant.ownerPhone,
     };
 
@@ -86,6 +88,8 @@ export class PerfilService {
         logoUrl: true,
         direccion: true,
         ciudad: true,
+        latitud: true,
+        longitud: true,
         ownerPhone: true,
       },
     });
@@ -103,6 +107,8 @@ export class PerfilService {
         logoUrl: dto.logoUrl,
         direccion: dto.direccion,
         ciudad: dto.ciudad,
+        latitud: dto.latitud,
+        longitud: dto.longitud,
       },
       select: {
         id: true,
@@ -114,6 +120,8 @@ export class PerfilService {
         logoUrl: true,
         direccion: true,
         ciudad: true,
+        latitud: true,
+        longitud: true,
       },
     });
   }

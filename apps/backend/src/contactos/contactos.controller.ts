@@ -33,6 +33,11 @@ export class ContactosController {
     return this.svc.remove(user.tenantId, id);
   }
 
+  @Get(':id/historial')
+  getHistorial(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.svc.getHistorial(user.tenantId, id);
+  }
+
   @Post(':id/canjear-puntos')
   canjearPuntos(
     @CurrentUser() user: any,

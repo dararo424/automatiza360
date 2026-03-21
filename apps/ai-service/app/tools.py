@@ -394,6 +394,29 @@ TOOLS_TECH_STORE = [
     ])
 ]
 
+_validar_cupon = types.FunctionDeclaration(
+    name="validar_cupon",
+    description=(
+        "Valida un cupón de descuento ingresado por el cliente. "
+        "Úsala cuando el cliente mencione que tiene un código de descuento o cupón. "
+        "Retorna si el cupón es válido y el descuento aplicable."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "codigo": types.Schema(
+                type=types.Type.STRING,
+                description="Código del cupón tal como lo indica el cliente (en mayúsculas).",
+            ),
+            "monto": types.Schema(
+                type=types.Type.NUMBER,
+                description="Monto total del pedido antes del descuento.",
+            ),
+        },
+        required=["codigo", "monto"],
+    ),
+)
+
 TOOLS_RESTAURANT = [
     types.Tool(function_declarations=[
         _consultar_menu_carta,
@@ -401,6 +424,7 @@ TOOLS_RESTAURANT = [
         _tomar_pedido,
         _ver_estado_pedido,
         _actualizar_menu_dia,
+        _validar_cupon,
     ])
 ]
 
@@ -599,6 +623,13 @@ async def execute_tool(
 
         if name == "_cancelar_cita":
             result = await client.cancelar_cita(args["appointment_id"], clean_phone)
+            return json.dumps(result, ensure_ascii=False)
+
+        if name == "validar_cupon":
+            result = await client._request("POST", "/cupones/validar", {
+                "codigo": str(args["codigo"]).upper(),
+                "monto": float(args.get("monto", 0)),
+            })
             return json.dumps(result, ensure_ascii=False)
 
         return json.dumps({"error": f"Herramienta '{name}' no reconocida."})

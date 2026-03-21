@@ -33,7 +33,8 @@
       "Bash(pnpm exec:*)",
       "Bash(npx tsc:*)",
       "Read(//e/Proyectos/**)",
-      "Bash(pnpm tsc:*)"
+      "Bash(pnpm tsc:*)",
+      "Bash(pnpm list:*)"
     ]
   }
 }

@@ -7,6 +7,7 @@ import { TopBar } from './TopBar';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { SupportChat } from '../support/SupportChat';
 import { getTrialInfo } from '../../api/subscriptions';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
 
 function SuspendedModal({ onLogout }: { onLogout: () => void }) {
   return (
@@ -37,6 +38,7 @@ function SuspendedModal({ onLogout }: { onLogout: () => void }) {
 export function AppLayout() {
   const { user, isLoading, logout } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  usePushNotifications();
 
   const { data: trialInfo } = useQuery({
     queryKey: ['trial-info'],

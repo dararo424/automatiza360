@@ -21,6 +21,8 @@ export interface PerfilPublico {
   logoUrl?: string;
   direccion?: string;
   ciudad?: string;
+  latitud?: number | null;
+  longitud?: number | null;
   whatsappNumber?: string;
   menuHoy?: { platos: PlatoMenu[] };
   servicios?: ServicioPublico[];

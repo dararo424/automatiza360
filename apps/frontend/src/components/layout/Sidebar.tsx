@@ -18,6 +18,8 @@ const PLAN_COLORS: Record<string, string> = {
 };
 
 const COMMON_BOTTOM: NavItem[] = [
+  { to: '/caja', label: 'Caja', emoji: '💵' },
+  { to: '/cupones', label: 'Cupones', emoji: '🏷️' },
   { to: '/resenas', label: 'Reseñas', emoji: '⭐' },
   { to: '/turnos', label: 'Turnos', emoji: '🗓️' },
   { to: '/compras', label: 'Proveedores', emoji: '🚚' },

@@ -34,6 +34,9 @@ import { ResenasModule } from './resenas/resenas.module';
 import { ImportacionModule } from './importacion/importacion.module';
 import { ComprasModule } from './compras/compras.module';
 import { TurnosModule } from './turnos/turnos.module';
+import { CuponesModule } from './cupones/cupones.module';
+import { PushModule } from './push/push.module';
+import { CajaModule } from './caja/caja.module';
 
 @Module({
   imports: [
@@ -70,6 +73,9 @@ import { TurnosModule } from './turnos/turnos.module';
     ImportacionModule,
     ComprasModule,
     TurnosModule,
+    CuponesModule,
+    PushModule,
+    CajaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

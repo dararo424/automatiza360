@@ -2,11 +2,13 @@ import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getContactos,
+  getHistorial,
   upsertContacto,
   actualizarContacto,
   eliminarContacto,
   canjearPuntos,
   type Contacto,
+  type HistorialContacto,
 } from '../../api/contactos';
 import { importarContactos, type ImportResult } from '../../api/importacion';
 
@@ -279,12 +281,108 @@ function ImportarModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Pendiente', CONFIRMED: 'Confirmado', PREPARING: 'Preparando',
+  READY: 'Listo', DELIVERED: 'Entregado', CANCELLED: 'Cancelado',
+};
+const APPOINTMENT_STATUS_LABEL: Record<string, string> = {
+  SCHEDULED: 'Programada', CONFIRMED: 'Confirmada', CANCELLED: 'Cancelada',
+  COMPLETED: 'Completada', NO_SHOW: 'No se presentó',
+};
+
+function HistorialModal({ contacto, onClose }: { contacto: Contacto; onClose: () => void }) {
+  const [tab, setTab] = useState<'ordenes' | 'citas'>('ordenes');
+
+  const { data, isLoading } = useQuery<HistorialContacto>({
+    queryKey: ['historial-contacto', contacto.id],
+    queryFn: () => getHistorial(contacto.id),
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="bg-slate-800 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+        <div className="p-5 border-b border-slate-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-white font-bold">Historial de {contacto.name || contacto.phone}</h2>
+              {data && (
+                <p className="text-slate-400 text-sm mt-0.5">
+                  Total gastado: <span className="text-green-400 font-semibold">${data.totalGastado.toLocaleString('es-CO')}</span>
+                </p>
+              )}
+            </div>
+            <button onClick={onClose} className="text-slate-400 hover:text-white text-xl">×</button>
+          </div>
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={() => setTab('ordenes')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === 'ordenes' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              Órdenes {data ? `(${data.ordenes.length})` : ''}
+            </button>
+            <button
+              onClick={() => setTab('citas')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === 'citas' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+            >
+              Citas {data ? `(${data.citas.length})` : ''}
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5">
+          {isLoading ? (
+            <p className="text-slate-400 text-center">Cargando...</p>
+          ) : !data ? null : tab === 'ordenes' ? (
+            data.ordenes.length === 0 ? (
+              <p className="text-slate-500 text-center">Sin órdenes.</p>
+            ) : (
+              <div className="space-y-2">
+                {data.ordenes.map((o) => (
+                  <div key={o.id} className="bg-slate-700 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-white font-semibold text-sm">Orden #{o.number}</span>
+                      <span className="text-green-400 font-bold text-sm">${o.total.toLocaleString('es-CO')}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-slate-400">
+                      <span>{ORDER_STATUS_LABEL[o.status] ?? o.status}</span>
+                      <span>{new Date(o.createdAt).toLocaleDateString('es-CO')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
+            data.citas.length === 0 ? (
+              <p className="text-slate-500 text-center">Sin citas.</p>
+            ) : (
+              <div className="space-y-2">
+                {data.citas.map((c) => (
+                  <div key={c.id} className="bg-slate-700 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-white font-semibold text-sm">{c.service.name}</span>
+                      <span className="text-xs text-slate-400">{APPOINTMENT_STATUS_LABEL[c.status] ?? c.status}</span>
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      <span>{new Date(c.date).toLocaleDateString('es-CO', { dateStyle: 'medium' })}</span>
+                      {c.professional && <span className="ml-2">con {c.professional.name}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ContactosPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState<{ open: boolean; contacto?: Contacto }>({ open: false });
   const [canjearModal, setCanjearModal] = useState<Contacto | null>(null);
   const [importarModal, setImportarModal] = useState(false);
+  const [historialContacto, setHistorialContacto] = useState<Contacto | null>(null);
 
   const { data: contactos = [], isLoading } = useQuery({
     queryKey: ['contactos', search],
@@ -309,6 +407,9 @@ export function ContactosPage() {
       )}
       {importarModal && (
         <ImportarModal onClose={() => setImportarModal(false)} />
+      )}
+      {historialContacto && (
+        <HistorialModal contacto={historialContacto} onClose={() => setHistorialContacto(null)} />
       )}
 
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -374,6 +475,12 @@ export function ContactosPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
+                        <button
+                          onClick={() => setHistorialContacto(c)}
+                          className="text-xs bg-slate-600 hover:bg-slate-500 text-slate-200 px-2 py-1 rounded"
+                        >
+                          Historial
+                        </button>
                         <button
                           onClick={() => setModal({ open: true, contacto: c })}
                           className="text-xs bg-indigo-700 hover:bg-indigo-600 text-white px-2 py-1 rounded"

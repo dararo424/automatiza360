@@ -33,6 +33,8 @@ import { AutomacionesPage } from './pages/automaciones/AutomacionesPage';
 import { ResenasPage } from './pages/resenas/ResenasPage';
 import { ComprasPage } from './pages/compras/ComprasPage';
 import { TurnosPage } from './pages/turnos/TurnosPage';
+import { CuponesPage } from './pages/cupones/CuponesPage';
+import { CajaPage } from './pages/caja/CajaPage';
 
 export function App() {
   return (
@@ -69,6 +71,8 @@ export function App() {
             <Route path="/resenas" element={<ResenasPage />} />
             <Route path="/compras" element={<ComprasPage />} />
             <Route path="/turnos" element={<TurnosPage />} />
+            <Route path="/cupones" element={<CuponesPage />} />
+            <Route path="/caja" element={<CajaPage />} />
           </Route>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminPage />} />
