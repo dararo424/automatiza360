@@ -35,6 +35,7 @@ import { ComprasPage } from './pages/compras/ComprasPage';
 import { TurnosPage } from './pages/turnos/TurnosPage';
 import { CuponesPage } from './pages/cupones/CuponesPage';
 import { CajaPage } from './pages/caja/CajaPage';
+import { FlujoPage } from './pages/flujos/FlujoPage';
 
 export function App() {
   return (
@@ -73,6 +74,7 @@ export function App() {
             <Route path="/turnos" element={<TurnosPage />} />
             <Route path="/cupones" element={<CuponesPage />} />
             <Route path="/caja" element={<CajaPage />} />
+            <Route path="/flujos" element={<FlujoPage />} />
           </Route>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminPage />} />

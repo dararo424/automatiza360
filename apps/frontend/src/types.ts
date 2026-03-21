@@ -1,4 +1,16 @@
-export type Industry = 'RESTAURANT' | 'TECH_STORE' | 'CLINIC' | 'BEAUTY' | 'OTHER';
+export type Industry =
+  | 'RESTAURANT'
+  | 'TECH_STORE'
+  | 'CLINIC'
+  | 'BEAUTY'
+  | 'CLOTHING_STORE'
+  | 'GYM'
+  | 'PHARMACY'
+  | 'VETERINARY'
+  | 'HOTEL'
+  | 'BAKERY'
+  | 'WORKSHOP'
+  | 'OTHER';
 export type AppointmentStatus =
   | 'SCHEDULED'
   | 'CONFIRMED'

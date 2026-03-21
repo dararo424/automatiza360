@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { getPlanInfo, iniciarUpgrade } from '../../api/subscriptions';
 import { getMiCodigo, getReferrals } from '../../api/referidos';
 import { getBotMetricas } from '../../api/dashboard';
+import { getPagos } from '../../api/billing';
+import { getFlujos } from '../../api/flujos';
 
 const PLAN_NAMES: Record<string, string> = {
   STARTER: 'Starter',
@@ -50,6 +52,18 @@ export function PlanPortalPage() {
   const { data: botMetricas } = useQuery({
     queryKey: ['bot-metricas'],
     queryFn: getBotMetricas,
+  });
+
+  const { data: pagos = [] } = useQuery({
+    queryKey: ['billing-pagos'],
+    queryFn: getPagos,
+    enabled: !!planInfo,
+  });
+
+  const { data: flujoInfo } = useQuery({
+    queryKey: ['flujos'],
+    queryFn: getFlujos,
+    enabled: !!planInfo,
   });
 
   if (isLoading) return <div className="p-8 text-slate-400">Cargando...</div>;
@@ -171,8 +185,33 @@ export function PlanPortalPage() {
         </div>
       )}
 
+      {/* Flujos activos */}
+      {flujoInfo && (
+        <div className="bg-slate-800 rounded-xl p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-white font-semibold">Flujos de WhatsApp activos</h2>
+            <Link to="/flujos" className="text-indigo-400 text-sm hover:underline">Gestionar →</Link>
+          </div>
+          <p className="text-slate-400 text-sm mb-3">
+            {flujoInfo.activos.length} de {flujoInfo.limite} flujos activados (Plan {flujoInfo.plan})
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {flujoInfo.disponibles
+              .filter((f) => flujoInfo.activos.includes(f.id))
+              .map((f) => (
+                <span key={f.id} className="bg-indigo-900/50 border border-indigo-700 text-indigo-200 text-xs px-3 py-1 rounded-full">
+                  {f.emoji} {f.nombre}
+                </span>
+              ))}
+            {flujoInfo.activos.length === 0 && (
+              <span className="text-slate-500 text-sm">No hay flujos activos</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Programa de referidos */}
-      <div className="bg-slate-800 rounded-xl p-5">
+      <div className="bg-slate-800 rounded-xl p-5 mb-6">
         <h2 className="text-white font-semibold mb-1">Programa de referidos</h2>
         <p className="text-slate-400 text-sm mb-4">
           Comparte tu código y gana beneficios cuando tus referidos se suscriban.
@@ -208,6 +247,53 @@ export function PlanPortalPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Historial de pagos */}
+      <div className="bg-slate-800 rounded-xl p-5 mt-6">
+        <h2 className="text-white font-semibold mb-4">Historial de pagos</h2>
+        {pagos.length === 0 ? (
+          <p className="text-slate-500 text-sm">Aún no tienes pagos registrados</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-400 border-b border-slate-700">
+                  <th className="pb-2 pr-4">Fecha</th>
+                  <th className="pb-2 pr-4">Descripción</th>
+                  <th className="pb-2 pr-4">Monto</th>
+                  <th className="pb-2">Estado</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700">
+                {pagos.map((pago) => (
+                  <tr key={pago.id}>
+                    <td className="py-2 pr-4 text-slate-400">
+                      {new Date(pago.createdAt).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </td>
+                    <td className="py-2 pr-4 text-slate-300">
+                      {pago.descripcion ?? `Plan ${pago.plan}`}
+                    </td>
+                    <td className="py-2 pr-4 text-slate-200 font-medium">
+                      ${pago.monto.toLocaleString('es-CO')}
+                    </td>
+                    <td className="py-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        pago.status === 'COMPLETADO'
+                          ? 'bg-emerald-700 text-emerald-200'
+                          : pago.status === 'FALLIDO'
+                          ? 'bg-red-800 text-red-200'
+                          : 'bg-amber-800 text-amber-200'
+                      }`}>
+                        {pago.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

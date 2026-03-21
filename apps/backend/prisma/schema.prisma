@@ -59,6 +59,8 @@ model Tenant {
   turnos               Turno[]
   cupones              Cupon[]
   pushSubscriptions    PushSubscription[]
+  flujosActivos        String             @default("ventas,citas")
+  pagos                PagoRegistro[]
 }
 
 // Usuario dentro de un negocio
@@ -387,6 +389,13 @@ enum Industry {
   TECH_STORE
   CLINIC
   BEAUTY
+  CLOTHING_STORE
+  GYM
+  PHARMACY
+  VETERINARY
+  HOTEL
+  BAKERY
+  WORKSHOP
   OTHER
 }
 
@@ -636,4 +645,18 @@ model Turno {
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id])
   tenant     Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// Historial de pagos / facturación
+model PagoRegistro {
+  id          String   @id @default(uuid())
+  tenantId    String
+  monto       Float
+  plan        String
+  status      String   // COMPLETADO / FALLIDO / PENDIENTE
+  wompiRef    String?
+  wompiId     String?
+  descripcion String?
+  createdAt   DateTime @default(now())
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
 }

@@ -53,8 +53,9 @@ export const translations = {
     industries: {
       title: 'Hecho para tu industria',
       subtitle: 'Adaptamos la plataforma a las necesidades específicas de tu tipo de negocio',
-      tabs: ['Restaurantes', 'Tiendas Tech', 'Clínicas', 'Otros negocios'],
+      tabs: ['Restaurantes', 'Tiendas Tech', 'Clínicas', 'Belleza', 'Ropa', 'Gimnasio', 'Farmacia', 'Veterinaria', 'Hotel', 'Panadería', 'Taller', 'Otros'],
       restaurant: {
+        emoji: '🍽️',
         title: 'Para Restaurantes y Cafés',
         features: [
           'El bot toma pedidos, muestra el menú del día y gestiona domicilios',
@@ -66,6 +67,7 @@ export const translations = {
         author: '— Propietaria, Galettes & Co',
       },
       tech: {
+        emoji: '💻',
         title: 'Para Tiendas de Tecnología',
         features: [
           'Importa listas de precios de proveedores automáticamente en PDF o Excel',
@@ -77,17 +79,115 @@ export const translations = {
         author: '— Administrador, Tienda Gamer',
       },
       clinic: {
+        emoji: '🏥',
         title: 'Para Clínicas y Consultorios',
         features: [
           'Agenda citas y envía recordatorios automáticos por WhatsApp',
           'Registra pacientes y su historial de consultas',
           'Notificaciones de resultados y seguimiento post-consulta',
-          'Próximamente disponible',
+          'Disponibilidad de médicos en tiempo real',
         ],
         quote: '"La gestión de citas nunca fue tan sencilla."',
-        author: '— Próximamente',
+        author: '— Dr. Ramírez, Clínica MediCare',
+      },
+      beauty: {
+        emoji: '💅',
+        title: 'Para Salones de Belleza y Spa',
+        features: [
+          'Reserva citas de servicios de belleza directamente por WhatsApp',
+          'Gestiona disponibilidad de estilistas y especialistas',
+          'Recordatorios automáticos para reducir cancelaciones',
+          'Catálogo de servicios con precios y duración',
+        ],
+        quote: '"Mis clientes reservan sin llamar. El bot atiende las 24 horas."',
+        author: '— Administradora, Salón BeautyGlow',
+      },
+      clothing: {
+        emoji: '👗',
+        title: 'Para Tiendas de Ropa',
+        features: [
+          'El bot muestra el catálogo con tallas y colores disponibles',
+          'Toma pedidos y gestiona reserva de prendas',
+          'Control de inventario por talla y color',
+          'Notifica cuando llega una prenda solicitada',
+        ],
+        quote: '"Mis ventas crecieron 40% desde que el bot atiende por WhatsApp."',
+        author: '— Propietaria, Moda & Estilo',
+      },
+      gym: {
+        emoji: '🏋️',
+        title: 'Para Gimnasios y Centros Fitness',
+        features: [
+          'Muestra planes de membresía y precios por WhatsApp',
+          'Agenda clases y gestiona cupos disponibles',
+          'Recordatorios de clases y vencimiento de membresías',
+          'Gestión de horarios de instructores',
+        ],
+        quote: '"Nuestros socios reservan clases en segundos desde el chat."',
+        author: '— Director, FitZone Gym',
+      },
+      pharmacy: {
+        emoji: '💊',
+        title: 'Para Farmacias y Droguerías',
+        features: [
+          'Consulta de disponibilidad y precios de medicamentos',
+          'El bot toma pedidos y verifica stock en tiempo real',
+          'Domicilios y retiro en tienda',
+          'Alertas de productos agotados',
+        ],
+        quote: '"Nuestros clientes piden medicamentos sin salir de casa."',
+        author: '— Gerente, Farmacia Salud Total',
+      },
+      veterinary: {
+        emoji: '🐾',
+        title: 'Para Veterinarias',
+        features: [
+          'Agenda citas para consultas y procedimientos',
+          'Historial de mascotas y recordatorio de vacunas',
+          'Notificaciones de resultados de exámenes',
+          'Seguimiento post-consulta por WhatsApp',
+        ],
+        quote: '"Los dueños de mascotas aman recibir actualizaciones por WhatsApp."',
+        author: '— Veterinaria, Clínica PetCare',
+      },
+      hotel: {
+        emoji: '🏨',
+        title: 'Para Hoteles y Hostales',
+        features: [
+          'Muestra tipos de habitaciones y disponibilidad',
+          'El bot recibe consultas y reservas directamente',
+          'Información de servicios, tarifas y check-in/out',
+          'Recordatorios y confirmaciones automáticas',
+        ],
+        quote: '"Atendemos consultas de reservas las 24 horas sin personal adicional."',
+        author: '— Gerente, Hotel Vista Verde',
+      },
+      bakery: {
+        emoji: '🍞',
+        title: 'Para Panaderías y Pastelerías',
+        features: [
+          'El bot muestra el menú del día y productos especiales',
+          'Toma pedidos y reservas de pasteles personalizados',
+          'Notifica cuando el pedido está listo para recoger',
+          'Gestión de domicilios locales',
+        ],
+        quote: '"Mis clientes hacen pedidos especiales por WhatsApp sin complicaciones."',
+        author: '— Propietaria, Dulce Arte Panadería',
+      },
+      workshop: {
+        emoji: '🔧',
+        title: 'Para Talleres y Mecánicas',
+        features: [
+          'Registra vehículos y descripción de fallas por WhatsApp',
+          'Seguimiento de reparaciones con estados en tiempo real',
+          'Cotizaciones de repuestos y mano de obra',
+          'Notifica cuando el vehículo está listo',
+        ],
+        quote: '"Los clientes siguen el estado de su vehículo en tiempo real."',
+        author: '— Propietario, Taller Auto Express',
       },
       other: {
+        emoji: '🏪',
         title: 'Para Cualquier Negocio',
         features: [
           'Plataforma flexible adaptable a cualquier industria',
@@ -98,6 +198,11 @@ export const translations = {
         quote: '"Automatiza360 se adaptó perfectamente a nuestro modelo de negocio."',
         author: '— Emprendedor, Cliente Automatiza360',
       },
+    },
+    demo: {
+      title: 'Pruébalo tú mismo',
+      subtitle: 'Sin registrarte. Sin tarjeta. Así se ve tu negocio con Automatiza360.',
+      sectionLabel: 'Prueba el bot ahora',
     },
     pricing: {
       title: 'Planes simples y transparentes',
@@ -282,8 +387,9 @@ export const translations = {
     industries: {
       title: 'Built for your industry',
       subtitle: 'We adapt the platform to the specific needs of your business type',
-      tabs: ['Restaurants', 'Tech Stores', 'Clinics', 'Other businesses'],
+      tabs: ['Restaurants', 'Tech Stores', 'Clinics', 'Beauty', 'Clothing', 'Gym', 'Pharmacy', 'Veterinary', 'Hotel', 'Bakery', 'Workshop', 'Other'],
       restaurant: {
+        emoji: '🍽️',
         title: 'For Restaurants & Cafes',
         features: [
           'The bot takes orders, shows the daily menu and manages deliveries',
@@ -295,6 +401,7 @@ export const translations = {
         author: '— Owner, Galettes & Co',
       },
       tech: {
+        emoji: '💻',
         title: 'For Tech Stores',
         features: [
           'Automatically import supplier price lists from PDF or Excel',
@@ -306,17 +413,115 @@ export const translations = {
         author: '— Manager, Tienda Gamer',
       },
       clinic: {
+        emoji: '🏥',
         title: 'For Clinics & Practices',
         features: [
           'Schedule appointments and send automatic reminders via WhatsApp',
           'Register patients and their consultation history',
           'Results notifications and post-consultation follow-up',
-          'Coming soon',
+          'Real-time doctor availability',
         ],
         quote: '"Appointment management was never this simple."',
-        author: '— Coming soon',
+        author: '— Dr. Ramírez, MediCare Clinic',
+      },
+      beauty: {
+        emoji: '💅',
+        title: 'For Beauty Salons & Spas',
+        features: [
+          'Book beauty service appointments directly via WhatsApp',
+          'Manage stylist and specialist availability',
+          'Automatic reminders to reduce cancellations',
+          'Service catalog with prices and duration',
+        ],
+        quote: '"Clients book without calling. The bot works 24 hours."',
+        author: '— Manager, BeautyGlow Salon',
+      },
+      clothing: {
+        emoji: '👗',
+        title: 'For Clothing Stores',
+        features: [
+          'The bot shows the catalog with available sizes and colors',
+          'Takes orders and manages garment reservations',
+          'Inventory control by size and color',
+          'Notifies when a requested item arrives',
+        ],
+        quote: '"Sales grew 40% since the bot handles WhatsApp inquiries."',
+        author: '— Owner, Moda & Estilo',
+      },
+      gym: {
+        emoji: '🏋️',
+        title: 'For Gyms & Fitness Centers',
+        features: [
+          'Shows membership plans and prices via WhatsApp',
+          'Schedule classes and manage available spots',
+          'Class reminders and membership expiry alerts',
+          'Instructor schedule management',
+        ],
+        quote: '"Our members book classes in seconds from the chat."',
+        author: '— Director, FitZone Gym',
+      },
+      pharmacy: {
+        emoji: '💊',
+        title: 'For Pharmacies & Drugstores',
+        features: [
+          'Check availability and prices of medications',
+          'The bot takes orders and verifies stock in real time',
+          'Delivery and in-store pickup',
+          'Out-of-stock alerts',
+        ],
+        quote: '"Our clients order medications without leaving home."',
+        author: '— Manager, Salud Total Pharmacy',
+      },
+      veterinary: {
+        emoji: '🐾',
+        title: 'For Veterinary Clinics',
+        features: [
+          'Schedule appointments for consultations and procedures',
+          'Pet history and vaccine reminders',
+          'Lab results notifications',
+          'Post-consultation follow-up via WhatsApp',
+        ],
+        quote: '"Pet owners love getting updates via WhatsApp."',
+        author: '— Veterinarian, PetCare Clinic',
+      },
+      hotel: {
+        emoji: '🏨',
+        title: 'For Hotels & Hostels',
+        features: [
+          'Shows room types and availability',
+          'The bot receives inquiries and reservations directly',
+          'Services info, rates, and check-in/out',
+          'Automatic reminders and confirmations',
+        ],
+        quote: '"We handle reservation inquiries 24/7 without extra staff."',
+        author: '— Manager, Vista Verde Hotel',
+      },
+      bakery: {
+        emoji: '🍞',
+        title: 'For Bakeries & Pastry Shops',
+        features: [
+          'The bot shows the daily menu and special products',
+          'Takes orders and reservations for custom cakes',
+          'Notifies when the order is ready for pickup',
+          'Local delivery management',
+        ],
+        quote: '"Clients place special orders via WhatsApp without any hassle."',
+        author: '— Owner, Dulce Arte Bakery',
+      },
+      workshop: {
+        emoji: '🔧',
+        title: 'For Repair Shops & Mechanics',
+        features: [
+          'Register vehicles and fault descriptions via WhatsApp',
+          'Real-time repair tracking with status updates',
+          'Parts and labor quotes',
+          'Notifies when the vehicle is ready',
+        ],
+        quote: '"Clients track their vehicle status in real time."',
+        author: '— Owner, Auto Express Workshop',
       },
       other: {
+        emoji: '🏪',
         title: 'For Any Business',
         features: [
           'Flexible platform adaptable to any industry',
@@ -327,6 +532,11 @@ export const translations = {
         quote: '"Automatiza360 adapted perfectly to our business model."',
         author: '— Entrepreneur, Automatiza360 Customer',
       },
+    },
+    demo: {
+      title: 'Try it yourself',
+      subtitle: 'No sign-up. No credit card. This is how your business looks with Automatiza360.',
+      sectionLabel: 'Try the bot now',
     },
     pricing: {
       title: 'Simple, transparent pricing',

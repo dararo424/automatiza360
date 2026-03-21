@@ -2,6 +2,7 @@ import * as crypto from 'crypto';
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Plan, Role, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { BillingService } from '../billing/billing.service';
 
 type PlanKey = 'STARTER' | 'PRO' | 'BUSINESS';
 
@@ -13,7 +14,10 @@ const PRECIOS: Record<PlanKey, number> = {
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly billingService: BillingService,
+  ) {}
 
   async crearTransaccion(tenantId: string, plan: PlanKey) {
     const tenant = await this.prisma.tenant.findUnique({
@@ -93,6 +97,17 @@ export class PaymentsService {
             },
           }),
         ]);
+
+        // Registrar pago en historial de facturación
+        await this.billingService.registrarPago(
+          intent.tenantId,
+          intent.monto / 100, // centavos → pesos
+          intent.plan,
+          referencia,
+          transaccion.id,
+          'COMPLETADO',
+          `Plan ${intent.plan}`,
+        );
       } else if (
         transaccion.status === 'DECLINED' ||
         transaccion.status === 'VOIDED'
@@ -101,6 +116,17 @@ export class PaymentsService {
           where: { id: intent.id },
           data: { status: transaccion.status },
         });
+
+        // Registrar pago fallido
+        await this.billingService.registrarPago(
+          intent.tenantId,
+          intent.monto / 100,
+          intent.plan,
+          referencia,
+          transaccion.id,
+          'FALLIDO',
+          `Plan ${intent.plan} - ${transaccion.status}`,
+        );
       }
     }
 

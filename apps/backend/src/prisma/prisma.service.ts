@@ -49,6 +49,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get turno() { return this.client.turno; }
   get cupon() { return this.client.cupon; }
   get pushSubscription() { return this.client.pushSubscription; }
+  get pagoRegistro() { return this.client.pagoRegistro; }
 
   // Transaction support
   $transaction: PrismaClient['$transaction'] = (...args: any[]) =>

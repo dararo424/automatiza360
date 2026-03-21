@@ -40,6 +40,7 @@ function getNavItems(industry: Industry): NavItem[] {
       { to: '/contactos', label: 'Contactos', emoji: '👥' },
       { to: '/campañas', label: 'Campañas', emoji: '📢' },
       { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
       ...COMMON_BOTTOM,
     ];
   }
@@ -55,6 +56,7 @@ function getNavItems(industry: Industry): NavItem[] {
       { to: '/contactos', label: 'Contactos', emoji: '👥' },
       { to: '/campañas', label: 'Campañas', emoji: '📢' },
       { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
       ...COMMON_BOTTOM,
     ];
   }
@@ -67,6 +69,93 @@ function getNavItems(industry: Industry): NavItem[] {
       { to: '/contactos', label: 'Contactos', emoji: '👥' },
       { to: '/campañas', label: 'Campañas', emoji: '📢' },
       { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
+      ...COMMON_BOTTOM,
+    ];
+  }
+
+  if (industry === 'CLOTHING_STORE' || industry === 'PHARMACY') {
+    return [
+      ...base,
+      { to: '/productos', label: 'Productos', emoji: '📦' },
+      { to: '/inventario', label: 'Inventario', emoji: '🗃️' },
+      { to: '/ordenes', label: 'Órdenes', emoji: '🛒' },
+      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
+      { to: '/contactos', label: 'Contactos', emoji: '👥' },
+      { to: '/campañas', label: 'Campañas', emoji: '📢' },
+      { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
+      ...COMMON_BOTTOM,
+    ];
+  }
+
+  if (industry === 'GYM') {
+    return [
+      ...base,
+      { to: '/productos', label: 'Membresías', emoji: '🏋️' },
+      { to: '/agenda', label: 'Clases', emoji: '📅' },
+      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
+      { to: '/contactos', label: 'Contactos', emoji: '👥' },
+      { to: '/campañas', label: 'Campañas', emoji: '📢' },
+      { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
+      ...COMMON_BOTTOM,
+    ];
+  }
+
+  if (industry === 'VETERINARY') {
+    return [
+      ...base,
+      { to: '/agenda', label: 'Citas', emoji: '📅' },
+      { to: '/tickets', label: 'Historial Mascotas', emoji: '🐾' },
+      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
+      { to: '/contactos', label: 'Contactos', emoji: '👥' },
+      { to: '/campañas', label: 'Campañas', emoji: '📢' },
+      { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
+      ...COMMON_BOTTOM,
+    ];
+  }
+
+  if (industry === 'HOTEL') {
+    return [
+      ...base,
+      { to: '/agenda', label: 'Reservas', emoji: '🏨' },
+      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
+      { to: '/contactos', label: 'Contactos', emoji: '👥' },
+      { to: '/campañas', label: 'Campañas', emoji: '📢' },
+      { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
+      ...COMMON_BOTTOM,
+    ];
+  }
+
+  if (industry === 'BAKERY') {
+    return [
+      ...base,
+      { to: '/ordenes', label: 'Órdenes', emoji: '🍞' },
+      { to: '/menu-dia', label: 'Menú del día', emoji: '🍴' },
+      { to: '/productos', label: 'Productos', emoji: '📦' },
+      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
+      { to: '/contactos', label: 'Contactos', emoji: '👥' },
+      { to: '/campañas', label: 'Campañas', emoji: '📢' },
+      { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
+      ...COMMON_BOTTOM,
+    ];
+  }
+
+  if (industry === 'WORKSHOP') {
+    return [
+      ...base,
+      { to: '/tickets', label: 'Tickets', emoji: '🔧' },
+      { to: '/cotizaciones', label: 'Cotizaciones', emoji: '📄' },
+      { to: '/inventario', label: 'Inventario', emoji: '📦' },
+      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
+      { to: '/contactos', label: 'Contactos', emoji: '👥' },
+      { to: '/campañas', label: 'Campañas', emoji: '📢' },
+      { to: '/gastos', label: 'Gastos', emoji: '💳' },
+      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
       ...COMMON_BOTTOM,
     ];
   }
@@ -77,6 +166,7 @@ function getNavItems(industry: Industry): NavItem[] {
     { to: '/contactos', label: 'Contactos', emoji: '👥' },
     { to: '/campañas', label: 'Campañas', emoji: '📢' },
     { to: '/gastos', label: 'Gastos', emoji: '💳' },
+    { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
     ...COMMON_BOTTOM,
   ];
 }

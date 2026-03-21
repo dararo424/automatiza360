@@ -3,6 +3,7 @@ import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { SocialProof } from './components/SocialProof';
 import { HowItWorks } from './components/HowItWorks';
+import { DemoChatSection } from './components/DemoChatSection';
 import { Features } from './components/Features';
 import { Industries } from './components/Industries';
 import { Pricing } from './components/Pricing';
@@ -20,6 +21,7 @@ export default function App() {
         <Hero />
         <SocialProof />
         <HowItWorks />
+        <DemoChatSection />
         <Features />
         <Industries />
         <Pricing />

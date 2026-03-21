@@ -17,10 +17,18 @@ interface FormData {
 }
 
 const INDUSTRY_OPTIONS: { value: Industry; label: string; emoji: string; desc: string }[] = [
-  { value: 'RESTAURANT', label: 'Restaurante / Café', emoji: '🍽️', desc: 'Gestión de órdenes, menú y delivery' },
+  { value: 'RESTAURANT', label: 'Restaurante', emoji: '🍽️', desc: 'Gestión de órdenes, menú y delivery' },
   { value: 'TECH_STORE', label: 'Tienda de Tecnología', emoji: '💻', desc: 'Reparaciones, cotizaciones e inventario' },
   { value: 'CLINIC', label: 'Clínica / Consultorio', emoji: '🏥', desc: 'Citas, pacientes y expedientes' },
-  { value: 'OTHER', label: 'Otro negocio', emoji: '🏪', desc: 'Solución adaptable a tu industria' },
+  { value: 'BEAUTY', label: 'Salón de Belleza / Spa', emoji: '💅', desc: 'Reservas, servicios y estilistas' },
+  { value: 'CLOTHING_STORE', label: 'Tienda de Ropa', emoji: '👗', desc: 'Catálogo, tallas y pedidos' },
+  { value: 'GYM', label: 'Gimnasio / Fitness', emoji: '🏋️', desc: 'Membresías, clases y horarios' },
+  { value: 'PHARMACY', label: 'Farmacia / Droguería', emoji: '💊', desc: 'Inventario, precios y pedidos' },
+  { value: 'VETERINARY', label: 'Veterinaria', emoji: '🐾', desc: 'Citas, historial de mascotas' },
+  { value: 'HOTEL', label: 'Hotel / Hostal', emoji: '🏨', desc: 'Reservas de habitaciones' },
+  { value: 'BAKERY', label: 'Panadería / Pastelería', emoji: '🍞', desc: 'Órdenes, menú y pedidos del día' },
+  { value: 'WORKSHOP', label: 'Taller / Mecánica', emoji: '🔧', desc: 'Tickets de reparación e inventario' },
+  { value: 'OTHER', label: 'Otro tipo de negocio', emoji: '🏪', desc: 'Solución adaptable a tu industria' },
 ];
 
 function StepIndicator({ current }: { current: Step }) {

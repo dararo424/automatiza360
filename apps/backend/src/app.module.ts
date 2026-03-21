@@ -37,6 +37,8 @@ import { TurnosModule } from './turnos/turnos.module';
 import { CuponesModule } from './cupones/cupones.module';
 import { PushModule } from './push/push.module';
 import { CajaModule } from './caja/caja.module';
+import { BillingModule } from './billing/billing.module';
+import { FlujoModule } from './flujos/flujos.module';
 
 @Module({
   imports: [
@@ -76,6 +78,8 @@ import { CajaModule } from './caja/caja.module';
     CuponesModule,
     PushModule,
     CajaModule,
+    BillingModule,
+    FlujoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

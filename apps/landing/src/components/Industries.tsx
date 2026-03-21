@@ -3,9 +3,8 @@ import type { RefObject } from 'react';
 import { useI18n } from '../hooks/useI18n';
 import { useIntersection } from '../hooks/useIntersection';
 
-type Tab = 'restaurant' | 'tech' | 'clinic' | 'other';
-const TABS: Tab[] = ['restaurant', 'tech', 'clinic', 'other'];
-const TAB_EMOJIS = ['🍽️', '💻', '🏥', '🏪'];
+type Tab = 'restaurant' | 'tech' | 'clinic' | 'beauty' | 'clothing' | 'gym' | 'pharmacy' | 'veterinary' | 'hotel' | 'bakery' | 'workshop' | 'other';
+const TABS: Tab[] = ['restaurant', 'tech', 'clinic', 'beauty', 'clothing', 'gym', 'pharmacy', 'veterinary', 'hotel', 'bakery', 'workshop', 'other'];
 
 export function Industries() {
   const { t } = useI18n();
@@ -30,13 +29,13 @@ export function Industries() {
             <button
               key={tab}
               onClick={() => setActive(tab)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
                 active === tab
                   ? 'bg-brand-dark text-white shadow-md'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
               }`}
             >
-              <span>{TAB_EMOJIS[i]}</span>
+              <span>{t.industries[tab].emoji}</span>
               <span>{t.industries.tabs[i]}</span>
             </button>
           ))}
@@ -63,7 +62,7 @@ export function Industries() {
           {/* Decorative side */}
           <div className="relative">
             <div className="bg-brand-dark rounded-2xl p-8 text-center shadow-xl">
-              <div className="text-8xl mb-4">{TAB_EMOJIS[TABS.indexOf(active)]}</div>
+              <div className="text-8xl mb-4">{t.industries[active].emoji}</div>
               <div className="text-white font-display font-bold text-xl mb-2">{content.title}</div>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {content.features.slice(0, 3).map((feat) => (
