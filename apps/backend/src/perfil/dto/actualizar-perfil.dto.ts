@@ -28,4 +28,8 @@ export class ActualizarPerfilDto {
   @IsOptional()
   @IsNumber()
   longitud?: number;
+
+  @IsOptional()
+  @IsString()
+  ownerPhone?: string;
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { getPlanInfo, iniciarUpgrade } from '../../api/subscriptions';
+import { getPlanInfo, iniciarUpgrade, cancelarSuscripcion, reactivarSuscripcion } from '../../api/subscriptions';
+import { useAuth } from '../../context/AuthContext';
 import { getMiCodigo, getReferrals } from '../../api/referidos';
 import { getBotMetricas } from '../../api/dashboard';
 import { getPagos } from '../../api/billing';
@@ -19,8 +20,25 @@ const PLAN_COLORS: Record<string, string> = {
   BUSINESS: 'bg-amber-600',
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  TRIAL: 'Trial',
+  ACTIVE: 'Activo',
+  SUSPENDED: 'Suspendido',
+  CANCELLED: 'Cancelado',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  TRIAL: 'bg-amber-600',
+  ACTIVE: 'bg-emerald-600',
+  SUSPENDED: 'bg-red-600',
+  CANCELLED: 'bg-slate-500',
+};
+
 export function PlanPortalPage() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [upgradeError, setUpgradeError] = useState('');
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const { data: planInfo, isLoading } = useQuery({
     queryKey: ['plan-info'],
@@ -36,6 +54,25 @@ export function PlanPortalPage() {
       setUpgradeError('No se pudo iniciar el proceso de pago. Inténtalo de nuevo.');
     },
   });
+
+  const cancelMutation = useMutation({
+    mutationFn: cancelarSuscripcion,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plan-info'] });
+      queryClient.invalidateQueries({ queryKey: ['trial-info'] });
+      setShowCancelConfirm(false);
+    },
+  });
+
+  const reactivarMutation = useMutation({
+    mutationFn: reactivarSuscripcion,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['plan-info'] });
+      queryClient.invalidateQueries({ queryKey: ['trial-info'] });
+    },
+  });
+
+  const isOwner = user?.role === 'OWNER';
 
   const { data: codigo } = useQuery({
     queryKey: ['referral-code'],
@@ -87,8 +124,8 @@ export function PlanPortalPage() {
             <p className="text-slate-400 text-sm mb-1">Plan actual</p>
             <div className="flex items-center gap-2">
               <span className={`text-white font-bold text-2xl`}>{PLAN_NAMES[planInfo.plan] ?? planInfo.plan}</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full text-white ${PLAN_COLORS[planInfo.plan] ?? 'bg-slate-600'}`}>
-                {planInfo.status}
+              <span className={`text-xs px-2 py-0.5 rounded-full text-white ${STATUS_COLORS[planInfo.status] ?? PLAN_COLORS[planInfo.plan] ?? 'bg-slate-600'}`}>
+                {STATUS_LABELS[planInfo.status] ?? planInfo.status}
               </span>
             </div>
             {planInfo.status === 'TRIAL' && (
@@ -250,6 +287,69 @@ export function PlanPortalPage() {
           </div>
         )}
       </div>
+
+      {/* Gestión de suscripción */}
+      {isOwner && (
+        <div className="bg-slate-800 rounded-xl p-5 mb-6">
+          <h2 className="text-white font-semibold mb-3">Gestión de suscripción</h2>
+          {cancelMutation.isError && (
+            <p className="text-red-400 text-sm mb-3">No se pudo procesar la solicitud. Inténtalo de nuevo.</p>
+          )}
+          {reactivarMutation.isError && (
+            <p className="text-red-400 text-sm mb-3">No se pudo reactivar la suscripción. Inténtalo de nuevo.</p>
+          )}
+          {reactivarMutation.isSuccess && (
+            <p className="text-emerald-400 text-sm mb-3">Suscripción reactivada exitosamente.</p>
+          )}
+
+          {planInfo.status === 'CANCELLED' ? (
+            <div>
+              <p className="text-slate-400 text-sm mb-3">Tu suscripción está cancelada. Puedes reactivarla en cualquier momento.</p>
+              <button
+                onClick={() => reactivarMutation.mutate()}
+                disabled={reactivarMutation.isPending}
+                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold px-4 py-3 rounded-xl text-sm transition-colors"
+              >
+                {reactivarMutation.isPending ? 'Reactivando...' : 'Reactivar suscripción'}
+              </button>
+            </div>
+          ) : (
+            <div>
+              {!showCancelConfirm ? (
+                <div>
+                  <p className="text-slate-400 text-sm mb-3">Si cancelas, mantendrás acceso hasta fin del período actual.</p>
+                  <button
+                    onClick={() => setShowCancelConfirm(true)}
+                    className="border border-red-500 text-red-400 hover:bg-red-900/30 font-semibold px-4 py-3 rounded-xl text-sm transition-colors"
+                  >
+                    Cancelar suscripción
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-red-900/20 border border-red-700 rounded-xl p-4">
+                  <p className="text-red-300 font-semibold mb-1">¿Estás seguro?</p>
+                  <p className="text-red-400 text-sm mb-4">Perderás acceso al finalizar el período actual. Esta acción se puede revertir.</p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => cancelMutation.mutate()}
+                      disabled={cancelMutation.isPending}
+                      className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+                    >
+                      {cancelMutation.isPending ? 'Cancelando...' : 'Sí, cancelar'}
+                    </button>
+                    <button
+                      onClick={() => setShowCancelConfirm(false)}
+                      className="border border-slate-600 text-slate-300 hover:bg-slate-700 px-4 py-2 rounded-lg text-sm transition-colors"
+                    >
+                      No, volver
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Historial de pagos */}
       <div className="bg-slate-800 rounded-xl p-5 mt-6">

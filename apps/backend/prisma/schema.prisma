@@ -61,6 +61,10 @@ model Tenant {
   pushSubscriptions    PushSubscription[]
   flujosActivos        String             @default("ventas,citas")
   pagos                PagoRegistro[]
+  onboardingStep       Int                @default(0)
+  onboardingDone       Boolean            @default(false)
+  npsRespuestas        NpsRespuesta[]
+  sucursales           Sucursal[]
 }
 
 // Usuario dentro de un negocio
@@ -645,6 +649,33 @@ model Turno {
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id])
   tenant     Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// NPS responses
+model NpsRespuesta {
+  id           String   @id @default(uuid())
+  tenantId     String
+  clientPhone  String
+  score        Int
+  comentario   String?
+  tipo         String
+  referenciaId String?
+  createdAt    DateTime @default(now())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// Sucursales / branches
+model Sucursal {
+  id           String   @id @default(uuid())
+  tenantId     String
+  nombre       String
+  direccion    String?
+  ciudad       String?
+  telefono     String?
+  twilioNumber String?
+  activa       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
 }
 
 // Historial de pagos / facturación

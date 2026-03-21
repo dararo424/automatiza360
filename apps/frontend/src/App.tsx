@@ -36,6 +36,8 @@ import { TurnosPage } from './pages/turnos/TurnosPage';
 import { CuponesPage } from './pages/cupones/CuponesPage';
 import { CajaPage } from './pages/caja/CajaPage';
 import { FlujoPage } from './pages/flujos/FlujoPage';
+import { NpsPage } from './pages/nps/NpsPage';
+import { SucursalesPage } from './pages/sucursales/SucursalesPage';
 
 export function App() {
   return (
@@ -75,6 +77,8 @@ export function App() {
             <Route path="/cupones" element={<CuponesPage />} />
             <Route path="/caja" element={<CajaPage />} />
             <Route path="/flujos" element={<FlujoPage />} />
+            <Route path="/nps" element={<NpsPage />} />
+            <Route path="/sucursales" element={<SucursalesPage />} />
           </Route>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminPage />} />

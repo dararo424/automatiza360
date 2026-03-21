@@ -39,6 +39,8 @@ import { PushModule } from './push/push.module';
 import { CajaModule } from './caja/caja.module';
 import { BillingModule } from './billing/billing.module';
 import { FlujoModule } from './flujos/flujos.module';
+import { NpsModule } from './nps/nps.module';
+import { SucursalesModule } from './sucursales/sucursales.module';
 
 @Module({
   imports: [
@@ -80,6 +82,8 @@ import { FlujoModule } from './flujos/flujos.module';
     CajaModule,
     BillingModule,
     FlujoModule,
+    NpsModule,
+    SucursalesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

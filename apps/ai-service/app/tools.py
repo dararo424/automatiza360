@@ -369,6 +369,37 @@ _cancelar_cita = types.FunctionDeclaration(
     ),
 )
 
+_registrar_nps = types.FunctionDeclaration(
+    name="registrar_nps",
+    description=(
+        "Registra la respuesta NPS del cliente después de una orden entregada o cita completada. "
+        "Úsala cuando el cliente responda a la pregunta de satisfacción con un número del 0 al 10."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "score": types.Schema(
+                type=types.Type.INTEGER,
+                description="Puntuación del 0 al 10 que dio el cliente.",
+            ),
+            "comentario": types.Schema(
+                type=types.Type.STRING,
+                description="Comentario adicional del cliente (opcional).",
+            ),
+            "tipo": types.Schema(
+                type=types.Type.STRING,
+                description="Tipo de referencia: 'ORDER' o 'APPOINTMENT'.",
+                enum=["ORDER", "APPOINTMENT"],
+            ),
+            "referencia_id": types.Schema(
+                type=types.Type.STRING,
+                description="ID de la orden o cita (opcional).",
+            ),
+        },
+        required=["score", "tipo"],
+    ),
+)
+
 _CLINIC_TOOLS = [
     _consultar_servicios_citas,
     _consultar_profesionales_citas,
@@ -376,6 +407,7 @@ _CLINIC_TOOLS = [
     _agendar_cita,
     _ver_mis_citas,
     _cancelar_cita,
+    _registrar_nps,
 ]
 
 TOOLS_CLINIC = [types.Tool(function_declarations=_CLINIC_TOOLS)]
@@ -425,6 +457,7 @@ TOOLS_RESTAURANT = [
         _ver_estado_pedido,
         _actualizar_menu_dia,
         _validar_cupon,
+        _registrar_nps,
     ])
 ]
 
@@ -629,6 +662,16 @@ async def execute_tool(
             result = await client._request("POST", "/cupones/validar", {
                 "codigo": str(args["codigo"]).upper(),
                 "monto": float(args.get("monto", 0)),
+            })
+            return json.dumps(result, ensure_ascii=False)
+
+        if name == "registrar_nps":
+            result = await client._request("POST", "/nps/bot", {
+                "clientPhone": clean_phone,
+                "score": int(args["score"]),
+                "comentario": args.get("comentario"),
+                "tipo": args.get("tipo", "ORDER"),
+                "referenciaId": args.get("referencia_id"),
             })
             return json.dumps(result, ensure_ascii=False)
 

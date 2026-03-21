@@ -17,6 +17,7 @@ import { StatCard } from '../components/ui/StatCard';
 import { Badge } from '../components/ui/Badge';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { getResenasStats } from '../api/resenas';
+import { getNpsStats } from '../api/nps';
 
 const APPOINTMENT_COLORS: Record<string, string> = {
   SCHEDULED: 'bg-blue-100 text-blue-800',
@@ -347,6 +348,53 @@ function RecentActivity({
   );
 }
 
+function NpsCard() {
+  const { data: stats } = useQuery({
+    queryKey: ['nps-stats'],
+    queryFn: getNpsStats,
+    staleTime: 5 * 60_000,
+  });
+
+  if (!stats || stats.total === 0) return null;
+
+  const color =
+    stats.total < 5
+      ? 'text-slate-400'
+      : stats.npsScore > 50
+      ? 'text-green-400'
+      : stats.npsScore >= 0
+      ? 'text-yellow-400'
+      : 'text-red-400';
+
+  const label =
+    stats.total < 5
+      ? 'Insuficientes respuestas'
+      : stats.npsScore > 50
+      ? 'Excelente'
+      : stats.npsScore >= 0
+      ? 'Bueno'
+      : 'Mejorable';
+
+  return (
+    <Link to="/nps" className="block bg-slate-800 hover:bg-slate-700 rounded-xl p-4 transition-colors">
+      <p className="text-slate-400 text-xs mb-1">NPS — Net Promoter Score</p>
+      <div className="flex items-end gap-3">
+        <span className={`font-black text-3xl ${color}`}>
+          {stats.total < 5 ? '—' : stats.npsScore}
+        </span>
+        <span className="text-slate-400 text-sm pb-0.5">{label}</span>
+      </div>
+      {stats.total >= 5 && (
+        <div className="flex gap-3 mt-2 text-xs text-slate-400">
+          <span className="text-green-400">{stats.promotores} promotores</span>
+          <span className="text-yellow-400">{stats.neutrales} neutrales</span>
+          <span className="text-red-400">{stats.detractores} detractores</span>
+        </div>
+      )}
+    </Link>
+  );
+}
+
 function ResenasCard() {
   const { data: stats } = useQuery({
     queryKey: ['resenas-stats'],
@@ -384,7 +432,10 @@ export function DashboardPage() {
     <div className="space-y-6">
       <OnboardingChecklist />
       <DashboardContent />
-      <ResenasCard />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <NpsCard />
+        <ResenasCard />
+      </div>
     </div>
   );
 }

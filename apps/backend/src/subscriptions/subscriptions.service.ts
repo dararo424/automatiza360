@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Plan, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 const PLAN_LIMITS: Record<Plan, { conversations: number | null; apiKeys: boolean; teamSize: number | null }> = {
   STARTER: { conversations: 500, apiKeys: false, teamSize: 3 },
@@ -10,7 +11,10 @@ const PLAN_LIMITS: Record<Plan, { conversations: number | null; apiKeys: boolean
 
 @Injectable()
 export class SubscriptionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
+  ) {}
 
   async checkTrialStatus(tenantId: string): Promise<void> {
     const tenant = await this.prisma.tenant.findUnique({
@@ -131,5 +135,61 @@ export class SubscriptionsService {
       `&reference=${referencia}&redirect-url=${redirectUrl}`;
 
     return { url, referencia };
+  }
+
+  async cancelarSuscripcion(tenantId: string) {
+    const tenant = await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { subscriptionStatus: SubscriptionStatus.CANCELLED },
+      select: { id: true, name: true, subscriptionStatus: true },
+    });
+
+    // Notify owner via email
+    const owner = await this.prisma.user.findFirst({
+      where: { tenantId, role: 'OWNER' },
+      select: { email: true },
+    });
+    if (owner) {
+      await this.emailService.send({
+        to: owner.email,
+        subject: 'Tu suscripción ha sido cancelada — Automatiza360',
+        html: `
+          <h2>Suscripción cancelada</h2>
+          <p>Hola ${tenant.name},</p>
+          <p>Tu suscripción ha sido cancelada. Tendrás acceso hasta fin de mes.</p>
+          <p>Si cambias de opinión, puedes reactivarla en cualquier momento desde tu panel.</p>
+          <a href="${process.env.FRONTEND_URL ?? 'https://app.automatiza360.com'}/mi-plan"
+             style="background:#4f46e5;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:16px">
+            Ir a Mi Plan →
+          </a>
+        `,
+      });
+    }
+
+    return { status: tenant.subscriptionStatus, message: 'Suscripción cancelada. Tendrás acceso hasta fin de mes.' };
+  }
+
+  async reactivarSuscripcion(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { subscriptionStatus: true, trialEndsAt: true },
+    });
+
+    if (!tenant) throw new BadRequestException('Tenant no encontrado');
+    if (tenant.subscriptionStatus !== SubscriptionStatus.CANCELLED) {
+      throw new BadRequestException('Solo se puede reactivar una suscripción cancelada');
+    }
+
+    const now = new Date();
+    const isInTrial = tenant.trialEndsAt && tenant.trialEndsAt > now;
+    const newStatus = isInTrial ? SubscriptionStatus.TRIAL : SubscriptionStatus.ACTIVE;
+
+    const updated = await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { subscriptionStatus: newStatus },
+      select: { subscriptionStatus: true },
+    });
+
+    return { status: updated.subscriptionStatus, message: 'Suscripción reactivada exitosamente.' };
   }
 }

@@ -9,12 +9,14 @@ export default defineConfig({
     manifest: {
       name: 'Automatiza360',
       short_name: 'A360',
-      theme_color: '#0F172A',
+      description: 'Automatización inteligente para tu negocio',
+      theme_color: '#22C55E',
       background_color: '#0F172A',
       display: 'standalone',
+      start_url: '/',
+      scope: '/',
       icons: [
-        { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-        { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+        { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
       ],
     },
     workbox: {

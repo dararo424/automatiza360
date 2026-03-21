@@ -8,6 +8,9 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { SupportChat } from '../support/SupportChat';
 import { getTrialInfo } from '../../api/subscriptions';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
+import { getOnboardingStatus } from '../../api/onboarding';
+import { OnboardingWizard } from '../onboarding/OnboardingWizard';
+import { InstallBanner } from '../common/InstallBanner';
 
 function SuspendedModal({ onLogout }: { onLogout: () => void }) {
   return (
@@ -38,6 +41,7 @@ function SuspendedModal({ onLogout }: { onLogout: () => void }) {
 export function AppLayout() {
   const { user, isLoading, logout } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
   usePushNotifications();
 
   const { data: trialInfo } = useQuery({
@@ -46,6 +50,19 @@ export function AppLayout() {
     enabled: !!user,
     staleTime: 5 * 60_000,
   });
+
+  const { data: onboardingStatus } = useQuery({
+    queryKey: ['onboarding-status'],
+    queryFn: getOnboardingStatus,
+    enabled: !!user && user.role !== 'SUPERADMIN',
+    staleTime: 5 * 60_000,
+  });
+
+  const showOnboarding =
+    !onboardingDismissed &&
+    !!onboardingStatus &&
+    !onboardingStatus.done &&
+    user?.role !== 'SUPERADMIN';
 
   if (isLoading) {
     return (
@@ -62,6 +79,12 @@ export function AppLayout() {
   return (
     <div className="flex h-screen overflow-hidden">
       {trialInfo?.status === 'SUSPENDED' && <SuspendedModal onLogout={logout} />}
+      {showOnboarding && (
+        <OnboardingWizard
+          initialStep={onboardingStatus?.step ?? 0}
+          onComplete={() => setOnboardingDismissed(true)}
+        />
+      )}
 
       {/* Mobile overlay */}
       {isMobileOpen && (
@@ -81,6 +104,7 @@ export function AppLayout() {
       </div>
 
       <SupportChat />
+      <InstallBanner />
     </div>
   );
 }

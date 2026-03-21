@@ -264,6 +264,22 @@ export function Sidebar({ isMobileOpen, onClose }: SidebarProps) {
           )}
         </NavLink>
 
+        {/* NPS link */}
+        <NavLink
+          to="/nps"
+          onClick={onClose}
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-indigo-600 text-white'
+                : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+            }`
+          }
+        >
+          <span>📈</span>
+          <span>NPS</span>
+        </NavLink>
+
         {/* Separador */}
         <div className="border-t border-slate-700 my-1" />
 
@@ -289,6 +305,24 @@ export function Sidebar({ isMobileOpen, onClose }: SidebarProps) {
             <span>{item.label}</span>
           </NavLink>
         ))}
+
+        {/* Sucursales — OWNER only */}
+        {user?.role === 'OWNER' && (
+          <NavLink
+            to="/sucursales"
+            onClick={onClose}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+              }`
+            }
+          >
+            <span>🏢</span>
+            <span>Sucursales</span>
+          </NavLink>
+        )}
       </nav>
 
       {/* Trial banner */}

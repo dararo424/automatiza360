@@ -98,6 +98,24 @@ export class PerfilService {
     return tenant;
   }
 
+  async getOnboardingStatus(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { onboardingStep: true, onboardingDone: true },
+    });
+    if (!tenant) throw new NotFoundException('Tenant no encontrado');
+    return { step: tenant.onboardingStep, done: tenant.onboardingDone };
+  }
+
+  async actualizarOnboarding(tenantId: string, step: number) {
+    const done = step >= 5;
+    return this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { onboardingStep: step, onboardingDone: done },
+      select: { onboardingStep: true, onboardingDone: true },
+    });
+  }
+
   async actualizarPerfil(tenantId: string, dto: ActualizarPerfilDto) {
     return this.prisma.tenant.update({
       where: { id: tenantId },
@@ -109,6 +127,7 @@ export class PerfilService {
         ciudad: dto.ciudad,
         latitud: dto.latitud,
         longitud: dto.longitud,
+        ownerPhone: dto.ownerPhone,
       },
       select: {
         id: true,

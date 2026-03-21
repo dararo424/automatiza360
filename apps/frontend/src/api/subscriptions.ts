@@ -22,3 +22,11 @@ export function getPlanInfo(): Promise<PlanInfo> {
 export function iniciarUpgrade(plan: string): Promise<{ url: string; referencia: string }> {
   return api.post('/subscriptions/upgrade', { plan }).then((r) => r.data);
 }
+
+export function cancelarSuscripcion(): Promise<{ status: string; message: string }> {
+  return api.post('/subscriptions/cancelar').then((r) => r.data);
+}
+
+export function reactivarSuscripcion(): Promise<{ status: string; message: string }> {
+  return api.post('/subscriptions/reactivar').then((r) => r.data);
+}

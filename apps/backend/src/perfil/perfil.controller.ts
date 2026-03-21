@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, UseGuards, Post } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PerfilService } from './perfil.service';
@@ -26,5 +26,20 @@ export class PerfilController {
     @Body() dto: ActualizarPerfilDto,
   ) {
     return this.perfilService.actualizarPerfil(user.tenantId, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('perfil/onboarding-status')
+  getOnboardingStatus(@CurrentUser() user: any) {
+    return this.perfilService.getOnboardingStatus(user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('perfil/onboarding-step')
+  actualizarOnboardingStep(
+    @CurrentUser() user: any,
+    @Body('step') step: number,
+  ) {
+    return this.perfilService.actualizarOnboarding(user.tenantId, step);
   }
 }
