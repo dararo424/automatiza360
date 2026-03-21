@@ -1,15 +1,20 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ConversacionesService } from './conversaciones.service';
 import { IngestMessageDto } from './dto/ingest-message.dto';
 
+@ApiTags('conversaciones')
+@ApiBearerAuth()
 @Controller('conversaciones')
 @UseGuards(JwtAuthGuard)
 export class ConversacionesController {
   constructor(private readonly svc: ConversacionesService) {}
 
+  @SkipThrottle()
   @Post('ingest')
   ingest(@CurrentUser() user: any, @Body() dto: IngestMessageDto) {
     return this.svc.ingestMessage(user.tenantId, dto);
@@ -23,6 +28,15 @@ export class ConversacionesController {
   @Get('uso')
   uso(@CurrentUser() user: any) {
     return this.svc.getUsage(user.tenantId);
+  }
+
+  @Get('sesion/:phone')
+  getSesion(
+    @CurrentUser() user: any,
+    @Param('phone') phone: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.svc.getSesion(user.tenantId, phone, limit ? parseInt(limit, 10) : 10);
   }
 
   @Get(':id')

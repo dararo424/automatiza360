@@ -57,6 +57,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   $transaction: PrismaClient['$transaction'] = (...args: any[]) =>
     (this.client.$transaction as any)(...args);
 
+  // Raw query support
+  $queryRaw: PrismaClient['$queryRaw'] = (...args: any[]) =>
+    (this.client.$queryRaw as any)(...args);
+
   async onModuleInit() {
     await this.client.$connect();
   }

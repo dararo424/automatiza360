@@ -7,6 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PaymentsService } from './payments.service';
@@ -25,6 +26,7 @@ export class PaymentsController {
     return this.payments.crearTransaccion(user.tenantId, dto.plan);
   }
 
+  @SkipThrottle()
   @Post('webhook')
   procesarWebhook(
     @Body() payload: any,

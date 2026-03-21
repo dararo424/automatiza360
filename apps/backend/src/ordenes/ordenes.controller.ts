@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { OrderStatus } from '@prisma/client';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { OrdenesService } from './ordenes.service';
@@ -19,6 +20,8 @@ import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { CrearOrdenBotDto } from './dto/crear-orden-bot.dto';
 import { ActualizarEstadoDto } from './dto/actualizar-estado.dto';
 
+@ApiTags('ordenes')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('ordenes')
 export class OrdenesController {

@@ -179,6 +179,20 @@ class BackendClient:
         result = await self._request("GET", f"/citas/cliente?phone={phone}")
         return result  # type: ignore[return-value]
 
+    # ── Sesión / historial de conversación ────────────────────────────────────
+
+    async def get_sesion(self, phone: str, limit: int = 10) -> list:
+        """Get conversation history from backend for context restoration after restart."""
+        try:
+            clean_phone = phone.replace("whatsapp:", "").strip()
+            encoded = quote_plus(clean_phone)
+            resp_raw = await self._request("GET", f"/conversaciones/sesion/{encoded}?limit={limit}")
+            if isinstance(resp_raw, list):
+                return resp_raw
+            return []
+        except Exception:
+            return []
+
     # ── Conversaciones (bandeja WhatsApp) ─────────────────────────────────────
 
     async def escalar_conversacion_por_telefono(self, phone: str) -> dict | None:

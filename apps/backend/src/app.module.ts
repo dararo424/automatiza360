@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -41,10 +43,15 @@ import { BillingModule } from './billing/billing.module';
 import { FlujoModule } from './flujos/flujos.module';
 import { NpsModule } from './nps/nps.module';
 import { SucursalesModule } from './sucursales/sucursales.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([
+      { name: 'short', ttl: 60000, limit: 10 },
+      { name: 'medium', ttl: 60000, limit: 60 },
+    ]),
     PrismaModule,
     EmailModule,
     RemindersModule,
@@ -84,8 +91,12 @@ import { SucursalesModule } from './sucursales/sucursales.module';
     FlujoModule,
     NpsModule,
     SucursalesModule,
+    HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

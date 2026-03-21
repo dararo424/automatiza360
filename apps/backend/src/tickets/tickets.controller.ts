@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { TicketStatus } from '@prisma/client';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { TicketsService } from './tickets.service';
@@ -19,6 +20,8 @@ import { CrearTicketDto } from './dto/crear-ticket.dto';
 import { ActualizarTicketDto } from './dto/actualizar-ticket.dto';
 import { ActualizarEstadoTicketDto } from './dto/actualizar-estado-ticket.dto';
 
+@ApiTags('tickets')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('tickets')
 export class TicketsController {

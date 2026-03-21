@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CitasService } from './citas.service';
@@ -19,6 +20,8 @@ import { CrearCitaBotDto } from './dto/crear-cita-bot.dto';
 import { CancelarCitaDto } from './dto/cancelar-cita.dto';
 import { ActualizarEstadoCitaDto } from './dto/actualizar-estado-cita.dto';
 
+@ApiTags('citas')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('citas')
 export class CitasController {

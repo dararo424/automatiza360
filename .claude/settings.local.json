@@ -35,7 +35,9 @@
       "Read(//e/Proyectos/**)",
       "Bash(pnpm tsc:*)",
       "Bash(pnpm list:*)",
-      "Bash(powershell -Command \":*)"
+      "Bash(powershell -Command \":*)",
+      "Bash(git stash:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\(''''jest'''',{}\\), indent=2\\)\\)\")"
     ]
   }
 }

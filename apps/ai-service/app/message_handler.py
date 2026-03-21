@@ -79,10 +79,27 @@ async def handle_message(phone: str, text: str, to_number: str = "default") -> s
 
     # ── Backend client + session ──────────────────────────────────────────────
     backend_client = get_client(config.bot_email, config.bot_password)
+    key = _session_key(to_number, phone)
+    is_new_session = key not in _sessions
     session = _get_session(to_number, phone)
 
     # Número limpio sin prefijo "whatsapp:"
     clean_phone = phone.replace("whatsapp:", "").strip()
+
+    # Restore context from DB if this is a new in-memory session (e.g. after restart).
+    # Stored under "restored_context" so it does not conflict with Gemini Content objects
+    # in session["history"]. The agent can use it as a context hint if needed.
+    if is_new_session:
+        try:
+            history = await backend_client.get_sesion(clean_phone)
+            if history:
+                session["restored_context"] = history
+                logger.info(
+                    "Restored %d messages from backend for %s on %s",
+                    len(history), phone, to_number,
+                )
+        except Exception as exc:
+            logger.warning("Failed to restore session for %s: %s", phone, exc)
 
     # Registrar mensaje entrante (fire-and-forget — no bloquea la respuesta)
     asyncio.create_task(

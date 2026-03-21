@@ -111,6 +111,25 @@ export class ConversacionesService {
     };
   }
 
+  async getSesion(tenantId: string, phone: string, limit = 10) {
+    const conversation = await this.prisma.conversation.findFirst({
+      where: { tenantId, clientPhone: { contains: phone.replace('whatsapp:', '').trim() } },
+    });
+    if (!conversation) return [];
+
+    const messages = await this.prisma.message.findMany({
+      where: { conversationId: conversation.id },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+      select: { body: true, direction: true, createdAt: true },
+    });
+
+    return messages.map((m) => ({
+      role: m.direction === 'INBOUND' ? 'user' : 'assistant',
+      content: m.body,
+    }));
+  }
+
   async escalarConversacionPorTelefono(tenantId: string, phone: string) {
     const clean = phone.replace('whatsapp:', '').trim();
     const conversation = await this.prisma.conversation.findFirst({
