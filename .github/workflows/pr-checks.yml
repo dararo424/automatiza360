@@ -1,0 +1,39 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint backend
+        working-directory: apps/backend
+        run: pnpm lint
+
+      - name: Type check frontend
+        working-directory: apps/frontend
+        run: pnpm tsc --noEmit
+
+      - name: Run tests
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test"
+          JWT_SECRET: "test-secret-key-minimum-32-characters-long"
+        run: pnpm test

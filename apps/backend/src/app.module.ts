@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import configuration from './config/configuration';
+import { validationSchema } from './config/env.validation';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -47,6 +50,12 @@ import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration],
+      validationSchema,
+      validationOptions: { abortEarly: false },
+    }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       { name: 'short', ttl: 60000, limit: 10 },

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
@@ -8,13 +8,13 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const allowedOrigins = [
-    'https://automatiza360-frontend.vercel.app',
-    'http://localhost:5173',
-    ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
-  ];
+  const env = process.env.NODE_ENV ?? 'development';
+  const port = process.env.PORT ?? 3000;
+
   app.enableCors({
-    origin: allowedOrigins,
+    origin: env === 'production'
+      ? [process.env.FRONTEND_URL ?? '', 'https://automatiza360.vercel.app']
+      : true, // allow all in dev/staging
     credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
@@ -32,6 +32,10 @@ async function bootstrap() {
     swaggerOptions: { persistAuthorization: true },
   });
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(port);
+  Logger.log(`Automatiza360 Backend running in ${env.toUpperCase()} mode on port ${port}`, 'Bootstrap');
+  if (env !== 'production') {
+    Logger.log(`Swagger docs: http://localhost:${port}/api/docs`, 'Bootstrap');
+  }
 }
 bootstrap();
