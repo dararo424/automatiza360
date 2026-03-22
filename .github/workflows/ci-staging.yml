@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Run Tests
+    name: Run Tests & Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,20 +55,3 @@ jobs:
 
       - name: Build frontend
         run: pnpm --filter frontend build
-
-  deploy-staging:
-    name: Deploy to Staging
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy Backend to Railway (Staging)
-        run: railway up --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_STAGING_BACKEND_SERVICE_ID }}

@@ -6,7 +6,7 @@ on:
 
 jobs:
   test:
-    name: Run Tests
+    name: Run Tests & Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,18 +57,4 @@ jobs:
       - name: Build landing
         run: pnpm --filter landing build
 
-  deploy-production:
-    name: Deploy to Production
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy Backend to Railway (Production)
-        run: railway up --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_PROD_BACKEND_SERVICE_ID }}
+# Railway auto-deploys from main branch via GitHub integration (no deploy step needed)
