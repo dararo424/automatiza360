@@ -35,6 +35,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test"
+        run: npx prisma generate
+
       - name: Run backend tests
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test"
