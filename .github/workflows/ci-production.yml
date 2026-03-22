@@ -61,23 +61,11 @@ jobs:
     name: Deploy to Production
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ secrets.RAILWAY_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Deploy Backend to Railway (Production)
-        if: ${{ secrets.RAILWAY_PROD_BACKEND_SERVICE_ID != '' }}
         uses: bervProject/railway-deploy@main
         with:
           railway_token: ${{ secrets.RAILWAY_TOKEN }}
           service: ${{ secrets.RAILWAY_PROD_BACKEND_SERVICE_ID }}
-
-      - name: Deploy Frontend to Vercel (Production)
-        if: ${{ secrets.VERCEL_TOKEN != '' }}
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
-          vercel-args: '--prod'
-          working-directory: apps/frontend

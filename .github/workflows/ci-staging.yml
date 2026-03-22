@@ -60,22 +60,12 @@ jobs:
     name: Deploy to Staging
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push' && secrets.RAILWAY_TOKEN != ''
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
       - name: Deploy Backend to Railway (Staging)
-        if: ${{ secrets.RAILWAY_STAGING_BACKEND_SERVICE_ID != '' }}
         uses: bervProject/railway-deploy@main
         with:
           railway_token: ${{ secrets.RAILWAY_TOKEN }}
           service: ${{ secrets.RAILWAY_STAGING_BACKEND_SERVICE_ID }}
-
-      - name: Deploy to Vercel (Preview)
-        if: ${{ secrets.VERCEL_TOKEN != '' }}
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
-          working-directory: apps/frontend
