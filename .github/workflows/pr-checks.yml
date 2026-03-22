@@ -34,16 +34,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint backend
-        working-directory: apps/backend
-        run: pnpm lint
+        run: pnpm --filter backend lint
 
       - name: Type check frontend
-        working-directory: apps/frontend
-        run: pnpm tsc --noEmit
+        run: pnpm --filter frontend exec tsc --noEmit
 
       - name: Run tests
-        working-directory: apps/backend
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test"
           JWT_SECRET: "test-secret-key-minimum-32-characters-long"
-        run: pnpm test
+        run: pnpm --filter backend test
