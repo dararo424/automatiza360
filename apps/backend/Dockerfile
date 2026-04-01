@@ -42,6 +42,9 @@ COPY --from=builder /app/dist ./dist/
 # Copy prisma schema and migrations so migrate deploy can run at startup
 COPY --from=builder /app/prisma ./prisma/
 
+# Copy JS config for prisma migrate deploy (no ts-node in production)
+COPY prisma.config.js ./
+
 # package.json is required for Node.js module resolution
 COPY package.json ./
 
