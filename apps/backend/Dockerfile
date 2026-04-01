@@ -30,6 +30,8 @@ FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
+RUN npm install -g pnpm@10.30.3
+
 # Copy pruned node_modules (prod-only) that already contain the generated
 # Prisma Client — no reinstall or re-generate needed.
 COPY --from=builder /app/node_modules ./node_modules
@@ -37,9 +39,16 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy compiled output
 COPY --from=builder /app/dist ./dist/
 
+# Copy prisma schema and migrations so migrate deploy can run at startup
+COPY --from=builder /app/prisma ./prisma/
+
 # package.json is required for Node.js module resolution
 COPY package.json ./
 
+# Entrypoint: run migrations then start the app
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
 EXPOSE 3000
 
-CMD ["node", "dist/src/main"]
+CMD ["./docker-entrypoint.sh"]
