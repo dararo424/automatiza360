@@ -11,164 +11,107 @@ interface NavItem {
   emoji: string;
 }
 
+interface NavSection {
+  label?: string;
+  items: NavItem[];
+}
+
 const PLAN_COLORS: Record<string, string> = {
   STARTER: 'bg-slate-600',
   PRO: 'bg-indigo-600',
   BUSINESS: 'bg-amber-600',
 };
 
-const COMMON_BOTTOM: NavItem[] = [
+const CLIENTES: NavItem[] = [
+  { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
+  { to: '/contactos', label: 'Contactos', emoji: '👥' },
+  { to: '/campañas', label: 'Campañas', emoji: '📢' },
+  { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
+];
+
+const FINANZAS: NavItem[] = [
+  { to: '/gastos', label: 'Gastos', emoji: '💳' },
   { to: '/caja', label: 'Caja', emoji: '💵' },
+  { to: '/compras', label: 'Proveedores', emoji: '🚚' },
+];
+
+const HERRAMIENTAS: NavItem[] = [
   { to: '/cupones', label: 'Cupones', emoji: '🏷️' },
   { to: '/resenas', label: 'Reseñas', emoji: '⭐' },
   { to: '/turnos', label: 'Turnos', emoji: '🗓️' },
-  { to: '/compras', label: 'Proveedores', emoji: '🚚' },
-  { to: '/automaciones', label: 'Automatizaciones', emoji: '⚡' },
+  { to: '/automaciones', label: 'Automatizaciones', emoji: '🤖' },
   { to: '/configuracion', label: 'Configuración', emoji: '⚙️' },
 ];
 
-function getNavItems(industry: Industry): NavItem[] {
-  const base: NavItem[] = [{ to: '/dashboard', label: 'Dashboard', emoji: '🏠' }];
+function getSections(industry: Industry): NavSection[] {
+  const dashboard: NavItem = { to: '/dashboard', label: 'Dashboard', emoji: '🏠' };
 
-  if (industry === 'RESTAURANT') {
-    return [
-      ...base,
+  const operacionesPorIndustria: Record<string, NavItem[]> = {
+    RESTAURANT: [
       { to: '/ordenes', label: 'Órdenes', emoji: '🍽️' },
       { to: '/productos', label: 'Productos', emoji: '📦' },
       { to: '/menu-dia', label: 'Menú del día', emoji: '🍴' },
-      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
-      { to: '/contactos', label: 'Contactos', emoji: '👥' },
-      { to: '/campañas', label: 'Campañas', emoji: '📢' },
-      { to: '/gastos', label: 'Gastos', emoji: '💳' },
-      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
-      ...COMMON_BOTTOM,
-    ];
-  }
-
-  if (industry === 'TECH_STORE') {
-    return [
-      ...base,
+    ],
+    TECH_STORE: [
       { to: '/tickets', label: 'Tickets', emoji: '🔧' },
       { to: '/cotizaciones', label: 'Cotizaciones', emoji: '📄' },
       { to: '/inventario', label: 'Inventario', emoji: '📦' },
       { to: '/garantias', label: 'Garantías', emoji: '🛡️' },
-      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
-      { to: '/contactos', label: 'Contactos', emoji: '👥' },
-      { to: '/campañas', label: 'Campañas', emoji: '📢' },
-      { to: '/gastos', label: 'Gastos', emoji: '💳' },
-      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
-      ...COMMON_BOTTOM,
-    ];
-  }
-
-  if (industry === 'CLINIC' || industry === 'BEAUTY') {
-    return [
-      ...base,
+    ],
+    CLINIC: [
       { to: '/agenda', label: 'Agenda', emoji: '📅' },
-      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
-      { to: '/contactos', label: 'Contactos', emoji: '👥' },
-      { to: '/campañas', label: 'Campañas', emoji: '📢' },
-      { to: '/gastos', label: 'Gastos', emoji: '💳' },
-      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
-      ...COMMON_BOTTOM,
-    ];
-  }
-
-  if (industry === 'CLOTHING_STORE' || industry === 'PHARMACY') {
-    return [
-      ...base,
+    ],
+    BEAUTY: [
+      { to: '/agenda', label: 'Agenda', emoji: '📅' },
+    ],
+    CLOTHING_STORE: [
       { to: '/productos', label: 'Productos', emoji: '📦' },
       { to: '/inventario', label: 'Inventario', emoji: '🗃️' },
       { to: '/ordenes', label: 'Órdenes', emoji: '🛒' },
-      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
-      { to: '/contactos', label: 'Contactos', emoji: '👥' },
-      { to: '/campañas', label: 'Campañas', emoji: '📢' },
-      { to: '/gastos', label: 'Gastos', emoji: '💳' },
-      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
-      ...COMMON_BOTTOM,
-    ];
-  }
-
-  if (industry === 'GYM') {
-    return [
-      ...base,
+    ],
+    PHARMACY: [
+      { to: '/productos', label: 'Productos', emoji: '📦' },
+      { to: '/inventario', label: 'Inventario', emoji: '🗃️' },
+      { to: '/ordenes', label: 'Órdenes', emoji: '🛒' },
+    ],
+    GYM: [
       { to: '/productos', label: 'Membresías', emoji: '🏋️' },
       { to: '/agenda', label: 'Clases', emoji: '📅' },
-      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
-      { to: '/contactos', label: 'Contactos', emoji: '👥' },
-      { to: '/campañas', label: 'Campañas', emoji: '📢' },
-      { to: '/gastos', label: 'Gastos', emoji: '💳' },
-      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
-      ...COMMON_BOTTOM,
-    ];
-  }
-
-  if (industry === 'VETERINARY') {
-    return [
-      ...base,
+    ],
+    VETERINARY: [
       { to: '/agenda', label: 'Citas', emoji: '📅' },
       { to: '/tickets', label: 'Historial Mascotas', emoji: '🐾' },
-      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
-      { to: '/contactos', label: 'Contactos', emoji: '👥' },
-      { to: '/campañas', label: 'Campañas', emoji: '📢' },
-      { to: '/gastos', label: 'Gastos', emoji: '💳' },
-      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
-      ...COMMON_BOTTOM,
-    ];
-  }
-
-  if (industry === 'HOTEL') {
-    return [
-      ...base,
+    ],
+    HOTEL: [
       { to: '/agenda', label: 'Reservas', emoji: '🏨' },
-      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
-      { to: '/contactos', label: 'Contactos', emoji: '👥' },
-      { to: '/campañas', label: 'Campañas', emoji: '📢' },
-      { to: '/gastos', label: 'Gastos', emoji: '💳' },
-      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
-      ...COMMON_BOTTOM,
-    ];
-  }
-
-  if (industry === 'BAKERY') {
-    return [
-      ...base,
+    ],
+    BAKERY: [
       { to: '/ordenes', label: 'Órdenes', emoji: '🍞' },
       { to: '/menu-dia', label: 'Menú del día', emoji: '🍴' },
       { to: '/productos', label: 'Productos', emoji: '📦' },
-      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
-      { to: '/contactos', label: 'Contactos', emoji: '👥' },
-      { to: '/campañas', label: 'Campañas', emoji: '📢' },
-      { to: '/gastos', label: 'Gastos', emoji: '💳' },
-      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
-      ...COMMON_BOTTOM,
-    ];
-  }
-
-  if (industry === 'WORKSHOP') {
-    return [
-      ...base,
+    ],
+    WORKSHOP: [
       { to: '/tickets', label: 'Tickets', emoji: '🔧' },
       { to: '/cotizaciones', label: 'Cotizaciones', emoji: '📄' },
       { to: '/inventario', label: 'Inventario', emoji: '📦' },
-      { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
-      { to: '/contactos', label: 'Contactos', emoji: '👥' },
-      { to: '/campañas', label: 'Campañas', emoji: '📢' },
-      { to: '/gastos', label: 'Gastos', emoji: '💳' },
-      { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
-      ...COMMON_BOTTOM,
-    ];
+    ],
+  };
+
+  const operaciones = operacionesPorIndustria[industry] ?? [];
+
+  const sections: NavSection[] = [
+    { items: [dashboard] },
+  ];
+
+  if (operaciones.length > 0) {
+    sections.push({ label: 'Operaciones', items: operaciones });
   }
 
-  return [
-    ...base,
-    { to: '/conversaciones', label: 'Conversaciones', emoji: '💬' },
-    { to: '/contactos', label: 'Contactos', emoji: '👥' },
-    { to: '/campañas', label: 'Campañas', emoji: '📢' },
-    { to: '/gastos', label: 'Gastos', emoji: '💳' },
-    { to: '/flujos', label: 'Flujos WhatsApp', emoji: '⚡' },
-    ...COMMON_BOTTOM,
-  ];
+  sections.push({ label: 'Clientes', items: CLIENTES });
+  sections.push({ label: 'Finanzas', items: FINANZAS });
+  sections.push({ label: 'Herramientas', items: HERRAMIENTAS });
+
+  return sections;
 }
 
 interface SidebarProps {
@@ -195,13 +138,20 @@ export function Sidebar({ isMobileOpen, onClose }: SidebarProps) {
   });
 
   const unreadCount = notificaciones?.filter((n) => !n.read).length ?? 0;
-  const navItems = getNavItems(industry);
+  const sections = getSections(industry as Industry);
   const planActual = user?.tenant?.subscriptionPlan || user?.tenant?.plan || 'STARTER';
   const planColor = PLAN_COLORS[planActual] ?? 'bg-slate-600';
   const mostrarTrial =
     user?.tenant?.subscriptionStatus !== 'ACTIVE' &&
     !!user?.tenant?.trialEndsAt &&
     new Date(user.tenant.trialEndsAt) > new Date();
+
+  const linkClass = (isActive: boolean, small = false) =>
+    `flex items-center gap-3 px-3 rounded-lg text-sm font-medium transition-colors ${small ? 'py-2' : 'py-2.5'} ${
+      isActive
+        ? 'bg-indigo-600 text-white'
+        : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+    }`;
 
   return (
     <aside
@@ -224,105 +174,78 @@ export function Sidebar({ isMobileOpen, onClose }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-              }`
-            }
-          >
-            <span>{item.emoji}</span>
-            <span>{item.label}</span>
-          </NavLink>
+      <nav className="flex-1 p-3 overflow-y-auto space-y-4">
+        {sections.map((section, i) => (
+          <div key={i}>
+            {section.label && (
+              <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {section.label}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {section.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={onClose}
+                  className={({ isActive }) => linkClass(isActive)}
+                >
+                  <span>{item.emoji}</span>
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
 
-        {/* Notifications */}
-        <NavLink
-          to="/notificaciones"
-          onClick={onClose}
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              isActive
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-            }`
-          }
-        >
-          <span>🔔</span>
-          <span className="flex-1">Notificaciones</span>
-          {unreadCount > 0 && (
-            <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </span>
-          )}
-        </NavLink>
+        {/* Cuenta */}
+        <div>
+          <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Cuenta
+          </p>
+          <div className="space-y-0.5">
+            <NavLink
+              to="/notificaciones"
+              onClick={onClose}
+              className={({ isActive }) => linkClass(isActive)}
+            >
+              <span>🔔</span>
+              <span className="flex-1">Notificaciones</span>
+              {unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </NavLink>
 
-        {/* NPS link */}
-        <NavLink
-          to="/nps"
-          onClick={onClose}
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              isActive
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-            }`
-          }
-        >
-          <span>📈</span>
-          <span>NPS</span>
-        </NavLink>
+            <NavLink to="/nps" onClick={onClose} className={({ isActive }) => linkClass(isActive)}>
+              <span>📈</span>
+              <span>NPS</span>
+            </NavLink>
 
-        {/* Separador */}
-        <div className="border-t border-slate-700 my-1" />
+            <NavLink to="/equipo" onClick={onClose} className={({ isActive }) => linkClass(isActive)}>
+              <span>👤</span>
+              <span>Equipo</span>
+            </NavLink>
 
-        {/* Gestión */}
-        {[
-          { to: '/equipo', label: 'Equipo', emoji: '👤' },
-          { to: '/mi-plan', label: 'Mi plan', emoji: '⭐' },
-          { to: '/api-keys', label: 'API Keys', emoji: '🔑' },
-        ].map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-400 hover:bg-slate-700 hover:text-white'
-              }`
-            }
-          >
-            <span>{item.emoji}</span>
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+            <NavLink to="/mi-plan" onClick={onClose} className={({ isActive }) => linkClass(isActive)}>
+              <span>⭐</span>
+              <span>Mi plan</span>
+            </NavLink>
 
-        {/* Sucursales — OWNER only */}
-        {user?.role === 'OWNER' && (
-          <NavLink
-            to="/sucursales"
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-400 hover:bg-slate-700 hover:text-white'
-              }`
-            }
-          >
-            <span>🏢</span>
-            <span>Sucursales</span>
-          </NavLink>
-        )}
+            <NavLink to="/api-keys" onClick={onClose} className={({ isActive }) => linkClass(isActive)}>
+              <span>🔑</span>
+              <span>API Keys</span>
+            </NavLink>
+
+            {user?.role === 'OWNER' && (
+              <NavLink to="/sucursales" onClick={onClose} className={({ isActive }) => linkClass(isActive)}>
+                <span>🏢</span>
+                <span>Sucursales</span>
+              </NavLink>
+            )}
+          </div>
+        </div>
       </nav>
 
       {/* Trial banner */}
@@ -338,7 +261,9 @@ export function Sidebar({ isMobileOpen, onClose }: SidebarProps) {
             {trialInfo.daysRemaining <= 3 ? '⚠️' : '🎉'} Trial gratis:{' '}
             {trialInfo.daysRemaining === 0 ? 'último día' : `${trialInfo.daysRemaining} días restantes`}
           </p>
-          <NavLink to="/planes" onClick={onClose} className="mt-1 underline hover:no-underline font-medium">Activar plan →</NavLink>
+          <NavLink to="/planes" onClick={onClose} className="mt-1 underline hover:no-underline font-medium">
+            Activar plan →
+          </NavLink>
         </div>
       )}
 
