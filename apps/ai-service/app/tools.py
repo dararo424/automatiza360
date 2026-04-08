@@ -461,6 +461,44 @@ TOOLS_RESTAURANT = [
     ])
 ]
 
+# ── Clothing store tool declarations ──────────────────────────────────────────
+
+_consultar_talla = types.FunctionDeclaration(
+    name="consultar_talla",
+    description=(
+        "Recomienda la talla de ropa ideal para el cliente según su altura, peso y cintura. "
+        "Llama esta herramienta cuando el cliente mencione palabras como 'talla', 'medida', "
+        "'me queda', 'qué talla soy' o quiera saber su talla. "
+        "Pide altura y peso primero; la cintura es opcional pero mejora la precisión."
+    ),
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "altura": types.Schema(
+                type=types.Type.NUMBER,
+                description="Altura del cliente en centímetros (ej: 170).",
+            ),
+            "peso": types.Schema(
+                type=types.Type.NUMBER,
+                description="Peso del cliente en kilogramos (ej: 65).",
+            ),
+            "cintura": types.Schema(
+                type=types.Type.NUMBER,
+                description="Medida de cintura en centímetros (opcional, mejora la precisión).",
+            ),
+        },
+        required=["altura", "peso"],
+    ),
+)
+
+TOOLS_CLOTHING_STORE = [
+    types.Tool(function_declarations=[
+        _consultar_inventario,
+        _tomar_pedido,
+        _consultar_talla,
+    ])
+]
+
 # Legacy alias
 ALL_TOOLS = TOOLS_TECH_STORE
 
@@ -474,6 +512,8 @@ def get_tools(industry: str) -> list[types.Tool]:
         return TOOLS_CLINIC
     if upper == "BEAUTY":
         return TOOLS_BEAUTY
+    if upper == "CLOTHING_STORE":
+        return TOOLS_CLOTHING_STORE
     return TOOLS_TECH_STORE
 
 
@@ -673,6 +713,18 @@ async def execute_tool(
                 "tipo": args.get("tipo", "ORDER"),
                 "referenciaId": args.get("referencia_id"),
             })
+            return json.dumps(result, ensure_ascii=False)
+
+        # ── Clothing store tools ──────────────────────────────────────────────
+        if name == "consultar_talla":
+            payload = {
+                "clientePhone": clean_phone,
+                "altura": float(args["altura"]),
+                "peso": float(args["peso"]),
+            }
+            if args.get("cintura"):
+                payload["cintura"] = float(args["cintura"])
+            result = await client._request("POST", "/tallas/bot/consultar", payload)
             return json.dumps(result, ensure_ascii=False)
 
         return json.dumps({"error": f"Herramienta '{name}' no reconocida."})

@@ -47,6 +47,7 @@ import { FlujoModule } from './flujos/flujos.module';
 import { NpsModule } from './nps/nps.module';
 import { SucursalesModule } from './sucursales/sucursales.module';
 import { HealthModule } from './health/health.module';
+import { TallasModule } from './tallas/tallas.module';
 
 @Module({
   imports: [
@@ -101,6 +102,7 @@ import { HealthModule } from './health/health.module';
     NpsModule,
     SucursalesModule,
     HealthModule,
+    TallasModule,
   ],
   controllers: [AppController],
   providers: [

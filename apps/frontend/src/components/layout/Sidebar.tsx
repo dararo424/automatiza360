@@ -68,6 +68,7 @@ function getSections(industry: Industry): NavSection[] {
       { to: '/productos', label: 'Productos', emoji: '📦' },
       { to: '/inventario', label: 'Inventario', emoji: '🗃️' },
       { to: '/ordenes', label: 'Órdenes', emoji: '🛒' },
+      { to: '/tallas', label: 'Tallas', emoji: '📏' },
     ],
     PHARMACY: [
       { to: '/productos', label: 'Productos', emoji: '📦' },

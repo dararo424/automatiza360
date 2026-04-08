@@ -65,6 +65,8 @@ model Tenant {
   onboardingDone       Boolean            @default(false)
   npsRespuestas        NpsRespuesta[]
   sucursales           Sucursal[]
+  tallaConfigs         TallaConfig[]
+  tallaConsultas       TallaConsulta[]
 }
 
 // Usuario dentro de un negocio
@@ -676,6 +678,34 @@ model Sucursal {
   activa       Boolean  @default(true)
   createdAt    DateTime @default(now())
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+// Tallas (tienda de ropa)
+model TallaConfig {
+  id         String   @id @default(cuid())
+  tenantId   String
+  talla      String
+  alturaMin  Float
+  alturaMax  Float
+  pesoMin    Float
+  pesoMax    Float
+  cinturaMin Float
+  cinturaMax Float
+  createdAt  DateTime @default(now())
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model TallaConsulta {
+  id               String   @id @default(cuid())
+  tenantId         String
+  clientePhone     String
+  altura           Float
+  peso             Float
+  cintura          Float?
+  tallaRecomendada String
+  confianza        String
+  createdAt        DateTime @default(now())
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
 }
 
 // Historial de pagos / facturación

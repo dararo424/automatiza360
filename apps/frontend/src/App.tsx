@@ -38,6 +38,7 @@ import { CajaPage } from './pages/caja/CajaPage';
 import { FlujoPage } from './pages/flujos/FlujoPage';
 import { NpsPage } from './pages/nps/NpsPage';
 import { SucursalesPage } from './pages/sucursales/SucursalesPage';
+import { TallasPage } from './pages/tallas/TallasPage';
 
 export function App() {
   return (
@@ -79,6 +80,7 @@ export function App() {
             <Route path="/flujos" element={<FlujoPage />} />
             <Route path="/nps" element={<NpsPage />} />
             <Route path="/sucursales" element={<SucursalesPage />} />
+            <Route path="/tallas" element={<TallasPage />} />
           </Route>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<AdminPage />} />
