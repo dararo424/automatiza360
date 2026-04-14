@@ -86,24 +86,30 @@ async def webhook(
     From: str = Form(...),
     Body: str = Form(default=""),
     To: str = Form(default=""),
+    MediaUrl0: str = Form(default=""),
 ):
     """
     Twilio WhatsApp webhook — receives a message and returns TwiML.
 
     Twilio sends:
-      From: the customer's WhatsApp number  (e.g. 'whatsapp:+521234567890')
-      To:   the Twilio number that received the message (e.g. 'whatsapp:+15551234567')
-      Body: the message text
+      From:       the customer's WhatsApp number  (e.g. 'whatsapp:+521234567890')
+      To:         the Twilio number that received the message (e.g. 'whatsapp:+15551234567')
+      Body:       the message text
+      MediaUrl0:  URL of the first media attachment (image, etc.) — empty if none
     """
     from app.message_handler import handle_message
 
     text = Body.strip() or "hola"
     # Strip the "whatsapp:" prefix from the To number for tenant lookup
     to_number = To.replace("whatsapp:", "").strip() or "default"
+    media_url: str | None = MediaUrl0.strip() or None
 
-    logger.info("Incoming  from=%s  to=%s  text=%r", From, to_number, text[:120])
+    logger.info(
+        "Incoming  from=%s  to=%s  text=%r  media=%s",
+        From, to_number, text[:120], media_url or "none",
+    )
 
-    reply = await handle_message(From, text, to_number)
+    reply = await handle_message(From, text, to_number, media_url)
     logger.info("Outgoing  to=%s  text=%r", From, reply[:120])
 
     safe = reply.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

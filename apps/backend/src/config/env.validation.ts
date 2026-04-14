@@ -27,4 +27,5 @@ export const validationSchema = Joi.object({
   VAPID_EMAIL: Joi.string().optional().allow(''),
   SUPERADMIN_EMAIL: Joi.string().email().optional().allow(''),
   SUPERADMIN_PASSWORD: Joi.string().optional().allow(''),
+  INTERNAL_API_KEY: Joi.string().min(16).optional().allow(''),
 });

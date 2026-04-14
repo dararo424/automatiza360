@@ -137,6 +137,7 @@ model Ticket {
   diagnosis   String?
   status      TicketStatus @default(RECEIVED)
   price       Float?
+  fotoUrl     String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 

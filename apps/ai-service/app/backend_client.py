@@ -207,6 +207,22 @@ class BackendClient:
             logger.warning("escalar_conversacion_por_telefono failed: %s", exc)
             return None
 
+    async def check_admin(self, phone: str) -> dict:
+        """Verifica si el número es admin (OWNER/ADMIN/STAFF) de este tenant."""
+        internal_key = os.environ.get("INTERNAL_API_KEY", "")
+        headers = {"X-Internal-Key": internal_key}
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                r = await client.get(
+                    f"{BACKEND_URL}/admin-bot/check/{phone}",
+                    headers=headers,
+                )
+                if r.status_code == 200:
+                    return r.json()
+        except Exception as exc:
+            logger.warning("check_admin failed for %s: %s", phone, exc)
+        return {"isAdmin": False}
+
     async def ingest_message(
         self,
         client_phone: str,

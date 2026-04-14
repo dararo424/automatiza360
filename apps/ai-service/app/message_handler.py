@@ -12,6 +12,7 @@ import logging
 import os
 
 from app.agent import run
+from app.admin_agent import run_admin
 from app.backend_client import get_client
 from app.config import get_tenant_config
 
@@ -38,7 +39,12 @@ def _get_session(to_number: str, phone: str) -> dict:
     return _sessions[key]
 
 
-async def handle_message(phone: str, text: str, to_number: str = "default") -> str:
+async def handle_message(
+    phone: str,
+    text: str,
+    to_number: str = "default",
+    media_url: str | None = None,
+) -> str:
     """
     Process one incoming WhatsApp message.
 
@@ -48,6 +54,7 @@ async def handle_message(phone: str, text: str, to_number: str = "default") -> s
         to_number: Twilio number that received the message (e.g. '+15551234567').
                    Used to look up the correct tenant. Defaults to "default"
                    for legacy single-tenant deployments.
+        media_url: Twilio MediaUrl0 if the message includes an image (or None).
     """
     # ── Tenant lookup ─────────────────────────────────────────────────────────
     config = get_tenant_config(to_number)
@@ -106,16 +113,44 @@ async def handle_message(phone: str, text: str, to_number: str = "default") -> s
         backend_client.ingest_message(clean_phone, text, "INBOUND")
     )
 
-    try:
-        reply = await run(phone, text, session, backend_client, owner_phone)
-    except Exception as exc:
-        logger.error(
-            "Agent error for %s on %s: %s", phone, to_number, exc, exc_info=True
-        )
-        return (
-            "⚠️ Ocurrió un error inesperado. "
-            "Por favor intenta de nuevo en unos momentos."
-        )
+    # ── Admin detection ───────────────────────────────────────────────────────
+    # Check if the sender is an admin of any tenant. Use the normalized phone
+    # (without "whatsapp:" prefix) for the lookup.
+    admin_info = await backend_client.check_admin(clean_phone)
+
+    # Admin sessions are stored separately under an "admin_history" key so
+    # they don't mix with the customer-facing Gemini history.
+    if admin_info.get("isAdmin"):
+        admin_session: list = session.setdefault("admin_history", [])
+        try:
+            reply = await run_admin(
+                phone,
+                text,
+                media_url,
+                admin_session,
+                backend_client,
+                owner_phone,
+                admin_info,
+            )
+        except Exception as exc:
+            logger.error(
+                "Admin agent error for %s on %s: %s", phone, to_number, exc, exc_info=True
+            )
+            reply = (
+                "⚠️ Ocurrió un error inesperado en el modo admin. "
+                "Por favor intenta de nuevo en unos momentos."
+            )
+    else:
+        try:
+            reply = await run(phone, text, session, backend_client, owner_phone)
+        except Exception as exc:
+            logger.error(
+                "Agent error for %s on %s: %s", phone, to_number, exc, exc_info=True
+            )
+            return (
+                "⚠️ Ocurrió un error inesperado. "
+                "Por favor intenta de nuevo en unos momentos."
+            )
 
     # Registrar respuesta del bot (fire-and-forget)
     asyncio.create_task(

@@ -48,6 +48,7 @@ import { NpsModule } from './nps/nps.module';
 import { SucursalesModule } from './sucursales/sucursales.module';
 import { HealthModule } from './health/health.module';
 import { TallasModule } from './tallas/tallas.module';
+import { AdminBotModule } from './admin-bot/admin-bot.module';
 
 @Module({
   imports: [
@@ -103,6 +104,7 @@ import { TallasModule } from './tallas/tallas.module';
     SucursalesModule,
     HealthModule,
     TallasModule,
+    AdminBotModule,
   ],
   controllers: [AppController],
   providers: [
