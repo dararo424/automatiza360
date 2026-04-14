@@ -17,60 +17,44 @@ export class AdminBotService {
 
   async checkAdmin(phone: string) {
     const normalized = normalizePhone(phone);
+    // Últimos 10 dígitos para comparar sin código de país
+    const last10 = normalized.slice(-10);
 
-    // Search by phone in User.name is not reliable; instead look at Tenant.ownerPhone
-    // and also search users whose email might encode phone — primary key is ownerPhone on Tenant.
-    // First try: check if any tenant has ownerPhone matching
-    const tenant = await this.prisma.tenant.findFirst({
-      where: {
-        ownerPhone: { contains: normalized },
-        active: true,
-      },
+    // Buscar usuario (OWNER/ADMIN/STAFF) cuyo phone coincida
+    const users = await this.prisma.user.findMany({
+      where: { active: true, role: { in: ['OWNER', 'ADMIN', 'STAFF'] } },
+      include: { tenant: true },
     });
 
-    if (tenant) {
-      // Find the OWNER user for this tenant
-      const user = await this.prisma.user.findFirst({
-        where: { tenantId: tenant.id, role: 'OWNER', active: true },
-      });
-      if (user) {
+    for (const user of users) {
+      if (!user.phone) continue;
+      const userPhoneNorm = normalizePhone(user.phone).slice(-10);
+      if (userPhoneNorm === last10) {
         return {
           isAdmin: true,
-          tenantId: tenant.id,
+          tenantId: user.tenantId,
           role: user.role,
           userId: user.id,
-          industry: tenant.industry,
+          industry: user.tenant.industry,
         };
       }
     }
 
-    // Second try: look for a contact/user whose whatsapp phone matches
-    // We look at Professional.phone or any direct User lookup.
-    // Since User doesn't store phone, we check Tenant.ownerPhone with various normalizations.
+    // Fallback: buscar por Tenant.ownerPhone (para owners que no tengan phone en User)
     const tenants = await this.prisma.tenant.findMany({ where: { active: true } });
     for (const t of tenants) {
       if (!t.ownerPhone) continue;
-      const ownerNorm = normalizePhone(t.ownerPhone);
-      // Compare last N digits to handle country code differences
-      const minLen = Math.min(normalized.length, ownerNorm.length);
-      if (minLen >= 7 && normalized.slice(-minLen) === ownerNorm.slice(-minLen)) {
-        const user = await this.prisma.user.findFirst({
-          where: { tenantId: t.id, active: true },
-          orderBy: [
-            { role: 'asc' }, // ADMIN < OWNER < STAFF — sort puts ADMIN first; we want OWNER first
-          ],
-        });
-        // Prefer OWNER
-        const ownerUser = await this.prisma.user.findFirst({
+      const ownerNorm = normalizePhone(t.ownerPhone).slice(-10);
+      if (ownerNorm === last10) {
+        const owner = await this.prisma.user.findFirst({
           where: { tenantId: t.id, role: 'OWNER', active: true },
         });
-        const selectedUser = ownerUser || user;
-        if (selectedUser) {
+        if (owner) {
           return {
             isAdmin: true,
             tenantId: t.id,
-            role: selectedUser.role,
-            userId: selectedUser.id,
+            role: owner.role,
+            userId: owner.id,
             industry: t.industry,
           };
         }

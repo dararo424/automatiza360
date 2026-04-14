@@ -75,6 +75,7 @@ model User {
   email     String   @unique
   password  String
   name      String
+  phone     String?
   role      Role     @default(STAFF)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
