@@ -131,4 +131,73 @@ export class EmailService {
       `,
     });
   }
+
+  async sendEscalacion(to: string, opts: { storeName: string; clientPhone: string; lastMessage: string }) {
+    await this.send({
+      to,
+      subject: `⚠️ Cliente requiere atención humana — ${opts.storeName}`,
+      html: `
+        <h2>⚠️ Un cliente necesita atención</h2>
+        <p><strong>Tienda:</strong> ${opts.storeName}</p>
+        <p><strong>Cliente:</strong> ${opts.clientPhone}</p>
+        <p><strong>Último mensaje:</strong> "${opts.lastMessage}"</p>
+        <p>El bot no pudo resolver la solicitud. Revisa la bandeja de conversaciones.</p>
+        <a href="${process.env.FRONTEND_URL ?? 'https://automatiza360-frontend.vercel.app'}/conversaciones"
+           style="background:#dc2626;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:16px">
+          Ver conversación →
+        </a>
+      `,
+    });
+  }
+
+  async sendReporteEjecutivo(to: string, data: {
+    storeName: string; semana: string; ordenes: number; ingresos: number;
+    citas: number; contactos: number; ordenesChange: number; ingresosChange: number;
+    citasChange: number; contactosChange: number;
+  }) {
+    const fmt = (n: number) => n.toLocaleString('es-CO');
+    const fmtCOP = (n: number) => `$${n.toLocaleString('es-CO')} COP`;
+    const pct = (n: number) => {
+      if (n === 0) return '<span style="color:#64748b">Sin cambio</span>';
+      const color = n > 0 ? '#16a34a' : '#dc2626';
+      const arrow = n > 0 ? '▲' : '▼';
+      return `<span style="color:${color}">${arrow} ${Math.abs(n).toFixed(1)}%</span>`;
+    };
+    await this.send({
+      to,
+      subject: `Resumen semanal — ${data.storeName}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+          <h1 style="color:#0f172a;">Resumen semanal de ${data.storeName}</h1>
+          <p style="color:#64748b;">${data.semana}</p>
+          <table width="100%" cellpadding="8">
+            <tr>
+              <td style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
+                <p style="color:#64748b;margin:0;">Ventas</p>
+                <p style="font-size:24px;font-weight:bold;margin:4px 0;">${fmt(data.ordenes)}</p>
+                <p style="margin:0;">${pct(data.ordenesChange)} vs semana anterior</p>
+              </td>
+              <td style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
+                <p style="color:#64748b;margin:0;">Ingresos</p>
+                <p style="font-size:24px;font-weight:bold;margin:4px 0;">${fmtCOP(data.ingresos)}</p>
+                <p style="margin:0;">${pct(data.ingresosChange)} vs semana anterior</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
+                <p style="color:#64748b;margin:0;">Citas</p>
+                <p style="font-size:24px;font-weight:bold;margin:4px 0;">${fmt(data.citas)}</p>
+                <p style="margin:0;">${pct(data.citasChange)} vs semana anterior</p>
+              </td>
+              <td style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
+                <p style="color:#64748b;margin:0;">Nuevos contactos</p>
+                <p style="font-size:24px;font-weight:bold;margin:4px 0;">${fmt(data.contactos)}</p>
+                <p style="margin:0;">${pct(data.contactosChange)} vs semana anterior</p>
+              </td>
+            </tr>
+          </table>
+        </div>
+      `,
+    });
+  }
 }
