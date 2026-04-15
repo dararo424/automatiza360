@@ -23,6 +23,7 @@ export class EmailService {
         port: parseInt(process.env.SMTP_PORT ?? '587'),
         secure: process.env.SMTP_SECURE === 'true',
         auth: { user, pass },
+        family: 4, // force IPv4 — Railway doesn't support IPv6 SMTP
       });
       this.logger.log(`Email service configured: ${host}`);
     } else {
