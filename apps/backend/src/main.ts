@@ -11,10 +11,14 @@ async function bootstrap() {
   const env = process.env.NODE_ENV ?? 'development';
   const port = process.env.PORT ?? 3000;
 
+  const allowedOrigins = [
+    process.env.FRONTEND_URL ?? '',
+    'https://automatiza360-frontend.vercel.app',
+    'https://automatiza360.vercel.app',
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: env === 'production'
-      ? [process.env.FRONTEND_URL ?? '', 'https://automatiza360.vercel.app']
-      : true, // allow all in dev/staging
+    origin: env === 'production' ? allowedOrigins : true,
     credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
