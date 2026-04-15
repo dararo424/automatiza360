@@ -54,6 +54,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get sucursal() { return this.client.sucursal; }
   get tallaConfig() { return this.client.tallaConfig; }
   get tallaConsulta() { return this.client.tallaConsulta; }
+  get passwordResetToken() { return this.client.passwordResetToken; }
 
   // Transaction support
   $transaction: PrismaClient['$transaction'] = (...args: any[]) =>

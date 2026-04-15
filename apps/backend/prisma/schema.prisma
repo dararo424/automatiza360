@@ -80,9 +80,20 @@ model User {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  turnos    Turno[]
+  tenantId            String
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  turnos              Turno[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 // Pedidos (restaurante)

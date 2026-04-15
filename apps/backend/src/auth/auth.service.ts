@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -9,6 +10,7 @@ import { Industry, Role, SubscriptionStatus, User, Tenant } from '@prisma/client
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { TwilioProvisioningService } from '../twilio/twilio-provisioning.service';
 import { LoginDto } from './dto/login.dto';
 import { RegistroTenantDto } from './dto/registro-tenant.dto';
@@ -19,6 +21,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly twilioProvisioning: TwilioProvisioningService,
+    private readonly emailService: EmailService,
   ) {}
 
   async registrarTenant(dto: RegistroTenantDto) {
@@ -100,6 +103,14 @@ export class AuthService {
 
     const token = this.generarToken(owner);
 
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    await this.emailService.enviarBienvenida(
+      dto.email,
+      dto.ownerName,
+      dto.businessName,
+      `${frontendUrl}/login`,
+    );
+
     return {
       mensaje: 'Tenant registrado exitosamente',
       token,
@@ -175,6 +186,14 @@ export class AuthService {
         twilioNumber: p.twilioNumber ?? '',
       };
     }
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    await this.emailService.enviarBienvenida(
+      dto.email,
+      dto.ownerName,
+      dto.businessName,
+      `${frontendUrl}/login`,
+    );
 
     return {
       mensaje: 'Cuenta creada para negocio existente',
@@ -271,6 +290,59 @@ export class AuthService {
         subscriptionPlan: usuario.tenant!.subscriptionPlan,
       },
     };
+  }
+
+  async solicitarRecuperacion(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    // Siempre responder igual para no revelar si el email existe
+    if (!user || !user.active) {
+      return { message: 'Si el correo existe, recibirás un enlace en breve.' };
+    }
+
+    // Invalidar tokens anteriores
+    await this.prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, used: false },
+      data: { used: true },
+    });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+    await this.prisma.passwordResetToken.create({
+      data: { token, userId: user.id, expiresAt },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+    await this.emailService.enviarRecuperacionContrasena(user.email, user.name, resetUrl);
+
+    return { message: 'Si el correo existe, recibirás un enlace en breve.' };
+  }
+
+  async resetearContrasena(token: string, nuevaContrasena: string) {
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) {
+      throw new BadRequestException('El enlace es inválido o ha expirado.');
+    }
+
+    const hash = await bcrypt.hash(nuevaContrasena, 10);
+
+    await this.prisma.user.update({
+      where: { id: resetToken.userId },
+      data: { password: hash },
+    });
+
+    await this.prisma.passwordResetToken.update({
+      where: { id: resetToken.id },
+      data: { used: true },
+    });
+
+    return { message: 'Contraseña actualizada correctamente.' };
   }
 
   private buildSlugBase(businessName: string): string {

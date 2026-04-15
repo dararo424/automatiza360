@@ -39,6 +39,8 @@ import { FlujoPage } from './pages/flujos/FlujoPage';
 import { NpsPage } from './pages/nps/NpsPage';
 import { SucursalesPage } from './pages/sucursales/SucursalesPage';
 import { TallasPage } from './pages/tallas/TallasPage';
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 
 export function App() {
   return (
@@ -46,6 +48,8 @@ export function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/menu/:slug" element={<MenuPublicoPage />} />
           <Route path="/negocio/:slug" element={<PerfilPublicoPage />} />

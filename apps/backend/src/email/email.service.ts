@@ -112,6 +112,73 @@ export class EmailService {
     });
   }
 
+  async enviarRecuperacionContrasena(email: string, nombre: string, resetUrl: string) {
+    await this.send({
+      to: email,
+      subject: 'Recupera tu contraseña — Automatiza360',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
+          <div style="background: #0f172a; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">Automatiza360</h1>
+          </div>
+          <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <h2 style="color: #0f172a; margin-top: 0;">Hola ${nombre},</h2>
+            <p style="color: #475569; line-height: 1.6;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en Automatiza360.</p>
+            <p style="color: #475569; line-height: 1.6;">Haz clic en el botón para crear una nueva contraseña. Este enlace expira en <strong>1 hora</strong>.</p>
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${resetUrl}" style="background: #4f46e5; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                Restablecer contraseña
+              </a>
+            </div>
+            <p style="color: #94a3b8; font-size: 14px;">Si no solicitaste esto, ignora este correo. Tu contraseña no cambiará.</p>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+            <p style="color: #94a3b8; font-size: 12px; text-align: center;">© 2026 Automatiza360 · Todos los derechos reservados</p>
+          </div>
+        </div>
+      `,
+    });
+  }
+
+  async enviarBienvenida(email: string, nombre: string, tenantName: string, loginUrl: string) {
+    try {
+      await this.send({
+        to: email,
+        subject: `¡Bienvenido a Automatiza360, ${nombre}!`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 20px;">
+            <div style="background: #0f172a; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">Automatiza360</h1>
+            </div>
+            <div style="background: white; padding: 32px; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+              <h2 style="color: #0f172a; margin-top: 0;">¡Bienvenido, ${nombre}!</h2>
+              <p style="color: #475569; line-height: 1.6;">Tu negocio <strong>${tenantName}</strong> ya está registrado en Automatiza360. Tienes <strong>14 días de prueba gratuita</strong> para explorar todas las funcionalidades.</p>
+              <div style="background: #f1f5f9; border-radius: 8px; padding: 20px; margin: 24px 0;">
+                <h3 style="color: #0f172a; margin-top: 0;">¿Por dónde empezar?</h3>
+                <ul style="color: #475569; line-height: 2; padding-left: 20px;">
+                  <li>Configura tu perfil de negocio</li>
+                  <li>Activa tu bot de WhatsApp</li>
+                  <li>Agrega tus productos o servicios</li>
+                  <li>Invita a tu equipo</li>
+                </ul>
+              </div>
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="${loginUrl}" style="background: #4f46e5; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                  Ir a mi panel
+                </a>
+              </div>
+              <p style="color: #94a3b8; font-size: 14px; text-align: center;">¿Tienes dudas? Escríbenos a <a href="mailto:soporte@rgyt.com" style="color: #4f46e5;">soporte@rgyt.com</a></p>
+              <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+              <p style="color: #94a3b8; font-size: 12px; text-align: center;">© 2026 Automatiza360 · Todos los derechos reservados</p>
+            </div>
+          </div>
+        `,
+      });
+    } catch (error) {
+      this.logger.error('Error enviando email de bienvenida:', error);
+      // No relanzar — el registro no debe fallar si el email falla
+    }
+  }
+
   async sendReporteEjecutivo(
     to: string,
     data: {

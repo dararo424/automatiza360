@@ -35,3 +35,25 @@ export function registro(payload: RegistroPayload): Promise<RegistroResponse> {
 export function getPerfil(): Promise<UserProfile> {
   return api.get('/auth/perfil').then((r) => r.data);
 }
+
+export async function solicitarRecuperacion(email: string): Promise<{ message: string }> {
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/recuperar-contrasena`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  return res.json();
+}
+
+export async function resetearContrasena(token: string, password: string): Promise<{ message: string }> {
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/reset-contrasena`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, password }),
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.message ?? 'Error al restablecer la contraseña');
+  }
+  return res.json();
+}

@@ -24,6 +24,18 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
+  @Post('recuperar-contrasena')
+  recuperar(@Body('email') email: string) {
+    return this.authService.solicitarRecuperacion(email);
+  }
+
+  @Throttle({ short: { ttl: 60000, limit: 5 } })
+  @Post('reset-contrasena')
+  reset(@Body() body: { token: string; password: string }) {
+    return this.authService.resetearContrasena(body.token, body.password);
+  }
+
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('perfil')

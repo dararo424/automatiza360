@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
@@ -89,6 +89,11 @@ export function LoginPage() {
                 className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="••••••••"
               />
+            </div>
+            <div className="flex justify-end">
+              <Link to="/forgot-password" className="text-sm text-indigo-600 hover:underline">
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
             <button
               type="submit"
