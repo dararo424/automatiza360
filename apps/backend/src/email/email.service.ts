@@ -19,11 +19,10 @@ export class EmailService {
 
     if (host && user && pass) {
       this.transporter = nodemailer.createTransport({
-        host,
-        port: parseInt(process.env.SMTP_PORT ?? '587'),
-        secure: process.env.SMTP_SECURE === 'true',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
         auth: { user, pass },
-        family: 4, // force IPv4 — Railway doesn't support IPv6 SMTP
       });
       this.logger.log(`Email service configured: ${host}`);
     } else {
