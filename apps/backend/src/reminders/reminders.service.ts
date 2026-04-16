@@ -357,4 +357,80 @@ export class RemindersService {
         );
     }
   }
+
+  /** Cada día a las 01:00 — suspende tenants con suscripción vencida y notifica por email */
+  @Cron('0 1 * * *')
+  async suspenderSuscripcionesVencidas() {
+    this.logger.log('Cron: verificando suscripciones vencidas...');
+    const ahora = new Date();
+
+    const vencidos = await this.prisma.tenant.findMany({
+      where: {
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+        subscriptionEndsAt: { lt: ahora },
+      },
+      include: {
+        users: { where: { role: 'OWNER' }, take: 1 },
+      },
+    });
+
+    for (const tenant of vencidos) {
+      await this.prisma.tenant.update({
+        where: { id: tenant.id },
+        data: { subscriptionStatus: SubscriptionStatus.SUSPENDED },
+      });
+
+      const owner = tenant.users[0];
+      if (owner) {
+        await this.emailService.send({
+          to: owner.email,
+          subject: 'Tu suscripción ha vencido — Automatiza360',
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+              <h2 style="color:#0f172a;">Tu suscripción de ${tenant.name} ha vencido</h2>
+              <p>Tu suscripción venció el <strong>${ahora.toLocaleDateString('es-CO')}</strong> y tu cuenta ha sido suspendida temporalmente.</p>
+              <p>Para continuar usando Automatiza360, renueva tu plan:</p>
+              <a href="${process.env.FRONTEND_URL ?? 'https://app.automatiza360.com'}/planes"
+                 style="background:#4f46e5;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:16px">
+                Renovar suscripción →
+              </a>
+              <p style="color:#94a3b8;font-size:13px;margin-top:24px;">Tus datos estarán disponibles por 30 días adicionales.</p>
+            </div>
+          `,
+        });
+      }
+      this.logger.log(`Tenant ${tenant.name} (${tenant.id}) suspendido por vencimiento`);
+    }
+
+    this.logger.log(`Cron: ${vencidos.length} tenants suspendidos`);
+  }
+
+  /** Cada día a las 09:00 — avisa a tenants ACTIVE cuya suscripción vence en 5 días */
+  @Cron('0 9 * * *')
+  async avisarVencimientoProximo() {
+    const en5dias = new Date();
+    en5dias.setDate(en5dias.getDate() + 5);
+    const en6dias = new Date();
+    en6dias.setDate(en6dias.getDate() + 6);
+
+    const proximos = await this.prisma.tenant.findMany({
+      where: {
+        subscriptionStatus: SubscriptionStatus.ACTIVE,
+        subscriptionEndsAt: { gte: en5dias, lt: en6dias },
+      },
+      include: {
+        users: { where: { role: 'OWNER' }, take: 1 },
+      },
+    });
+
+    for (const tenant of proximos) {
+      const owner = tenant.users[0];
+      if (!owner) continue;
+      await this.emailService.sendTrialExpirando(owner.email, {
+        storeName: tenant.name,
+        daysRemaining: 5,
+      });
+      this.logger.log(`Aviso vencimiento enviado a ${tenant.name}`);
+    }
+  }
 }

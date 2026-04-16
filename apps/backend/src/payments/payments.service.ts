@@ -44,7 +44,6 @@ export class PaymentsService {
     params.set('redirect-url', redirectUrl);
 
     const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`;
-    console.log('Checkout URL generada:', checkoutUrl);
 
     return {
       checkoutUrl,
@@ -134,8 +133,12 @@ export class PaymentsService {
   }
 
   verificarFirmaWebhook(payload: any, firmaRecibida: string): boolean {
-    const cadena =
-      JSON.stringify(payload) + process.env.WOMPI_EVENTS_SECRET;
+    const secret = process.env.WOMPI_EVENTS_SECRET;
+    if (!secret) {
+      // Sin secret configurado no podemos validar — rechazar siempre
+      return false;
+    }
+    const cadena = JSON.stringify(payload) + secret;
     const firmaCalculada = crypto
       .createHash('sha256')
       .update(cadena)
