@@ -8,6 +8,7 @@ interface JwtPayload {
   email: string;
   tenantId: string;
   role: string;
+  tv?: number; // tokenVersion — invalida tokens anteriores al cambio de contraseña
 }
 
 @Injectable()
@@ -27,6 +28,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (!user || !user.active) {
       throw new UnauthorizedException('No autorizado');
+    }
+
+    // Verificar tokenVersion: si el token no tiene tv (antiguo) o no coincide, rechazar.
+    // Esto fuerza re-login tras cambio de contraseña o tokens pre-feature.
+    if (payload.tv === undefined || payload.tv !== user.tokenVersion) {
+      throw new UnauthorizedException('Sesión expirada. Inicia sesión de nuevo.');
     }
 
     return {

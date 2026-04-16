@@ -334,7 +334,7 @@ export class AuthService {
 
     await this.prisma.user.update({
       where: { id: resetToken.userId },
-      data: { password: hash },
+      data: { password: hash, tokenVersion: { increment: 1 } },
     });
 
     await this.prisma.passwordResetToken.update({
@@ -374,6 +374,7 @@ export class AuthService {
       email: user.email,
       tenantId: user.tenantId,
       role: user.role,
+      tv: user.tokenVersion,
     };
     return this.jwtService.sign(payload);
   }
