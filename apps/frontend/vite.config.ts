@@ -20,7 +20,9 @@ export default defineConfig({
       ],
     },
     workbox: {
-      globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+      globPatterns: ['**/*.{js,css,ico,png,svg}'],
+      navigateFallback: null,
+      runtimeCaching: [],
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }) as any],
