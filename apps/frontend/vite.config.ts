@@ -1,32 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  plugins: [react() as any, VitePWA({
-    registerType: 'autoUpdate',
-    manifest: {
-      name: 'Automatiza360',
-      short_name: 'A360',
-      description: 'Automatización inteligente para tu negocio',
-      theme_color: '#22C55E',
-      background_color: '#0F172A',
-      display: 'standalone',
-      start_url: '/',
-      scope: '/',
-      icons: [
-        { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
-      ],
-    },
-    workbox: {
-      globPatterns: [],
-      navigateFallback: null,
-      runtimeCaching: [],
-      cleanupOutdatedCaches: true,
-    },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  }) as any],
+  plugins: [react() as any],
   server: {
     proxy: {
       '/api': {
