@@ -16,7 +16,7 @@ api.interceptors.response.use(
     // Solo redirigir a login si el 401 viene de un endpoint que requiere auth.
     // No redirigir en /auth/login ni /auth/registro para mostrar el error al usuario.
     const url: string = error.config?.url ?? '';
-    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/registro');
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/registro') || url.includes('/auth/reset-contrasena') || url.includes('/auth/recuperar-contrasena');
     if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.clear();
       window.location.href = '/login';

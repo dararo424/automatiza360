@@ -37,23 +37,9 @@ export function getPerfil(): Promise<UserProfile> {
 }
 
 export async function solicitarRecuperacion(email: string): Promise<{ message: string }> {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/recuperar-contrasena`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
-  });
-  return res.json();
+  return api.post('/auth/recuperar-contrasena', { email }).then((r) => r.data);
 }
 
 export async function resetearContrasena(token: string, password: string): Promise<{ message: string }> {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/reset-contrasena`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, password }),
-  });
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.message ?? 'Error al restablecer la contraseña');
-  }
-  return res.json();
+  return api.post('/auth/reset-contrasena', { token, password }).then((r) => r.data);
 }
