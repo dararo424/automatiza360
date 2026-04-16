@@ -29,6 +29,7 @@ export function ResetPasswordPage() {
     setSubmitting(true);
     try {
       await resetearContrasena(token, password);
+      localStorage.removeItem('token'); // invalidar sesión activa
       setExitoso(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'El enlace es inválido o ha expirado.');
