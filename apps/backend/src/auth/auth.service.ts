@@ -332,11 +332,13 @@ export class AuthService {
 
     const hash = await bcrypt.hash(nuevaContrasena, 10);
 
+    // Actualizar contraseña e invalidar sesiones activas (tokenVersion)
     await this.prisma.user.update({
       where: { id: resetToken.userId },
       data: { password: hash, tokenVersion: { increment: 1 } },
     });
 
+    // Marcar token como usado para que no pueda reutilizarse
     await this.prisma.passwordResetToken.update({
       where: { id: resetToken.id },
       data: { used: true },

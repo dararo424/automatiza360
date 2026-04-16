@@ -13,7 +13,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Solo redirigir a login si el 401 viene de un endpoint que requiere auth.
+    // No redirigir en /auth/login ni /auth/registro para mostrar el error al usuario.
+    const url: string = error.config?.url ?? '';
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/registro');
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.clear();
       window.location.href = '/login';
     }
