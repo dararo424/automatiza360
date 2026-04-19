@@ -50,38 +50,107 @@ REGLAS:
 
     if upper in ("RESTAURANT", "BAKERY"):
         base += """
-CAPACIDADES PARA RESTAURANTE:
-- Cargar menú del día: "el menú de hoy es: Bandeja paisa $18.000, Sancocho $15.000"
-- Ver órdenes pendientes del día
-- Resumen del día (total ventas, órdenes pendientes, ingresos)
+CAPACIDADES RESTAURANTE / PANADERÍA:
+- Cargar menú del día en lenguaje natural: "hoy hay bandeja paisa $18.000 y sancocho $15.000"
+- Ver y gestionar órdenes: ver pendientes, detalle de una orden, cambiar estado (CONFIRMED → PREPARING → READY → DELIVERED)
+  → Al pasar a READY, el cliente recibe WhatsApp automático
+- Registrar gastos: "gasté $45.000 en ingredientes hoy"
+- Buscar contacto por nombre o teléfono
+- Enviar campaña a todos los contactos (confirmar antes)
+- Resumen del día y del mes
+
+FLUJO ÓRDENES: ver_ordenes_pendientes → ver_detalle_orden → cambiar_estado_orden
 """
     elif upper in ("TECH_STORE", "WORKSHOP"):
         base += """
-CAPACIDADES PARA TIENDA TECH / TALLER:
+CAPACIDADES TIENDA TECH / TALLER:
+- Crear ticket nuevo cuando el cliente deja un equipo: nombre, teléfono, dispositivo, falla
+  → Si el admin manda una foto, adjúntala al ticket automáticamente
 - Buscar ticket por nombre de cliente
-- Cambiar estado de ticket (RECEIVED, DIAGNOSING, WAITING_PARTS, REPAIRING, READY, DELIVERED, CANCELLED)
-- Adjuntar foto a un ticket cuando el admin manda una imagen
-- Resumen del día (tickets abiertos, cerrados hoy, ingresos)
+- Cambiar estado de ticket (RECEIVED → DIAGNOSING → WAITING_PARTS → REPAIRING → READY → DELIVERED → CANCELLED)
+- Ver cotizaciones pendientes de respuesta
+- Ver productos con stock bajo
+- Registrar gastos
+- Buscar contacto por nombre o teléfono
+- Enviar campaña a todos los contactos (confirmar antes)
+- Resumen del día y del mes
+
+FLUJO TICKET NUEVO: crear_ticket (con foto si la manda) → buscar_ticket para seguimiento → cambiar_estado_ticket
 """
     elif upper in ("CLINIC", "BEAUTY", "VETERINARY"):
         base += """
-CAPACIDADES PARA CLÍNICA / SALÓN / VETERINARIA:
-- Ver resumen del día (citas, completadas, pendientes)
-- Cancelar citas en un rango horario y obtener lista de clientes afectados para notificarlos
+CAPACIDADES CLÍNICA / SALÓN / VETERINARIA:
+- Ver citas del día (o cualquier fecha): hora, cliente, servicio, profesional, estado
+- Crear cita manualmente para un cliente (reservas por teléfono o presencial)
+- Cambiar estado de una cita individual (CONFIRMED, COMPLETED, NO_SHOW, CANCELLED)
+- Reagendar una cita → notifica automáticamente al cliente por WhatsApp
+- Cancelar citas en rango horario + notificar pacientes afectados automáticamente
+- Registrar gastos
+- Buscar contacto por nombre o teléfono
+- Enviar campaña a todos los contactos (confirmar antes)
+- Resumen del día y del mes
+
+FLUJO CANCELACIÓN MASIVA:
+1. Confirma: "¿Cancelo todas las citas del [fecha] desde las [hora]?"
+2. Ejecuta cancelar_citas_rango
+3. INMEDIATAMENTE llama notificar_pacientes_cancelados con clientesAfectados
+4. Reporta: "Cancelé X citas y notifiqué a [nombres] por WhatsApp."
+
+FLUJO REAGENDAMIENTO: ver_citas_dia → reagendar_cita (notifica al cliente solo)
 """
     elif upper == "CLOTHING_STORE":
         base += """
-CAPACIDADES PARA TIENDA DE ROPA:
-- Agregar producto nuevo o actualizar uno existente: nombre, precio, stock, descripción
-- Actualizar precio de un producto por nombre
-- Actualizar stock de un producto por nombre
-- Eliminar (desactivar) un producto por nombre
-- Resumen del día (órdenes, productos con stock bajo)
+CAPACIDADES TIENDA DE ROPA:
+- Agregar o actualizar producto: nombre, precio, stock, descripción
+- Actualizar precio o stock de un producto por nombre
+- Eliminar (desactivar) un producto
+- Ver productos con stock bajo
+- Registrar gastos
+- Buscar contacto por nombre o teléfono
+- Enviar campaña a todos los contactos (confirmar antes)
+- Resumen del día y del mes
+"""
+    elif upper == "GYM":
+        base += """
+CAPACIDADES GIMNASIO:
+- Ver clases / sesiones del día (ver_citas_dia)
+- Crear reserva de clase para un cliente (crear_cita_admin)
+- Cambiar estado de una sesión (CONFIRMED, COMPLETED, NO_SHOW)
+- Registrar gastos del gimnasio
+- Buscar miembro por nombre o teléfono
+- Enviar mensaje a todos los miembros (campañas)
+- Resumen del día y del mes
+"""
+    elif upper == "HOTEL":
+        base += """
+CAPACIDADES HOTEL:
+- Ver reservas del día (ver_citas_dia — las reservas son citas)
+- Crear reserva manualmente para un huésped (crear_cita_admin)
+- Cambiar estado de reserva (CONFIRMED = check-in, COMPLETED = check-out, CANCELLED)
+- Registrar gastos del hotel
+- Buscar huésped por nombre o teléfono
+- Enviar mensaje a todos los huéspedes (campañas)
+- Resumen del día y del mes
+"""
+    elif upper == "PHARMACY":
+        base += """
+CAPACIDADES FARMACIA:
+- Ver medicamentos / productos con stock bajo
+- Actualizar stock de un producto
+- Actualizar precio de un producto
+- Agregar o actualizar medicamento en el catálogo
+- Registrar gastos
+- Buscar cliente por nombre o teléfono
+- Enviar campaña a todos los contactos (confirmar antes)
+- Resumen del día y del mes
 """
     else:
         base += """
 CAPACIDADES GENERALES:
-- Resumen del día
+- Resumen del día y del mes
+- Buscar contacto por nombre o teléfono
+- Registrar gastos
+- Enviar campaña a todos los contactos (confirmar antes)
 """
 
     if media_url:
@@ -155,6 +224,7 @@ async def run_admin(
                         client,
                         tenant_id,
                         media_url,
+                        industry,
                     )
                     tool_results.append({
                         "type": "tool_result",

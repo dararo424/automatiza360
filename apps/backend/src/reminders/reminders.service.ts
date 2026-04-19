@@ -358,6 +358,136 @@ export class RemindersService {
     }
   }
 
+  // ── Reporte matutino WhatsApp al dueño ────────────────────────────────────
+
+  @Cron('0 8 * * *')
+  async sendMorningWhatsAppReport(): Promise<void> {
+    this.logger.log('Enviando reportes matutinos por WhatsApp...');
+
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    if (!accountSid || !authToken) return;
+
+    const twilioClient = twilio.default(accountSid, authToken);
+
+    const tenants = await this.prisma.tenant.findMany({
+      where: {
+        subscriptionStatus: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
+        ownerPhone: { not: null },
+      },
+    });
+
+    const hoy = new Date();
+    hoy.setUTCHours(0, 0, 0, 0);
+    const manana = new Date(hoy);
+    manana.setUTCDate(manana.getUTCDate() + 1);
+
+    for (const tenant of tenants) {
+      if (!tenant.ownerPhone) continue;
+      const whatsappNumber = tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
+      if (!whatsappNumber) continue;
+
+      try {
+        const [citas, ordenes] = await Promise.all([
+          this.prisma.appointment.findMany({
+            where: { tenantId: tenant.id, date: { gte: hoy, lt: manana }, status: { in: ['SCHEDULED', 'CONFIRMED'] as any } },
+            include: { service: true, professional: true },
+            orderBy: { date: 'asc' },
+          }),
+          this.prisma.order.findMany({
+            where: { tenantId: tenant.id, status: { in: ['PENDING', 'CONFIRMED', 'PREPARING'] as any }, createdAt: { gte: hoy, lt: manana } },
+            take: 5,
+          }),
+        ]);
+
+        const fecha = hoy.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+        let msg = `☀️ *Buenos días* — Resumen de hoy ${fecha} en ${tenant.name}\n\n`;
+
+        if (citas.length > 0) {
+          msg += `📅 *${citas.length} cita(s) hoy:*\n`;
+          msg += citas.map((c) => {
+            const hora = c.date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' });
+            const prof = c.professional ? ` — ${c.professional.name}` : '';
+            return `• ${hora} ${c.clientName} (${c.service.name}${prof})`;
+          }).join('\n');
+          msg += '\n\n';
+        } else {
+          msg += `📅 Sin citas agendadas hoy.\n\n`;
+        }
+
+        if (ordenes.length > 0) {
+          msg += `🛒 *${ordenes.length} pedido(s) pendiente(s)*\n`;
+        }
+
+        msg += `\n_Responde este mensaje para gestionar tu negocio._`;
+
+        await twilioClient.messages.create({
+          from: `whatsapp:${whatsappNumber}`,
+          to: `whatsapp:${this.normalizePhone(tenant.ownerPhone)}`,
+          body: msg,
+        });
+
+        this.logger.log(`Reporte matutino enviado a ${tenant.name} (${tenant.ownerPhone})`);
+      } catch (err) {
+        this.logger.error(`Error reporte matutino ${tenant.name}: ${(err as Error).message}`);
+      }
+    }
+  }
+
+  // ── Alerta de stock bajo WhatsApp al dueño ────────────────────────────────
+
+  @Cron('0 10 * * *')
+  async sendStockAlerts(): Promise<void> {
+    this.logger.log('Revisando alertas de stock bajo...');
+
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    if (!accountSid || !authToken) return;
+
+    const twilioClient = twilio.default(accountSid, authToken);
+
+    const tenants = await this.prisma.tenant.findMany({
+      where: {
+        subscriptionStatus: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
+        ownerPhone: { not: null },
+        industry: { in: ['TECH_STORE', 'CLOTHING_STORE', 'PHARMACY', 'RESTAURANT', 'BAKERY', 'WORKSHOP'] as any },
+      },
+    });
+
+    for (const tenant of tenants) {
+      if (!tenant.ownerPhone) continue;
+      const whatsappNumber = tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
+      if (!whatsappNumber) continue;
+
+      try {
+        const bajoStock = await this.prisma.$queryRaw<Array<{ name: string; stock: number; minStock: number }>>`
+          SELECT name, stock, "minStock"
+          FROM "Product"
+          WHERE "tenantId" = ${tenant.id}
+            AND active = true
+            AND stock <= "minStock"
+          ORDER BY stock ASC
+          LIMIT 10
+        `;
+
+        if (bajoStock.length === 0) continue;
+
+        const lista = bajoStock.map((p) => `• ${p.name}: ${p.stock} unidades (mín. ${p.minStock})`).join('\n');
+        const msg = `⚠️ *Alerta de stock bajo* — ${tenant.name}\n\n${lista}\n\n_Escríbeme para actualizar el stock._`;
+
+        await twilioClient.messages.create({
+          from: `whatsapp:${whatsappNumber}`,
+          to: `whatsapp:${this.normalizePhone(tenant.ownerPhone)}`,
+          body: msg,
+        });
+
+        this.logger.log(`Alerta de stock enviada a ${tenant.name} (${bajoStock.length} productos)`);
+      } catch (err) {
+        this.logger.error(`Error alerta stock ${tenant.name}: ${(err as Error).message}`);
+      }
+    }
+  }
+
   /** Cada día a las 01:00 — suspende tenants con suscripción vencida y notifica por email */
   @Cron('0 1 * * *')
   async suspenderSuscripcionesVencidas() {

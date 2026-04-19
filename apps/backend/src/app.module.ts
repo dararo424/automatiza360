@@ -49,6 +49,7 @@ import { SucursalesModule } from './sucursales/sucursales.module';
 import { HealthModule } from './health/health.module';
 import { TallasModule } from './tallas/tallas.module';
 import { AdminBotModule } from './admin-bot/admin-bot.module';
+import { PublicModule } from './public/public.module';
 
 @Module({
   imports: [
@@ -105,6 +106,7 @@ import { AdminBotModule } from './admin-bot/admin-bot.module';
     HealthModule,
     TallasModule,
     AdminBotModule,
+    PublicModule,
   ],
   controllers: [AppController],
   providers: [
