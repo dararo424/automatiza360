@@ -20,6 +20,13 @@ export class ConversacionesController {
     return this.svc.ingestMessage(user.tenantId, dto);
   }
 
+  /** Llamado por el AI service antes de procesar cada mensaje de cliente. */
+  @SkipThrottle()
+  @Post('track')
+  track(@CurrentUser() user: any, @Body() body: { clientPhone: string }) {
+    return this.svc.checkAndTrackConversation(user.tenantId, body.clientPhone);
+  }
+
   @Get()
   list(@CurrentUser() user: any) {
     return this.svc.listConversations(user.tenantId);

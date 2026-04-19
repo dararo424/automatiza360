@@ -17,10 +17,48 @@ export class ConversacionesService {
     private readonly emailService: EmailService,
   ) {}
 
-  async ingestMessage(tenantId: string, dto: IngestMessageDto) {
-    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
-    const limit = PLAN_LIMITS[tenant.plan as Plan] ?? 500;
+  async checkAndTrackConversation(tenantId: string, clientPhone: string): Promise<{
+    allowed: boolean;
+    used: number;
+    limit: number | null;
+    plan: string;
+  }> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { plan: true, conversationCountMonth: true, subscriptionStatus: true },
+    });
+    const rawLimit = PLAN_LIMITS[tenant.plan as Plan] ?? 500;
+    const limit = rawLimit === Infinity ? null : rawLimit;
 
+    // Check if this phone already had a conversation THIS calendar month
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const existing = await this.prisma.conversation.findUnique({
+      where: { tenantId_clientPhone: { tenantId, clientPhone } },
+      select: { lastMessageAt: true },
+    });
+
+    const alreadyCountedThisMonth =
+      existing?.lastMessageAt != null && existing.lastMessageAt >= startOfMonth;
+
+    if (alreadyCountedThisMonth) {
+      return { allowed: true, used: tenant.conversationCountMonth, limit, plan: tenant.plan };
+    }
+
+    // New conversation this month — check limit
+    if (limit !== null && tenant.conversationCountMonth >= limit) {
+      return { allowed: false, used: tenant.conversationCountMonth, limit, plan: tenant.plan };
+    }
+
+    // Within limit — increment
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { conversationCountMonth: { increment: 1 } },
+    });
+
+    return { allowed: true, used: tenant.conversationCountMonth + 1, limit, plan: tenant.plan };
+  }
+
+  async ingestMessage(tenantId: string, dto: IngestMessageDto) {
     // Upsert conversation
     const conversation = await this.prisma.conversation.upsert({
       where: { tenantId_clientPhone: { tenantId, clientPhone: dto.clientPhone } },
@@ -41,17 +79,6 @@ export class ConversacionesService {
         unreadCount: dto.direction === MessageDirection.INBOUND ? 1 : 0,
       },
     });
-
-    // Enforce plan limit (count inbound messages this month)
-    if (dto.direction === MessageDirection.INBOUND) {
-      if (tenant.conversationCountMonth >= limit) {
-        return { blocked: true, reason: 'plan_limit_reached', conversationId: conversation.id };
-      }
-      await this.prisma.tenant.update({
-        where: { id: tenantId },
-        data: { conversationCountMonth: { increment: 1 } },
-      });
-    }
 
     const message = await this.prisma.message.create({
       data: {
