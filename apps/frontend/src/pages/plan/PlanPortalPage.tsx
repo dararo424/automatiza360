@@ -157,7 +157,7 @@ export function PlanPortalPage() {
                 disabled={upgradeMutation.isPending}
                 className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold px-4 py-3 rounded-xl text-sm transition-colors"
               >
-                Mejorar a Pro — $149,000/mes
+                Mejorar a Pro — $242,000/mes
               </button>
             )}
             <button
@@ -165,7 +165,7 @@ export function PlanPortalPage() {
               disabled={upgradeMutation.isPending}
               className="flex-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold px-4 py-3 rounded-xl text-sm transition-colors"
             >
-              Mejorar a Business — $299,000/mes
+              Mejorar a Business — $529,000/mes
             </button>
           </div>
         </div>
