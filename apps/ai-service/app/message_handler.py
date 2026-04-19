@@ -141,6 +141,25 @@ async def handle_message(
                 "Por favor intenta de nuevo en unos momentos."
             )
     else:
+        # ── Plan enforcement ──────────────────────────────────────────────────
+        track = await backend_client.track_conversation(clean_phone)
+        if not track.get("allowed", True):
+            plan = track.get("plan", "STARTER")
+            used = track.get("used", 0)
+            limit = track.get("limit", 500)
+            logger.info(
+                "Plan limit reached for tenant on %s — plan=%s used=%s limit=%s",
+                to_number, plan, used, limit,
+            )
+            frontend_url = os.getenv("FRONTEND_URL", "https://automatiza360.vercel.app")
+            return (
+                f"Hola 👋 Hemos alcanzado el límite de conversaciones de este mes "
+                f"({used}/{limit} en plan {plan}).\n\n"
+                f"Para seguir atendiendo sin interrupciones, el negocio puede actualizar "
+                f"su plan en: {frontend_url}/mi-plan\n\n"
+                "Gracias por tu paciencia 🙏"
+            )
+        # ─────────────────────────────────────────────────────────────────────
         try:
             reply = await run(phone, text, session, backend_client, owner_phone)
         except Exception as exc:

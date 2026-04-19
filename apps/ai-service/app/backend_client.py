@@ -223,6 +223,23 @@ class BackendClient:
             logger.warning("check_admin failed for %s: %s", phone, exc)
         return {"isAdmin": False}
 
+    async def track_conversation(self, client_phone: str) -> dict:
+        """
+        Registra una conversación nueva para el mes actual y verifica el límite del plan.
+        Debe llamarse (await) antes de procesar mensajes de clientes.
+        Devuelve: { allowed: bool, used: int, limit: int | None, plan: str }
+        """
+        try:
+            clean = client_phone.replace("whatsapp:", "").strip()
+            result = await self._request(
+                "POST", "/conversaciones/track", json={"clientPhone": clean}
+            )
+            return result  # type: ignore[return-value]
+        except Exception as exc:
+            logger.warning("track_conversation failed for %s: %s", client_phone, exc)
+            # En caso de error deja pasar — mejor una respuesta que silencio total
+            return {"allowed": True, "used": 0, "limit": None, "plan": "UNKNOWN"}
+
     async def ingest_message(
         self,
         client_phone: str,
