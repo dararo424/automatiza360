@@ -21,6 +21,6 @@ import { TwilioModule } from '../twilio/twilio.module';
   ],
   controllers: [AuthController, EquipoController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard],
-  exports: [JwtAuthGuard],
+  exports: [JwtAuthGuard, AuthService],
 })
 export class AuthModule {}

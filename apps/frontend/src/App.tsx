@@ -41,6 +41,7 @@ import { SucursalesPage } from './pages/sucursales/SucursalesPage';
 import { TallasPage } from './pages/tallas/TallasPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
+import { AutoLoginPage } from './pages/auth/AutoLoginPage';
 
 export function App() {
   return (
@@ -48,6 +49,7 @@ export function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/auto-login" element={<AutoLoginPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
