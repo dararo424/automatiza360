@@ -1,8 +1,10 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Industry, Plan } from '@prisma/client';
 import {
   IsEmail,
   IsEnum,
+  IsOptional,
   IsString,
   Matches,
   MaxLength,
@@ -45,9 +47,10 @@ class AutoOnboardDto {
   @IsEnum(Plan)
   plan!: Plan;
 
+  @IsOptional()
   @IsString()
   @MaxLength(1000)
-  description!: string;
+  description?: string;
 }
 
 @Controller('public')
@@ -56,12 +59,14 @@ export class PublicController {
 
   @Post('analyze-business')
   @HttpCode(200)
+  @Throttle({ short: { ttl: 60000, limit: 4 }, medium: { ttl: 600000, limit: 10 } })
   analyzeBusiness(@Body() body: AnalyzeBusinessDto) {
     return this.service.analyzeBusiness(body.description);
   }
 
   @Post('auto-onboard')
   @HttpCode(201)
+  @Throttle({ short: { ttl: 300000, limit: 3 }, medium: { ttl: 3600000, limit: 5 } })
   autoOnboard(@Body() body: AutoOnboardDto) {
     return this.service.autoOnboard(body);
   }
