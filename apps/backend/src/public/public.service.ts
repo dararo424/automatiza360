@@ -24,7 +24,7 @@ export interface AutoOnboardDto {
   ownerPhone: string;
   industry: Industry;
   plan: Plan;
-  description: string;
+  description?: string;
 }
 
 @Injectable()
