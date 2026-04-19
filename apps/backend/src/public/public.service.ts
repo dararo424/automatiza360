@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
 
-interface BusinessAnalysis {
+export interface BusinessAnalysis {
   industry: string;
   industryLabel: string;
   industryEmoji: string;
