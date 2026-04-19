@@ -116,18 +116,76 @@ export class EmailService {
     });
   }
 
-  async sendTrialExpirando(to: string, opts: { storeName: string; daysRemaining: number }) {
+  async sendTrialMidPoint(to: string, opts: { storeName: string; loginUrl: string }) {
     await this.send({
       to,
-      subject: `Tu trial vence en ${opts.daysRemaining} día${opts.daysRemaining !== 1 ? 's' : ''} — Automatiza360`,
+      subject: `¿Cómo va todo en ${opts.storeName}? — A mitad del trial`,
       html: `
-        <h2>⏰ Tu período de prueba está por vencer</h2>
-        <p>Hola ${opts.storeName},</p>
-        <p>Tu trial gratuito vence en <strong>${opts.daysRemaining} día${opts.daysRemaining !== 1 ? 's' : ''}</strong>.</p>
-        <a href="${process.env.FRONTEND_URL ?? 'https://automatiza360-frontend.vercel.app'}/planes"
-           style="background:#4f46e5;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;margin-top:16px">
-          Ver planes →
-        </a>
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:20px;">
+          <div style="background:#070E1B;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+            <h1 style="color:white;margin:0;font-size:24px;">Automatiza<span style="color:#00C278">360</span></h1>
+          </div>
+          <div style="background:white;padding:32px;border-radius:0 0 12px 12px;">
+            <h2 style="color:#0f172a;margin-top:0;">Ya llevas 7 días con nosotros 🎯</h2>
+            <p style="color:#475569;line-height:1.6;">Hola equipo de <strong>${opts.storeName}</strong>, estamos a mitad de tu período de prueba gratuita.</p>
+            <p style="color:#475569;line-height:1.6;">¿Sabías que los negocios que configuran estas 3 cosas en el trial convierten <strong>3× más clientes</strong>?</p>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:20px;margin:24px 0;">
+              <p style="color:#166534;font-weight:bold;margin:0 0 12px 0;">✅ Lista de activación</p>
+              <ul style="color:#475569;line-height:2;padding-left:20px;margin:0;">
+                <li>Agrega al menos 5 productos o servicios al catálogo</li>
+                <li>Activa el bot de WhatsApp y haz una prueba con tu número</li>
+                <li>Configura los horarios de atención del bot</li>
+              </ul>
+            </div>
+            <div style="text-align:center;margin:32px 0;">
+              <a href="${opts.loginUrl}" style="background:#00C278;color:#070E1B;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
+                Ir a completar mi configuración →
+              </a>
+            </div>
+            <p style="color:#94a3b8;font-size:14px;text-align:center;">¿Necesitas ayuda? <a href="mailto:soporteautomatiza360@rgytgroup.com" style="color:#00C278;">soporteautomatiza360@rgytgroup.com</a></p>
+            <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
+            <p style="color:#94a3b8;font-size:12px;text-align:center;">© 2026 Automatiza360 · Todos los derechos reservados</p>
+          </div>
+        </div>
+      `,
+    });
+  }
+
+  async sendTrialExpirando(to: string, opts: { storeName: string; daysRemaining: number }) {
+    const isLastDay = opts.daysRemaining === 1;
+    await this.send({
+      to,
+      subject: isLastDay
+        ? `🚨 Último día de trial — ${opts.storeName}`
+        : `⚠️ Tu trial vence en ${opts.daysRemaining} días — Automatiza360`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:20px;">
+          <div style="background:#070E1B;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+            <h1 style="color:white;margin:0;font-size:24px;">Automatiza<span style="color:#00C278">360</span></h1>
+          </div>
+          <div style="background:white;padding:32px;border-radius:0 0 12px 12px;">
+            <h2 style="color:#0f172a;margin-top:0;">${isLastDay ? '🚨 Mañana termina tu trial' : `⏰ Te quedan ${opts.daysRemaining} días`}</h2>
+            <p style="color:#475569;line-height:1.6;">Hola equipo de <strong>${opts.storeName}</strong>,</p>
+            <p style="color:#475569;line-height:1.6;">
+              ${isLastDay
+                ? 'Tu período de prueba gratuita <strong>vence mañana</strong>. Para no perder acceso a tu bot, tus datos y tus clientes configurados, activa tu plan hoy.'
+                : `Tu trial gratuito vence en <strong>${opts.daysRemaining} días</strong>. Activa tu plan para seguir automatizando sin interrupciones.`
+              }
+            </p>
+            <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:16px;margin:20px 0;">
+              <p style="color:#9a3412;margin:0;font-size:14px;">Si no activas un plan, tu bot dejará de responder y perderás acceso al dashboard.</p>
+            </div>
+            <div style="text-align:center;margin:32px 0;">
+              <a href="${process.env.FRONTEND_URL ?? 'https://automatiza360-frontend.vercel.app'}/planes"
+                 style="background:#00C278;color:#070E1B;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
+                Activar mi plan ahora →
+              </a>
+            </div>
+            <p style="color:#94a3b8;font-size:14px;text-align:center;">¿Tienes dudas? <a href="mailto:soporteautomatiza360@rgytgroup.com" style="color:#00C278;">soporteautomatiza360@rgytgroup.com</a></p>
+            <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
+            <p style="color:#94a3b8;font-size:12px;text-align:center;">© 2026 Automatiza360 · Todos los derechos reservados</p>
+          </div>
+        </div>
       `,
     });
   }

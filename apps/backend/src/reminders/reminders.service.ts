@@ -182,13 +182,14 @@ export class RemindersService {
     this.logger.log('Revisando tenants con trial próximo a vencer...');
 
     const now = new Date();
-    const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-    const in1Day = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
+    const frontendUrl = process.env.FRONTEND_URL ?? 'https://automatiza360-frontend.vercel.app';
+    // Captura: 7 días restantes (mid-trial), 3 días y 1 día
+    const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     const tenants = await this.prisma.tenant.findMany({
       where: {
         subscriptionStatus: SubscriptionStatus.TRIAL,
-        trialEndsAt: { lte: in3Days, gte: now },
+        trialEndsAt: { lte: in7Days, gte: now },
       },
       include: {
         users: {
@@ -199,7 +200,7 @@ export class RemindersService {
       },
     });
 
-    this.logger.log(`Tenants con trial por vencer: ${tenants.length}`);
+    this.logger.log(`Tenants con trial por vencer (≤7 días): ${tenants.length}`);
 
     for (const tenant of tenants) {
       const ownerEmail = tenant.users[0]?.email;
@@ -208,16 +209,22 @@ export class RemindersService {
       const msRemaining = tenant.trialEndsAt.getTime() - now.getTime();
       const daysRemaining = Math.ceil(msRemaining / (24 * 60 * 60 * 1000));
 
-      if (daysRemaining !== 3 && daysRemaining !== 1) continue;
-
       try {
-        await this.emailService.sendTrialExpirando(ownerEmail, {
-          storeName: tenant.name,
-          daysRemaining,
-        });
-        this.logger.log(
-          `Email de trial enviado a ${ownerEmail} (${tenant.name}) — ${daysRemaining} día(s) restantes`,
-        );
+        if (daysRemaining === 7) {
+          await this.emailService.sendTrialMidPoint(ownerEmail, {
+            storeName: tenant.name,
+            loginUrl: `${frontendUrl}/dashboard`,
+          });
+          this.logger.log(`Email mid-trial enviado a ${ownerEmail} (${tenant.name})`);
+        } else if (daysRemaining === 3 || daysRemaining === 1) {
+          await this.emailService.sendTrialExpirando(ownerEmail, {
+            storeName: tenant.name,
+            daysRemaining,
+          });
+          this.logger.log(
+            `Email de trial enviado a ${ownerEmail} (${tenant.name}) — ${daysRemaining} día(s) restantes`,
+          );
+        }
       } catch (error) {
         this.logger.error(
           `Error enviando email de trial a ${ownerEmail}: ${(error as Error).message}`,
