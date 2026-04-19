@@ -13,8 +13,12 @@ async function bootstrap() {
 
   const allowedOrigins = [
     process.env.FRONTEND_URL ?? '',
+    process.env.LANDING_URL ?? '',
     'https://automatiza360-frontend.vercel.app',
     'https://automatiza360.vercel.app',
+    'https://automatiza360-landing.vercel.app',
+    'https://automatiza360.com',
+    'https://www.automatiza360.com',
   ].filter(Boolean);
 
   app.enableCors({

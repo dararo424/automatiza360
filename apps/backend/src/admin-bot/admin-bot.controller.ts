@@ -10,7 +10,7 @@ import {
   Query,
   UnauthorizedException,
 } from '@nestjs/common';
-import { TicketStatus } from '@prisma/client';
+import { AppointmentStatus, OrderStatus, TicketStatus } from '@prisma/client';
 import { AdminBotService } from './admin-bot.service';
 
 function verifyInternalKey(key: string | undefined) {
@@ -139,6 +139,29 @@ export class AdminBotController {
     );
   }
 
+  @Post('citas/notificar-cancelacion')
+  notificarCancelacion(
+    @Body() body: {
+      tenantId: string;
+      industry: string;
+      pacientes: Array<{
+        nombre: string;
+        telefono: string;
+        servicio: string;
+        hora: string;
+        profesional?: string | null;
+      }>;
+    },
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.notificarPacientesCancelacion(
+      body.tenantId,
+      body.industry,
+      body.pacientes,
+    );
+  }
+
   // ── Órdenes pendientes ─────────────────────────────────────────────────────
 
   @Get('ordenes/pendientes/:tenantId')
@@ -148,5 +171,160 @@ export class AdminBotController {
   ) {
     verifyInternalKey(key);
     return this.service.ordenesPendientes(tenantId);
+  }
+
+  @Get('orden/buscar')
+  verDetalleOrden(
+    @Query('tenantId') tenantId: string,
+    @Query('numero') numero: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.verDetalleOrden(tenantId, parseInt(numero, 10));
+  }
+
+  @Patch('orden/:numero/estado')
+  cambiarEstadoOrden(
+    @Param('numero') numero: string,
+    @Body() body: { tenantId: string; estado: OrderStatus },
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.cambiarEstadoOrden(body.tenantId, parseInt(numero, 10), body.estado);
+  }
+
+  // ── Citas avanzadas ────────────────────────────────────────────────────────
+
+  @Get('citas/dia')
+  verCitasDia(
+    @Query('tenantId') tenantId: string,
+    @Query('fecha') fecha: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.verCitasDia(tenantId, fecha);
+  }
+
+  @Post('citas/crear')
+  crearCitaAdmin(
+    @Body() body: {
+      tenantId: string;
+      clientName: string;
+      clientPhone: string;
+      serviceName: string;
+      fecha: string;
+      hora: string;
+      profesionalNombre?: string;
+    },
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.crearCitaAdmin(
+      body.tenantId,
+      body.clientName,
+      body.clientPhone,
+      body.serviceName,
+      body.fecha,
+      body.hora,
+      body.profesionalNombre,
+    );
+  }
+
+  @Patch('citas/:id/estado')
+  cambiarEstadoCita(
+    @Param('id') id: string,
+    @Body() body: { tenantId: string; estado: AppointmentStatus },
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.cambiarEstadoCita(body.tenantId, id, body.estado);
+  }
+
+  @Patch('citas/:id/reagendar')
+  reagendarCita(
+    @Param('id') id: string,
+    @Body() body: { tenantId: string; nuevaFecha: string; nuevaHora: string },
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.reagendarCita(body.tenantId, id, body.nuevaFecha, body.nuevaHora);
+  }
+
+  // ── Contactos ──────────────────────────────────────────────────────────────
+
+  @Get('contacto/buscar')
+  buscarContacto(
+    @Query('tenantId') tenantId: string,
+    @Query('query') query: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.buscarContacto(tenantId, query);
+  }
+
+  // ── Gastos ─────────────────────────────────────────────────────────────────
+
+  @Post('gasto')
+  registrarGasto(
+    @Body() body: { tenantId: string; descripcion: string; monto: number; categoria: string },
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.registrarGasto(body.tenantId, body.descripcion, body.monto, body.categoria);
+  }
+
+  // ── Ticket nuevo ───────────────────────────────────────────────────────────
+
+  @Post('ticket')
+  crearTicket(
+    @Body() body: { tenantId: string; clientName: string; clientPhone: string; device: string; issue: string; fotoUrl?: string },
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.crearTicket(body.tenantId, body.clientName, body.clientPhone, body.device, body.issue, body.fotoUrl);
+  }
+
+  // ── Cotizaciones pendientes ────────────────────────────────────────────────
+
+  @Get('cotizaciones/pendientes/:tenantId')
+  verCotizacionesPendientes(
+    @Param('tenantId') tenantId: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.verCotizacionesPendientes(tenantId);
+  }
+
+  // ── Stock bajo ─────────────────────────────────────────────────────────────
+
+  @Get('stock-bajo/:tenantId')
+  verStockBajo(
+    @Param('tenantId') tenantId: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.verStockBajo(tenantId);
+  }
+
+  // ── Resumen del mes ────────────────────────────────────────────────────────
+
+  @Get('resumen-mes/:tenantId')
+  resumenMes(
+    @Param('tenantId') tenantId: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.resumenMes(tenantId);
+  }
+
+  // ── Campaña rápida ─────────────────────────────────────────────────────────
+
+  @Post('campaña/rapida')
+  crearCampañaRapida(
+    @Body() body: { tenantId: string; mensaje: string },
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.crearCampañaRapida(body.tenantId, body.mensaje);
   }
 }
