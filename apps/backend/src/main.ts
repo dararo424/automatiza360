@@ -21,8 +21,19 @@ async function bootstrap() {
     'https://www.automatiza360.com',
   ].filter(Boolean);
 
+  // Acepta cualquier preview/deploy de Vercel de nuestros proyectos
+  const vercelPattern = /^https:\/\/automatiza360[a-z0-9-]*\.vercel\.app$/;
+
   app.enableCors({
-    origin: env === 'production' ? allowedOrigins : true,
+    origin: env === 'production'
+      ? (origin, cb) => {
+          if (!origin || allowedOrigins.includes(origin) || vercelPattern.test(origin)) {
+            cb(null, true);
+          } else {
+            cb(new Error('Not allowed by CORS'));
+          }
+        }
+      : true,
     credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
