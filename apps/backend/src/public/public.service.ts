@@ -97,7 +97,9 @@ Responde SOLO con el JSON.`;
         messages: [{ role: 'user', content: prompt }],
       });
 
-      const text = response.content.find((b) => b.type === 'text')?.text ?? '{}';
+      const raw = response.content.find((b) => b.type === 'text')?.text ?? '{}';
+      // Strip markdown code fences if Claude wraps the JSON
+      const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
       return JSON.parse(text) as BusinessAnalysis;
     } catch (err) {
       this.logger.error('Business analysis failed', err);
