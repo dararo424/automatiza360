@@ -38,50 +38,56 @@ export class PublicService {
   ) {}
 
   async analyzeBusiness(description: string): Promise<BusinessAnalysis> {
-    const prompt = `Eres un consultor honesto de automatización para negocios latinoamericanos. Tu trabajo es recomendar el plan MÁS ADECUADO, no el más caro.
+    const prompt = `Eres un consultor honesto de automatización para negocios latinoamericanos.
 
 El prospecto describió su negocio así:
 """
 ${description}
 """
 
-PASO 1 — Detecta señales clave en la descripción:
-- ¿Trabaja solo / es independiente / a domicilio / freelancer / emprendedor individual? → STARTER
-- ¿Menciona empleados, equipo, sucursales, alto volumen? → evalúa PRO o BUSINESS
-- ¿Está empezando, es pequeño, tiene pocos clientes? → STARTER
-- ¿Tiene múltiples servicios Y varios empleados Y flujo constante? → PRO
-- ¿Tiene cadena, franquicia, múltiples locales o necesita integración con sistema propio? → BUSINESS
+PASO 1 — Estima el volumen mensual de mensajes de WhatsApp que recibiría este negocio.
+Piensa: ¿cuántos clientes potenciales contactan este tipo de negocio por mes? ¿Con qué frecuencia pregunta cada cliente? ¿Es un negocio de consulta frecuente o esporádica?
 
-REGLAS ESTRICTAS DE PLAN (aplica la primera que coincida):
-1. STARTER: trabaja solo O negocio unipersonal O a domicilio O "empezando" O menos de 3 empleados O volumen bajo
-2. PRO: 3+ empleados Y múltiples servicios Y flujo medio-alto de clientes
-3. BUSINESS: cadena/franquicia O múltiples sucursales O +50 clientes/día O necesita API/integración
+Ejemplos de referencia:
+- Peluquero, electricista, profe particular, servicio a domicilio → 50-200 msg/mes → STARTER
+- Restaurante pequeño, tienda de ropa, salón de belleza con 2-3 empleados → 200-600 msg/mes → puede ser STARTER o PRO según lo que describa
+- Tienda establecida con catálogo amplio, clínica con varios doctores, gimnasio con membresías → 600-2000 msg/mes → PRO
+- Cadena, franquicia, varios locales, alto volumen diario → +2000 msg/mes → BUSINESS
 
-IMPORTANTE: La mayoría de negocios pequeños latinoamericanos son STARTER. Solo asigna PRO si hay evidencia clara de equipo y volumen. BUSINESS es raro.
+REGLA DE PLAN basada en volumen estimado:
+- STARTER: menos de 500 mensajes/mes estimados
+- PRO: entre 500 y 2000 mensajes/mes estimados
+- BUSINESS: más de 2000 mensajes/mes O múltiples sucursales O necesita integración con sistema propio
 
-PASO 2 — Devuelve UN ÚNICO objeto JSON válido (sin markdown):
+PASO 2 — Con base en ese análisis, construye los planWhyPoints explicando:
+1. Por qué ese tipo de negocio genera ese volumen de mensajes (razona desde la descripción)
+2. Por qué ese volumen encaja con el plan recomendado
+3. Qué perdería o pagaría de más si eligiera otro plan
+
+Los planWhyPoints NO pueden ser frases genéricas. Deben nombrar el tipo de negocio, el contexto y el volumen estimado.
+
+PASO 3 — Devuelve UN ÚNICO objeto JSON válido (sin markdown, sin texto extra):
 {
   "industry": "<RESTAURANT | BAKERY | TECH_STORE | WORKSHOP | CLINIC | BEAUTY | VETERINARY | CLOTHING_STORE | GYM | PHARMACY | HOTEL | OTHER>",
   "industryLabel": "<nombre amigable en español>",
   "industryEmoji": "<emoji>",
   "recommendedPlan": "<STARTER | PRO | BUSINESS>",
-  "planReason": "<1 oración directa mencionando algo específico del negocio descrito, máx 15 palabras>",
+  "planReason": "<1 oración directa que mencione el volumen estimado y el tipo de negocio, máx 15 palabras>",
   "planWhyPoints": [
-    "<razón que mencione un detalle CONCRETO de su descripción, ej: 'Como peluquero a domicilio, WhatsApp es tu único canal de ventas'>",
-    "<razón sobre su situación específica, ej: 'Trabajas solo, por lo que no necesitas gestión de múltiples agendas'>",
-    "<razón sobre el valor real para su caso, ej: 'Con Starter automatizas citas sin pagar por funciones que no usarás'>"
+    "<razón 1: explica el volumen estimado basándote en cómo opera este negocio específico>",
+    "<razón 2: conecta ese volumen con el límite del plan recomendado>",
+    "<razón 3: explica qué gana eligiendo este plan y no uno más caro o más barato>"
   ],
   "automations": [
-    "<automatización WhatsApp MUY concreta para su negocio y plan recomendado>",
+    "<automatización WhatsApp concreta y útil para este negocio específico>",
     "<automatización 2>",
     "<automatización 3>",
     "<automatización 4>"
   ],
-  "headline": "<frase 8-12 palabras sobre el valor para su negocio específico>",
-  "description": "<2 oraciones con valor concreto para su tipo de negocio y situación>"
+  "headline": "<frase 8-12 palabras sobre el valor para su tipo de negocio>",
+  "description": "<2 oraciones con valor concreto para su situación>"
 }
 
-Los planWhyPoints DEBEN mencionar detalles literales de la descripción del prospecto. Nunca uses frases genéricas como "tu negocio tiene múltiples servicios" si eso no está en la descripción.
 Responde SOLO con el JSON.`;
 
     try {
