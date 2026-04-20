@@ -190,6 +190,43 @@ export class EmailService {
     });
   }
 
+  async sendConfirmacionPago(to: string, opts: { ownerName: string; storeName: string; plan: string; monto: number; referencia: string }) {
+    const planLabel: Record<string, string> = { STARTER: 'Starter', PRO: 'Pro', BUSINESS: 'Business' };
+    const label = planLabel[opts.plan] ?? opts.plan;
+    const fmt = (n: number) => `$${n.toLocaleString('es-CO')} COP`;
+    await this.send({
+      to,
+      subject: `✅ Pago confirmado — Plan ${label} activado`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:20px;">
+          <div style="background:#070E1B;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+            <h1 style="color:white;margin:0;font-size:24px;">Automatiza<span style="color:#00C278">360</span></h1>
+          </div>
+          <div style="background:white;padding:32px;border-radius:0 0 12px 12px;">
+            <h2 style="color:#0f172a;margin-top:0;">¡Pago recibido, ${opts.ownerName}! 🎉</h2>
+            <p style="color:#475569;line-height:1.6;">Tu suscripción de <strong>${opts.storeName}</strong> al plan <strong>${label}</strong> ha sido activada exitosamente.</p>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:20px;margin:24px 0;">
+              <p style="color:#166534;font-weight:bold;margin:0 0 12px 0;">Detalles del pago</p>
+              <p style="color:#475569;margin:4px 0;">Plan: <strong>${label}</strong></p>
+              <p style="color:#475569;margin:4px 0;">Monto: <strong>${fmt(opts.monto)}</strong></p>
+              <p style="color:#475569;margin:4px 0;">Referencia: <code style="background:#e2e8f0;padding:2px 6px;border-radius:4px;font-size:13px;">${opts.referencia}</code></p>
+              <p style="color:#475569;margin:4px 0;">Vigencia: <strong>1 mes desde hoy</strong></p>
+            </div>
+            <div style="text-align:center;margin:32px 0;">
+              <a href="${process.env.FRONTEND_URL ?? 'https://automatiza360-frontend.vercel.app'}/dashboard"
+                 style="background:#00C278;color:#070E1B;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
+                Ir a mi panel →
+              </a>
+            </div>
+            <p style="color:#94a3b8;font-size:14px;text-align:center;">¿Tienes dudas? <a href="mailto:soporteautomatiza360@rgytgroup.com" style="color:#00C278;">soporteautomatiza360@rgytgroup.com</a></p>
+            <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
+            <p style="color:#94a3b8;font-size:12px;text-align:center;">© 2026 Automatiza360 · Todos los derechos reservados</p>
+          </div>
+        </div>
+      `,
+    });
+  }
+
   async sendEscalacion(to: string, opts: { storeName: string; clientPhone: string; lastMessage: string }) {
     await this.send({
       to,

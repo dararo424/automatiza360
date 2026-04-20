@@ -1,8 +1,9 @@
 import * as crypto from 'crypto';
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Plan, Role, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
+import { EmailService } from '../email/email.service';
 
 type PlanKey = 'STARTER' | 'PRO' | 'BUSINESS';
 
@@ -14,9 +15,12 @@ const PRECIOS: Record<PlanKey, number> = {
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly billingService: BillingService,
+    private readonly emailService: EmailService,
   ) {}
 
   async crearTransaccion(tenantId: string, plan: PlanKey) {
@@ -100,13 +104,28 @@ export class PaymentsService {
         // Registrar pago en historial de facturación
         await this.billingService.registrarPago(
           intent.tenantId,
-          intent.monto / 100, // centavos → pesos
+          intent.monto / 100,
           intent.plan,
           referencia,
           transaccion.id,
           'COMPLETADO',
           `Plan ${intent.plan}`,
         );
+
+        // Notificar al owner por email
+        const tenant = await this.prisma.tenant.findUnique({
+          where: { id: intent.tenantId },
+          include: { users: { where: { role: Role.OWNER }, take: 1 } },
+        });
+        if (tenant?.users[0]?.email) {
+          this.emailService.sendConfirmacionPago(tenant.users[0].email, {
+            ownerName: tenant.users[0].nombre ?? tenant.businessName,
+            storeName: tenant.businessName,
+            plan: intent.plan,
+            monto: intent.monto / 100,
+            referencia,
+          }).catch((e) => this.logger.error('Email confirmación pago failed', e));
+        }
       } else if (
         transaccion.status === 'DECLINED' ||
         transaccion.status === 'VOIDED'
