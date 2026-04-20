@@ -38,40 +38,50 @@ export class PublicService {
   ) {}
 
   async analyzeBusiness(description: string): Promise<BusinessAnalysis> {
-    const prompt = `Eres un consultor experto en automatización para negocios latinoamericanos.
-Un prospecto describió su negocio así:
+    const prompt = `Eres un consultor honesto de automatización para negocios latinoamericanos. Tu trabajo es recomendar el plan MÁS ADECUADO, no el más caro.
+
+El prospecto describió su negocio así:
 """
 ${description}
 """
 
-Analiza la descripción y devuelve UN ÚNICO objeto JSON válido (sin markdown, sin explicaciones extras):
+PASO 1 — Detecta señales clave en la descripción:
+- ¿Trabaja solo / es independiente / a domicilio / freelancer / emprendedor individual? → STARTER
+- ¿Menciona empleados, equipo, sucursales, alto volumen? → evalúa PRO o BUSINESS
+- ¿Está empezando, es pequeño, tiene pocos clientes? → STARTER
+- ¿Tiene múltiples servicios Y varios empleados Y flujo constante? → PRO
+- ¿Tiene cadena, franquicia, múltiples locales o necesita integración con sistema propio? → BUSINESS
+
+REGLAS ESTRICTAS DE PLAN (aplica la primera que coincida):
+1. STARTER: trabaja solo O negocio unipersonal O a domicilio O "empezando" O menos de 3 empleados O volumen bajo
+2. PRO: 3+ empleados Y múltiples servicios Y flujo medio-alto de clientes
+3. BUSINESS: cadena/franquicia O múltiples sucursales O +50 clientes/día O necesita API/integración
+
+IMPORTANTE: La mayoría de negocios pequeños latinoamericanos son STARTER. Solo asigna PRO si hay evidencia clara de equipo y volumen. BUSINESS es raro.
+
+PASO 2 — Devuelve UN ÚNICO objeto JSON válido (sin markdown):
 {
   "industry": "<RESTAURANT | BAKERY | TECH_STORE | WORKSHOP | CLINIC | BEAUTY | VETERINARY | CLOTHING_STORE | GYM | PHARMACY | HOTEL | OTHER>",
   "industryLabel": "<nombre amigable en español>",
   "industryEmoji": "<emoji>",
   "recommendedPlan": "<STARTER | PRO | BUSINESS>",
-  "planReason": "<1 oración directa sobre por qué ese plan, máx 15 palabras>",
+  "planReason": "<1 oración directa mencionando algo específico del negocio descrito, máx 15 palabras>",
   "planWhyPoints": [
-    "<razón específica 1 basada en la descripción del negocio, ej: 'Atiendes múltiples servicios que se benefician de agenda automatizada'>",
-    "<razón específica 2, ej: 'El volumen de consultas por precios justifica respuestas 24/7'>",
-    "<razón específica 3, ej: 'Con 3 estilistas necesitas gestión de disponibilidad en tiempo real'>"
+    "<razón que mencione un detalle CONCRETO de su descripción, ej: 'Como peluquero a domicilio, WhatsApp es tu único canal de ventas'>",
+    "<razón sobre su situación específica, ej: 'Trabajas solo, por lo que no necesitas gestión de múltiples agendas'>",
+    "<razón sobre el valor real para su caso, ej: 'Con Starter automatizas citas sin pagar por funciones que no usarás'>"
   ],
   "automations": [
-    "<automatización WhatsApp concreta para su negocio>",
+    "<automatización WhatsApp MUY concreta para su negocio y plan recomendado>",
     "<automatización 2>",
     "<automatización 3>",
     "<automatización 4>"
   ],
   "headline": "<frase 8-12 palabras sobre el valor para su negocio específico>",
-  "description": "<2 oraciones con valor concreto para su tipo de negocio>"
+  "description": "<2 oraciones con valor concreto para su tipo de negocio y situación>"
 }
 
-Reglas plan:
-- STARTER: 1 persona / negocio pequeño / empezando
-- PRO: varios empleados / flujo medio / múltiples servicios
-- BUSINESS: cadena / sucursales / alto volumen / necesita API
-
-Los planWhyPoints DEBEN ser específicos al negocio descrito, no genéricos.
+Los planWhyPoints DEBEN mencionar detalles literales de la descripción del prospecto. Nunca uses frases genéricas como "tu negocio tiene múltiples servicios" si eso no está en la descripción.
 Responde SOLO con el JSON.`;
 
     try {
