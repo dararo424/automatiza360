@@ -119,8 +119,8 @@ export class PaymentsService {
         });
         if (tenant?.users[0]?.email) {
           this.emailService.sendConfirmacionPago(tenant.users[0].email, {
-            ownerName: tenant.users[0].nombre ?? tenant.businessName,
-            storeName: tenant.businessName,
+            ownerName: tenant.users[0].name,
+            storeName: tenant.name,
             plan: intent.plan,
             monto: intent.monto / 100,
             referencia,
