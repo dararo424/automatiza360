@@ -87,22 +87,43 @@ async def webhook(
     Body: str = Form(default=""),
     To: str = Form(default=""),
     MediaUrl0: str = Form(default=""),
+    MediaContentType0: str = Form(default=""),
 ):
     """
     Twilio WhatsApp webhook — receives a message and returns TwiML.
 
     Twilio sends:
-      From:       the customer's WhatsApp number  (e.g. 'whatsapp:+521234567890')
-      To:         the Twilio number that received the message (e.g. 'whatsapp:+15551234567')
-      Body:       the message text
-      MediaUrl0:  URL of the first media attachment (image, etc.) — empty if none
+      From:               the customer's WhatsApp number  (e.g. 'whatsapp:+521234567890')
+      To:                 the Twilio number that received the message
+      Body:               the message text (empty for voice notes)
+      MediaUrl0:          URL of the first media attachment (audio/ogg for voice notes)
+      MediaContentType0:  MIME type of MediaUrl0 (e.g. 'audio/ogg')
     """
     from app.message_handler import handle_message
 
-    text = Body.strip() or "hola"
-    # Strip the "whatsapp:" prefix from the To number for tenant lookup
     to_number = To.replace("whatsapp:", "").strip() or "default"
     media_url: str | None = MediaUrl0.strip() or None
+    is_voice = MediaContentType0.startswith("audio/") and bool(media_url)
+
+    # ── Voice note: transcribe and use transcription as the message text ──────
+    voice_prefix = ""
+    if is_voice:
+        from app.voice_service import transcribe_voice_message
+        logger.info("Voice note detected from=%s  url=%s", From, media_url)
+        try:
+            transcription = await transcribe_voice_message(media_url)  # type: ignore[arg-type]
+            text = transcription
+            voice_prefix = f'🎙️ *Escuché:* "{transcription}"\n\n'
+        except Exception as exc:
+            logger.error("Voice transcription failed: %s", exc)
+            twiml = (
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                "<Response><Message>No pude procesar tu nota de voz 😔 "
+                "¿Podrías escribirlo?</Message></Response>"
+            )
+            return Response(content=twiml, media_type="text/xml")
+    else:
+        text = Body.strip() or "hola"
 
     logger.info(
         "Incoming  from=%s  to=%s  text=%r  media=%s",
@@ -110,6 +131,8 @@ async def webhook(
     )
 
     reply = await handle_message(From, text, to_number, media_url)
+    if voice_prefix:
+        reply = voice_prefix + reply
     logger.info("Outgoing  to=%s  text=%r", From, reply[:120])
 
     safe = reply.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
