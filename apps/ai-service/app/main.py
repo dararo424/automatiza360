@@ -6,7 +6,7 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.backend_client import get_client
@@ -83,6 +83,7 @@ async def import_inventory(file: UploadFile = File(...)):
 
 @app.post("/webhook")
 async def webhook(
+    request: Request,
     From: str = Form(...),
     Body: str = Form(default=""),
     To: str = Form(default=""),
@@ -99,7 +100,17 @@ async def webhook(
       MediaUrl0:          URL of the first media attachment (audio/ogg for voice notes)
       MediaContentType0:  MIME type of MediaUrl0 (e.g. 'audio/ogg')
     """
+    from app.security import verify_twilio_request
     from app.message_handler import handle_message
+
+    # ── Twilio signature validation ───────────────────────────────────────────
+    signature = request.headers.get("X-Twilio-Signature", "")
+    # Use WEBHOOK_URL env var if set (needed when Railway proxies change the host)
+    webhook_url = os.getenv("WEBHOOK_URL") or str(request.url)
+    form_params = {k: v for k, v in (await request.form()).items()}
+    if not verify_twilio_request(webhook_url, form_params, signature):
+        logger.warning("Invalid Twilio signature from %s", request.client)
+        raise HTTPException(status_code=403, detail="Invalid signature")
 
     to_number = To.replace("whatsapp:", "").strip() or "default"
     media_url: str | None = MediaUrl0.strip() or None
