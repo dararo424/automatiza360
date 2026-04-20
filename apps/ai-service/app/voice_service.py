@@ -16,14 +16,18 @@ from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
-_openai: AsyncOpenAI | None = None
+_client: AsyncOpenAI | None = None
 
 
-def _get_openai() -> AsyncOpenAI:
-    global _openai
-    if _openai is None:
-        _openai = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    return _openai
+def _get_client() -> AsyncOpenAI:
+    """Returns Groq client (free tier) with OpenAI-compatible API."""
+    global _client
+    if _client is None:
+        _client = AsyncOpenAI(
+            api_key=os.getenv("GROQ_API_KEY"),
+            base_url="https://api.groq.com/openai/v1",
+        )
+    return _client
 
 
 async def transcribe_voice_message(media_url: str) -> str:
@@ -50,8 +54,8 @@ async def transcribe_voice_message(media_url: str) -> str:
     audio_file = io.BytesIO(audio_bytes)
     audio_file.name = "voice.ogg"
 
-    result = await _get_openai().audio.transcriptions.create(
-        model="whisper-1",
+    result = await _get_client().audio.transcriptions.create(
+        model="whisper-large-v3-turbo",
         file=audio_file,
         language="es",
     )
