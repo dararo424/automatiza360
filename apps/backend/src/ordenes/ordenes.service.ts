@@ -212,8 +212,23 @@ export class OrdenesService {
     const publicKey = process.env.WOMPI_PUBLIC_KEY;
     if (!publicKey) throw new BadRequestException('WOMPI_PUBLIC_KEY no configurada');
     const amountInCents = Math.round(orden.total * 100);
-    const url = `https://checkout.wompi.co/p/?public-key=${publicKey}&currency=COP&amount-in-cents=${amountInCents}&reference=${orderId}`;
-    return { url };
+    const referencia = `ORD-${orderId}`;
+
+    // Firma de integridad requerida por Wompi para evitar manipulación del monto
+    const integritySecret = process.env.WOMPI_INTEGRITY_SECRET ?? '';
+    const cadena = `${referencia}${amountInCents}COP${integritySecret}`;
+    const { createHash } = await import('crypto');
+    const firma = createHash('sha256').update(cadena).digest('hex');
+
+    const params = new URLSearchParams({
+      'public-key': publicKey,
+      currency: 'COP',
+      'amount-in-cents': String(amountInCents),
+      reference: referencia,
+      'signature:integrity': firma,
+      'redirect-url': `${process.env.FRONTEND_URL ?? ''}/pago-resultado`,
+    });
+    return { url: `https://checkout.wompi.co/p/?${params.toString()}` };
   }
 
   async actualizarEstado(

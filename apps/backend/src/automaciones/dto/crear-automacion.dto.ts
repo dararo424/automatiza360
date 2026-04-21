@@ -2,6 +2,7 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsObject,
   IsOptional,
@@ -11,11 +12,13 @@ import {
 import { Type } from 'class-transformer';
 import { AutomacionTrigger } from '@prisma/client';
 
+const PASO_TIPOS = ['WAIT', 'SEND_WHATSAPP'] as const;
+
 export class AutomacionPasoDto {
   @IsInt()
   orden: number;
 
-  @IsString()
+  @IsIn(PASO_TIPOS, { message: `tipo debe ser: ${PASO_TIPOS.join(', ')}` })
   tipo: string;
 
   @IsObject()
