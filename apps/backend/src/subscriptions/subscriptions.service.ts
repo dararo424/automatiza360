@@ -101,8 +101,9 @@ export class SubscriptionsService {
 
   async iniciarUpgrade(tenantId: string, nuevoPlan: string) {
     const PLAN_PRECIOS: Record<string, number> = {
-      PRO: 14900000,      // $149,000 COP en centavos
-      BUSINESS: 29900000, // $299,000 COP en centavos
+      STARTER: 7900000,   // $79,000 COP en centavos
+      PRO: 24200000,      // $242,000 COP en centavos
+      BUSINESS: 52900000, // $529,000 COP en centavos
     };
 
     const monto = PLAN_PRECIOS[nuevoPlan];
