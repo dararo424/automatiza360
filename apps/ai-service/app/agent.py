@@ -405,6 +405,17 @@ def set_store_name(name: str) -> None:
 
 # ── History sanitizer ──────────────────────────────────────────────────────────
 
+def _build_history_from_context(context: list[dict]) -> list:
+    """Convert DB message format {role, content} to Gemini Content objects."""
+    result = []
+    for msg in context:
+        role = "user" if msg.get("role") == "user" else "model"
+        content = str(msg.get("content", "")).strip()
+        if content:
+            result.append(types.Content(role=role, parts=[types.Part(text=content)]))
+    return result
+
+
 def _sanitize_history(history: list) -> list:
     """
     Remove trailing function_call turns that lack a paired function_response.
@@ -458,6 +469,13 @@ async def run(
     gemini = _get_gemini_client()
     config = _get_config(client, owner_phone)
     history: list = _sanitize_history(session.get("history", []))
+
+    # Seed history from DB context when in-memory session is empty (e.g. after redeploy)
+    if not history:
+        restored = session.get("restored_context", [])
+        if restored:
+            history = _build_history_from_context(restored)
+            logger.info("Seeded %d turns from restored_context", len(history))
 
     chat = gemini.aio.chats.create(
         model=_MODEL_NAME,
