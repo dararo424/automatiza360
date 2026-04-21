@@ -423,6 +423,7 @@ TOOLS_TECH_STORE = [
         _ver_mis_reparaciones,
         _registrar_reparacion,
         _generar_cotizacion,
+        _registrar_nps,
     ])
 ]
 
@@ -496,25 +497,83 @@ TOOLS_CLOTHING_STORE = [
         _consultar_inventario,
         _tomar_pedido,
         _consultar_talla,
+        _validar_cupon,
+        _registrar_nps,
     ])
 ]
+
+# ── GYM ───────────────────────────────────────────────────────────────────────
+TOOLS_GYM = [types.Tool(function_declarations=[
+    *_CLINIC_TOOLS,       # clases y sesiones de entrenamiento
+    _consultar_inventario, # membresías, suplementos, accesorios
+    _validar_cupon,
+])]
+
+# ── PHARMACY ──────────────────────────────────────────────────────────────────
+TOOLS_PHARMACY = [types.Tool(function_declarations=[
+    _consultar_inventario,
+    _registrar_nps,
+])]
+
+# ── VETERINARY ────────────────────────────────────────────────────────────────
+TOOLS_VETERINARY = [types.Tool(function_declarations=[
+    *_CLINIC_TOOLS,        # citas veterinarias
+    _consultar_inventario, # alimentos, medicamentos, accesorios
+])]
+
+# ── HOTEL ─────────────────────────────────────────────────────────────────────
+TOOLS_HOTEL = [types.Tool(function_declarations=[
+    *_CLINIC_TOOLS,  # reservas de habitaciones
+    _registrar_nps,
+])]
+
+# ── BAKERY ────────────────────────────────────────────────────────────────────
+TOOLS_BAKERY = [types.Tool(function_declarations=[
+    _consultar_menu_carta,
+    _consultar_menu_dia,
+    _tomar_pedido,
+    _ver_estado_pedido,
+    _validar_cupon,
+    _registrar_nps,
+])]
+
+# ── WORKSHOP ──────────────────────────────────────────────────────────────────
+TOOLS_WORKSHOP = [types.Tool(function_declarations=[
+    _consultar_inventario,
+    _ver_reparacion,
+    _ver_mis_reparaciones,
+    _registrar_reparacion,
+    _generar_cotizacion,
+    _registrar_nps,
+])]
+
+# ── OTHER (genérico) ──────────────────────────────────────────────────────────
+TOOLS_OTHER = [types.Tool(function_declarations=[
+    _consultar_inventario,
+    _registrar_nps,
+])]
 
 # Legacy alias
 ALL_TOOLS = TOOLS_TECH_STORE
 
+_INDUSTRY_TOOLS: dict[str, list[types.Tool]] = {
+    "RESTAURANT":     TOOLS_RESTAURANT,
+    "CLINIC":         TOOLS_CLINIC,
+    "BEAUTY":         TOOLS_BEAUTY,
+    "CLOTHING_STORE": TOOLS_CLOTHING_STORE,
+    "GYM":            TOOLS_GYM,
+    "PHARMACY":       TOOLS_PHARMACY,
+    "VETERINARY":     TOOLS_VETERINARY,
+    "HOTEL":          TOOLS_HOTEL,
+    "BAKERY":         TOOLS_BAKERY,
+    "WORKSHOP":       TOOLS_WORKSHOP,
+    "TECH_STORE":     TOOLS_TECH_STORE,
+}
+
 
 def get_tools(industry: str) -> list[types.Tool]:
     """Return the tool list for the given tenant industry string."""
-    upper = (industry or "").upper()
-    if upper == "RESTAURANT":
-        return TOOLS_RESTAURANT
-    if upper == "CLINIC":
-        return TOOLS_CLINIC
-    if upper == "BEAUTY":
-        return TOOLS_BEAUTY
-    if upper == "CLOTHING_STORE":
-        return TOOLS_CLOTHING_STORE
-    return TOOLS_TECH_STORE
+    return _INDUSTRY_TOOLS.get((industry or "").upper(), TOOLS_OTHER)
 
 
 # ── Async executor ─────────────────────────────────────────────────────────────
