@@ -10,13 +10,14 @@ const INDUSTRY_COLORS: Record<string, string> = {
   OTHER: 'bg-slate-500',
 };
 
-function MetricCard({ title, value, color }: { title: string; value: string | number; color: string }) {
-  return (
-    <div className={`rounded-xl p-5 text-white ${color}`}>
+function MetricCard({ title, value, color, href }: { title: string; value: string | number; color: string; href?: string }) {
+  const inner = (
+    <div className={`rounded-xl p-5 text-white ${color} ${href ? 'hover:opacity-90 transition-opacity cursor-pointer' : ''}`}>
       <p className="text-sm opacity-80">{title}</p>
       <p className="text-3xl font-bold mt-1">{value}</p>
     </div>
   );
+  return href ? <Link to={href}>{inner}</Link> : inner;
 }
 
 export function AdminPage() {
@@ -31,12 +32,18 @@ export function AdminPage() {
     <div className="p-4 md:p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold text-white mb-6">Panel de Administración</h1>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
-        <MetricCard title="Tenants activos" value={data.activos} color="bg-emerald-600" />
-        <MetricCard title="En trial" value={data.trial} color="bg-amber-500" />
-        <MetricCard title="Suspendidos" value={data.suspendidos} color="bg-red-600" />
-        <MetricCard title="Cancelados" value={data.cancelados} color="bg-slate-600" />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
+        <MetricCard title="Tenants activos" value={data.activos} color="bg-emerald-600" href="/admin/tenants?status=ACTIVE" />
+        <MetricCard title="En trial" value={data.trial} color="bg-amber-500" href="/admin/tenants?status=TRIAL" />
+        <MetricCard title="Suspendidos" value={data.suspendidos} color="bg-red-600" href="/admin/tenants?status=SUSPENDED" />
+        <MetricCard title="Cancelados" value={data.cancelados} color="bg-slate-600" href="/admin/tenants?status=CANCELLED" />
         <MetricCard title="Nuevos este mes" value={data.nuevosMes} color="bg-indigo-600" />
+        <MetricCard
+          title="Sin configurar"
+          value={data.sinConfigurar ?? 0}
+          color={data.sinConfigurar > 0 ? 'bg-orange-500' : 'bg-slate-700'}
+          href="/admin/tenants?onboarding=false"
+        />
       </div>
 
       <div className="bg-slate-800 rounded-xl p-5 mb-6">

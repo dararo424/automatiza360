@@ -14,15 +14,20 @@ export class DashboardService {
     const hoyInicio = new Date(
       Date.UTC(nowColombia.getUTCFullYear(), nowColombia.getUTCMonth(), nowColombia.getUTCDate()) + offsetMs,
     );
+    const ayerInicio = new Date(hoyInicio.getTime() - 24 * 60 * 60 * 1000);
     const mesInicio = new Date(
       Date.UTC(nowColombia.getUTCFullYear(), nowColombia.getUTCMonth(), 1) + offsetMs,
     );
+    const semanaInicio = new Date(hoyInicio.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     const [
       ordenesHoy,
+      ordenesAyer,
       ordenesMes,
       ingresosMesData,
+      ingresosAyerData,
       citasHoy,
+      citasAyer,
       citasMes,
       citasPendientes,
       totalProductos,
@@ -33,14 +38,22 @@ export class DashboardService {
       ultimasCitas,
       phonesOrden,
       phonesCita,
+      contactosNuevosSemana,
+      contactosTotales,
     ] = await Promise.all([
       this.prisma.order.count({ where: { tenantId, createdAt: { gte: hoyInicio } } }),
+      this.prisma.order.count({ where: { tenantId, createdAt: { gte: ayerInicio, lt: hoyInicio } } }),
       this.prisma.order.count({ where: { tenantId, createdAt: { gte: mesInicio } } }),
       this.prisma.order.aggregate({
         where: { tenantId, createdAt: { gte: mesInicio }, status: { notIn: ['CANCELLED'] } },
         _sum: { total: true },
       }),
+      this.prisma.order.aggregate({
+        where: { tenantId, createdAt: { gte: ayerInicio, lt: hoyInicio }, status: { notIn: ['CANCELLED'] } },
+        _sum: { total: true },
+      }),
       this.prisma.appointment.count({ where: { tenantId, createdAt: { gte: hoyInicio } } }),
+      this.prisma.appointment.count({ where: { tenantId, createdAt: { gte: ayerInicio, lt: hoyInicio } } }),
       this.prisma.appointment.count({ where: { tenantId, createdAt: { gte: mesInicio } } }),
       this.prisma.appointment.count({
         where: { tenantId, status: { in: ['SCHEDULED', 'CONFIRMED'] }, date: { gte: now } },
@@ -82,6 +95,8 @@ export class DashboardService {
         select: { clientPhone: true },
         distinct: ['clientPhone'],
       }),
+      this.prisma.contact.count({ where: { tenantId, createdAt: { gte: semanaInicio } } }),
+      this.prisma.contact.count({ where: { tenantId } }),
     ]);
 
     const phonesSet = new Set([
@@ -91,9 +106,12 @@ export class DashboardService {
 
     return {
       ordenesHoy,
+      ordenesAyer,
       ordenesMes,
       ingresosMes: Math.round(ingresosMesData._sum.total ?? 0),
+      ingresosAyer: Math.round(ingresosAyerData._sum.total ?? 0),
       citasHoy,
+      citasAyer,
       citasMes,
       citasPendientes,
       conversacionesMes: phonesSet.size,
@@ -101,6 +119,8 @@ export class DashboardService {
       productosStockBajo,
       ticketsAbiertos,
       ticketsResueltosHoy,
+      contactosNuevosSemana,
+      contactosTotales,
       ultimasOrdenes: ultimasOrdenes.map((o) => ({
         id: o.id,
         clienteNombre: o.phone ?? `#${o.number}`,

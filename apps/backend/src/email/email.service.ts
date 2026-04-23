@@ -116,6 +116,46 @@ export class EmailService {
     });
   }
 
+  async sendActivacionDia1(to: string, opts: { ownerName: string; storeName: string; dashboardUrl: string }) {
+    await this.send({
+      to,
+      subject: `${opts.storeName} — tu bot está listo para activar`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:20px;">
+          <div style="background:#0f172a;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+            <h1 style="color:white;margin:0;font-size:24px;">Automatiza360</h1>
+          </div>
+          <div style="background:white;padding:32px;border-radius:0 0 12px 12px;">
+            <h2 style="color:#0f172a;margin-top:0;">Hola ${opts.ownerName} 👋</h2>
+            <p style="color:#475569;line-height:1.6;">Tu cuenta para <strong>${opts.storeName}</strong> ya está lista. Solo te faltan 3 pasos para que tu bot responda solo:</p>
+            <div style="margin:24px 0;">
+              <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;">
+                <span style="background:#4f46e5;color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;flex-shrink:0;text-align:center;line-height:28px;">1</span>
+                <div><strong style="color:#0f172a;">Agrega tus productos o servicios</strong><br><span style="color:#64748b;font-size:14px;">El bot los usa para responder preguntas de precio y disponibilidad.</span></div>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;">
+                <span style="background:#4f46e5;color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;flex-shrink:0;text-align:center;line-height:28px;">2</span>
+                <div><strong style="color:#0f172a;">Conecta tu número de WhatsApp</strong><br><span style="color:#64748b;font-size:14px;">Ve a "Mi Plan" y sigue las instrucciones — tarda menos de 2 minutos.</span></div>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;">
+                <span style="background:#4f46e5;color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;flex-shrink:0;text-align:center;line-height:28px;">3</span>
+                <div><strong style="color:#0f172a;">Envíate un mensaje de prueba</strong><br><span style="color:#64748b;font-size:14px;">Escribe al número conectado y ve cómo responde el bot en tiempo real.</span></div>
+              </div>
+            </div>
+            <div style="text-align:center;margin:32px 0;">
+              <a href="${opts.dashboardUrl}" style="background:#4f46e5;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
+                Activar mi bot ahora →
+              </a>
+            </div>
+            <p style="color:#94a3b8;font-size:13px;text-align:center;">Tienes 13 días restantes de prueba gratuita. Si necesitas ayuda, responde este correo.</p>
+            <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
+            <p style="color:#94a3b8;font-size:12px;text-align:center;">© 2026 Automatiza360</p>
+          </div>
+        </div>
+      `,
+    });
+  }
+
   async sendTrialMidPoint(to: string, opts: { storeName: string; loginUrl: string }) {
     await this.send({
       to,

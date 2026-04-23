@@ -50,6 +50,7 @@ import { HealthModule } from './health/health.module';
 import { TallasModule } from './tallas/tallas.module';
 import { AdminBotModule } from './admin-bot/admin-bot.module';
 import { PublicModule } from './public/public.module';
+import { HazloPorMiModule } from './hazlo-por-mi/hazlo-por-mi.module';
 
 @Module({
   imports: [
@@ -107,6 +108,7 @@ import { PublicModule } from './public/public.module';
     TallasModule,
     AdminBotModule,
     PublicModule,
+    HazloPorMiModule,
   ],
   controllers: [AppController],
   providers: [

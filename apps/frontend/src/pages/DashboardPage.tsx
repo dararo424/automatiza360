@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { OnboardingChecklist } from '../components/onboarding/OnboardingChecklist';
@@ -131,20 +132,24 @@ function RestaurantDashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Órdenes hoy" value={m.ordenesHoy} colorClass="border-indigo-500" emoji="📦" />
+        <StatCard title="Órdenes hoy" value={m.ordenesHoy} colorClass="border-indigo-500" emoji="📦"
+          trend={{ current: m.ordenesHoy, previous: m.ordenesAyer, label: 'vs ayer' }} />
         <StatCard title="Órdenes este mes" value={m.ordenesMes} colorClass="border-blue-500" emoji="📅" />
         <StatCard
           title="Ingresos este mes"
           value={`$${m.ingresosMes.toLocaleString('es-CO')}`}
           colorClass="border-green-500"
           emoji="💰"
+          trend={{ current: m.ingresosMes, previous: m.ingresosAyer * 30, label: 'est.' }}
         />
         <StatCard title="Conversaciones este mes" value={m.conversacionesMes} colorClass="border-purple-500" emoji="💬" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard title="Total productos activos" value={m.totalProductos} colorClass="border-slate-400" emoji="📦" />
         <StatCard title="Stock bajo (< 5 uds)" value={m.productosStockBajo} colorClass="border-red-400" emoji="⚠️" />
+        <StatCard title="Contactos nuevos (7 días)" value={m.contactosNuevosSemana} colorClass="border-teal-400" emoji="👥"
+          subtitle={`${m.contactosTotales} total`} />
       </div>
 
       <TendenciasChart showOrdenes showCitas={false} />
@@ -166,15 +171,18 @@ function TechStoreDashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Órdenes hoy" value={m.ordenesHoy} colorClass="border-indigo-500" emoji="📦" />
+        <StatCard title="Órdenes hoy" value={m.ordenesHoy} colorClass="border-indigo-500" emoji="📦"
+          trend={{ current: m.ordenesHoy, previous: m.ordenesAyer, label: 'vs ayer' }} />
         <StatCard title="Órdenes este mes" value={m.ordenesMes} colorClass="border-blue-500" emoji="📅" />
         <StatCard title="Tickets abiertos" value={m.ticketsAbiertos} colorClass="border-yellow-500" emoji="🎫" />
         <StatCard title="Resueltos hoy" value={m.ticketsResueltosHoy} colorClass="border-green-500" emoji="✅" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard title="Total productos activos" value={m.totalProductos} colorClass="border-slate-400" emoji="📦" />
         <StatCard title="Conversaciones este mes" value={m.conversacionesMes} colorClass="border-purple-500" emoji="💬" />
+        <StatCard title="Contactos nuevos (7 días)" value={m.contactosNuevosSemana} colorClass="border-teal-400" emoji="👥"
+          subtitle={`${m.contactosTotales} total`} />
       </div>
 
       <TendenciasChart showOrdenes showCitas={false} />
@@ -196,20 +204,24 @@ function ClinicBeautyDashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Citas hoy" value={m.citasHoy} colorClass="border-indigo-500" emoji="📅" />
+        <StatCard title="Citas hoy" value={m.citasHoy} colorClass="border-indigo-500" emoji="📅"
+          trend={{ current: m.citasHoy, previous: m.citasAyer, label: 'vs ayer' }} />
         <StatCard title="Citas este mes" value={m.citasMes} colorClass="border-blue-500" emoji="📅" />
         <StatCard title="Citas pendientes" value={m.citasPendientes} colorClass="border-yellow-500" emoji="⏳" />
         <StatCard title="Conversaciones este mes" value={m.conversacionesMes} colorClass="border-purple-500" emoji="💬" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard title="Total servicios activos" value={m.totalProductos} colorClass="border-slate-400" emoji="💅" />
         <StatCard
           title="Ingresos este mes"
           value={`$${m.ingresosMes.toLocaleString('es-CO')}`}
           colorClass="border-green-500"
           emoji="💰"
+          trend={{ current: m.ingresosMes, previous: m.ingresosAyer * 30, label: 'est.' }}
         />
+        <StatCard title="Contactos nuevos (7 días)" value={m.contactosNuevosSemana} colorClass="border-teal-400" emoji="👥"
+          subtitle={`${m.contactosTotales} total`} />
       </div>
 
       <TendenciasChart showOrdenes={false} showCitas />
@@ -415,6 +427,47 @@ function ResenasCard() {
   );
 }
 
+function MiEnlaceCard() {
+  const { user } = useAuth();
+  const slug = user?.tenant?.slug;
+  const frontendUrl = window.location.origin;
+  const url = slug ? `${frontendUrl}/negocio/${slug}` : null;
+  const [copied, setCopied] = useState(false);
+
+  if (!url) return null;
+
+  function copy() {
+    navigator.clipboard.writeText(url!).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+      <p className="text-slate-400 text-xs mb-1">Tu enlace público</p>
+      <p className="text-slate-500 text-xs mb-3">Compártelo en tu bio de Instagram, stories o tarjeta de presentación</p>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 bg-slate-900 text-green-400 text-xs px-3 py-2 rounded-lg truncate">{url}</code>
+        <button
+          onClick={copy}
+          className="shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+        >
+          {copied ? '✓ Copiado' : 'Copiar'}
+        </button>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+        >
+          Ver
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function DashboardContent() {
   const { user } = useAuth();
   const industry = user?.tenant?.industry;
@@ -436,6 +489,7 @@ export function DashboardPage() {
         <NpsCard />
         <ResenasCard />
       </div>
+      <MiEnlaceCard />
     </div>
   );
 }

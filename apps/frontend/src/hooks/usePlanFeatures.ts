@@ -6,8 +6,9 @@ export interface PlanFeatures {
   plan: string;
   canUseApiKeys: boolean;
   canUseConversaciones: boolean;
+  canUseCampanas: boolean;
   conversationLimit: number | null;
-  teamSize: number | null;
+  agentLimit: number | null;
   isLoading: boolean;
 }
 
@@ -22,23 +23,15 @@ export function usePlanFeatures(): PlanFeatures {
     staleTime: 5 * 60 * 1000,
   });
 
-  if (!data) {
-    return {
-      plan,
-      canUseApiKeys: plan === 'BUSINESS',
-      canUseConversaciones: true,
-      conversationLimit: plan === 'STARTER' ? 500 : plan === 'PRO' ? 2000 : null,
-      teamSize: plan === 'STARTER' ? 3 : plan === 'PRO' ? 10 : null,
-      isLoading,
-    };
-  }
+  const resolvedPlan = data?.plan ?? plan;
 
   return {
-    plan: data.plan,
-    canUseApiKeys: data.features.apiKeys,
+    plan: resolvedPlan,
+    canUseApiKeys: resolvedPlan === 'BUSINESS',
     canUseConversaciones: true,
-    conversationLimit: data.features.conversationLimit,
-    teamSize: data.features.teamSize,
+    canUseCampanas: resolvedPlan === 'PRO' || resolvedPlan === 'BUSINESS',
+    conversationLimit: resolvedPlan === 'STARTER' ? 500 : resolvedPlan === 'PRO' ? 2000 : null,
+    agentLimit: resolvedPlan === 'STARTER' ? 1 : resolvedPlan === 'PRO' ? 3 : null,
     isLoading,
   };
 }

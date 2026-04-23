@@ -91,13 +91,18 @@ export class AdminService {
     const now = new Date();
     const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [activos, trial, suspendidos, cancelados, nuevosMes, porIndustria] = await Promise.all([
+    const hace2dias = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+
+    const [activos, trial, suspendidos, cancelados, nuevosMes, porIndustria, sinConfigurar] = await Promise.all([
       this.prisma.tenant.count({ where: { subscriptionStatus: SubscriptionStatus.ACTIVE } }),
       this.prisma.tenant.count({ where: { subscriptionStatus: SubscriptionStatus.TRIAL } }),
       this.prisma.tenant.count({ where: { subscriptionStatus: SubscriptionStatus.SUSPENDED } }),
       this.prisma.tenant.count({ where: { subscriptionStatus: SubscriptionStatus.CANCELLED } }),
       this.prisma.tenant.count({ where: { createdAt: { gte: inicioMes } } }),
       this.prisma.tenant.groupBy({ by: ['industry'], _count: { industry: true } }),
+      this.prisma.tenant.count({
+        where: { onboardingDone: false, createdAt: { lte: hace2dias } },
+      }),
     ]);
 
     const tenantsActivos = await this.prisma.tenant.findMany({
@@ -116,6 +121,7 @@ export class AdminService {
       suspendidos,
       cancelados,
       nuevosMes,
+      sinConfigurar,
       mrr,
       porIndustria: porIndustria.map((g) => ({ industry: g.industry, count: g._count.industry })),
     };

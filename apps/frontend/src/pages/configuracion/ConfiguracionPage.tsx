@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMiPerfil, actualizarPerfil } from '../../api/perfil';
+import { crearSolicitudHazlo, getMisSolicitudesHazlo } from '../../api/hazlo-por-mi';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 const APP_URL = import.meta.env.VITE_APP_URL ?? window.location.origin;
+
+const BOT_TONES = [
+  { key: 'FORMAL', label: 'Formal', desc: 'Profesional y respetuoso' },
+  { key: 'AMIGABLE', label: 'Amigable', desc: 'Cercano y cálido' },
+  { key: 'COSTEÑO', label: 'Costeño', desc: 'Descomplicado y alegre' },
+];
 
 export function ConfiguracionPage() {
   const qc = useQueryClient();
@@ -20,9 +27,13 @@ export function ConfiguracionPage() {
     ciudad: '',
     latitud: '',
     longitud: '',
+    botName: '',
+    botTone: 'AMIGABLE',
   });
 
   const [copied, setCopied] = useState(false);
+  const [hazloDesc, setHazloDesc] = useState('');
+  const [hazloSent, setHazloSent] = useState(false);
 
   useEffect(() => {
     if (perfil) {
@@ -34,6 +45,8 @@ export function ConfiguracionPage() {
         ciudad: perfil.ciudad ?? '',
         latitud: perfil.latitud != null ? String(perfil.latitud) : '',
         longitud: perfil.longitud != null ? String(perfil.longitud) : '',
+        botName: perfil.botName ?? '',
+        botTone: perfil.botTone ?? 'AMIGABLE',
       });
     }
   }, [perfil]);
@@ -44,9 +57,24 @@ export function ConfiguracionPage() {
         ...form,
         latitud: form.latitud !== '' ? parseFloat(form.latitud) : undefined,
         longitud: form.longitud !== '' ? parseFloat(form.longitud) : undefined,
+        botName: form.botName || undefined,
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['mi-perfil'] });
+    },
+  });
+
+  const { data: solicitudesHazlo } = useQuery({
+    queryKey: ['hazlo-por-mi'],
+    queryFn: getMisSolicitudesHazlo,
+  });
+
+  const { mutate: enviarHazlo, isPending: enviandoHazlo } = useMutation({
+    mutationFn: () => crearSolicitudHazlo(hazloDesc),
+    onSuccess: () => {
+      setHazloSent(true);
+      setHazloDesc('');
+      void qc.invalidateQueries({ queryKey: ['hazlo-por-mi'] });
     },
   });
 
@@ -223,6 +251,119 @@ export function ConfiguracionPage() {
           {isSuccess && (
             <span className="text-sm text-green-600 font-medium">Cambios guardados</span>
           )}
+        </div>
+      </div>
+
+      {/* Bot personality */}
+      <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-800">Personalidad del bot</h2>
+          <p className="text-sm text-slate-500 mt-0.5">Cómo se presenta y comunica tu asistente con los clientes.</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Nombre del bot
+          </label>
+          <input
+            type="text"
+            value={form.botName}
+            onChange={(e) => setForm((f) => ({ ...f, botName: e.target.value }))}
+            placeholder="Ej: Sofía, Juanito, Asistente..."
+            maxLength={30}
+            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Tono de comunicación
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            {BOT_TONES.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, botTone: t.key }))}
+                className={`border-2 rounded-xl p-3 text-left transition-colors ${
+                  form.botTone === t.key
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <p className={`font-semibold text-sm ${form.botTone === t.key ? 'text-indigo-700' : 'text-slate-700'}`}>
+                  {t.label}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">{t.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            onClick={() => mutate()}
+            disabled={isPending}
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60"
+          >
+            {isPending ? 'Guardando...' : 'Guardar personalidad'}
+          </button>
+        </div>
+      </div>
+
+      {/* Hazlo por mí */}
+      <div className="bg-gradient-to-br from-indigo-950 to-slate-900 border border-indigo-800 rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="text-4xl shrink-0">🚀</div>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-white">¿Quieres que lo hagamos por ti?</h2>
+            <p className="text-slate-400 text-sm mt-1 mb-4">
+              Cuéntanos de tu negocio y nuestro equipo configura tu bot completo en 24-48 horas.
+              Productos, flujos de venta, respuestas automáticas — todo listo.
+            </p>
+
+            {hazloSent ? (
+              <div className="bg-green-900/50 border border-green-700 rounded-xl p-4 text-green-300 text-sm">
+                ¡Solicitud enviada! Te escribiremos pronto al correo registrado.
+              </div>
+            ) : solicitudesHazlo && solicitudesHazlo.length > 0 ? (
+              <div className="space-y-2">
+                {solicitudesHazlo.map((s) => (
+                  <div key={s.id} className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 flex items-center justify-between">
+                    <p className="text-slate-300 text-sm truncate">{s.descripcion.slice(0, 60)}...</p>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ml-3 ${
+                      s.status === 'DONE' ? 'bg-green-900 text-green-300' : 'bg-amber-900 text-amber-300'
+                    }`}>
+                      {s.status === 'DONE' ? 'Completado' : 'En proceso'}
+                    </span>
+                  </div>
+                ))}
+                <button
+                  onClick={() => setHazloSent(false)}
+                  className="text-indigo-400 hover:text-indigo-300 text-sm underline mt-2"
+                >
+                  Enviar otra solicitud
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <textarea
+                  rows={3}
+                  value={hazloDesc}
+                  onChange={(e) => setHazloDesc(e.target.value)}
+                  placeholder="Ej: Tengo una peluquería en Medellín con 3 estilistas, ofrecemos corte, tinte y manicure. Quiero que el bot tome citas por WhatsApp y muestre precios..."
+                  className="w-full bg-slate-800 border border-slate-700 text-slate-200 placeholder-slate-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={() => enviarHazlo()}
+                  disabled={enviandoHazlo || hazloDesc.trim().length < 20}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {enviandoHazlo ? 'Enviando...' : 'Solicitar configuración →'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
