@@ -2,9 +2,12 @@ import api from './axios';
 
 export interface DashboardMetricas {
   ordenesHoy: number;
+  ordenesAyer: number;
   ordenesMes: number;
   ingresosMes: number;
+  ingresosAyer: number;
   citasHoy: number;
+  citasAyer: number;
   citasMes: number;
   citasPendientes: number;
   conversacionesMes: number;
@@ -12,6 +15,8 @@ export interface DashboardMetricas {
   productosStockBajo: number;
   ticketsAbiertos: number;
   ticketsResueltosHoy: number;
+  contactosNuevosSemana: number;
+  contactosTotales: number;
   ultimasOrdenes: Array<{
     id: string;
     clienteNombre: string;

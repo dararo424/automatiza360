@@ -126,6 +126,11 @@ export class PaymentsService {
             referencia,
           }).catch((e) => this.logger.error('Email confirmación pago failed', e));
         }
+
+        // Recompensar referidor si aplica
+        await this.rewardReferrer(intent.tenantId).catch((e) =>
+          this.logger.error('Error rewarding referrer:', e),
+        );
       } else if (
         transaccion.status === 'DECLINED' ||
         transaccion.status === 'VOIDED'
@@ -218,5 +223,46 @@ export class PaymentsService {
         trialEndsAt: true,
       },
     });
+  }
+
+  private async rewardReferrer(newPayingTenantId: string): Promise<void> {
+    const referral = await this.prisma.referral.findUnique({
+      where: { referredTenantId: newPayingTenantId },
+      include: { referralCode: true },
+    });
+
+    if (!referral || referral.rewardGiven || referral.status === 'REWARDED') return;
+
+    const referrerTenantId = referral.referralCode.tenantId;
+    const referrer = await this.prisma.tenant.findUnique({
+      where: { id: referrerTenantId },
+      select: { subscriptionEndsAt: true, trialEndsAt: true, subscriptionStatus: true },
+    });
+    if (!referrer) return;
+
+    const REWARD_DAYS = 30;
+    const now = new Date();
+
+    // Extend subscriptionEndsAt if ACTIVE, otherwise extend trialEndsAt
+    const isActive = referrer.subscriptionStatus === SubscriptionStatus.ACTIVE;
+    const base = isActive
+      ? (referrer.subscriptionEndsAt ?? now)
+      : (referrer.trialEndsAt ?? now);
+    const newDate = new Date(Math.max(base.getTime(), now.getTime()) + REWARD_DAYS * 86400_000);
+
+    await this.prisma.$transaction([
+      this.prisma.referral.update({
+        where: { referredTenantId: newPayingTenantId },
+        data: { rewardGiven: true, status: 'REWARDED' },
+      }),
+      this.prisma.tenant.update({
+        where: { id: referrerTenantId },
+        data: isActive
+          ? { subscriptionEndsAt: newDate }
+          : { trialEndsAt: newDate },
+      }),
+    ]);
+
+    this.logger.log(`Referrer ${referrerTenantId} rewarded 30 days for referring ${newPayingTenantId}`);
   }
 }

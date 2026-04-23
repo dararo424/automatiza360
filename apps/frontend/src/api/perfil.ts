@@ -13,6 +13,8 @@ export interface PerfilTenant {
   latitud?: number | null;
   longitud?: number | null;
   ownerPhone?: string;
+  botName?: string | null;
+  botTone?: string;
 }
 
 export const getMiPerfil = (): Promise<PerfilTenant> =>

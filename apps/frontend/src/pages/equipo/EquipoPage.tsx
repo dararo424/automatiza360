@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
+import { usePlanFeatures } from '../../hooks/usePlanFeatures';
 import {
   getEquipo,
   invitarUsuario,
@@ -91,11 +92,14 @@ export function EquipoPage() {
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const canManage = user?.role === 'OWNER' || user?.role === 'ADMIN';
+  const { agentLimit } = usePlanFeatures();
 
   const { data: equipo = [], isLoading } = useQuery({
     queryKey: ['equipo'],
     queryFn: getEquipo,
   });
+
+  const atLimit = agentLimit !== null && equipo.length >= agentLimit + 1;
 
   const eliminarMutation = useMutation({
     mutationFn: (id: string) => eliminarMiembro(id),
@@ -106,17 +110,25 @@ export function EquipoPage() {
     <div className="p-4 md:p-8 max-w-3xl mx-auto">
       {showModal && <InvitarModal onClose={() => setShowModal(false)} />}
 
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-white">Equipo ({equipo.length})</h1>
         {canManage && (
           <button
             onClick={() => setShowModal(true)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+            disabled={atLimit}
+            title={atLimit ? `Límite de tu plan alcanzado` : undefined}
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
           >
             + Invitar usuario
           </button>
         )}
       </div>
+      {agentLimit !== null && (
+        <p className="text-slate-500 text-xs mb-6">
+          {equipo.length} de {agentLimit} agente{agentLimit !== 1 ? 's' : ''} en tu plan.
+          {atLimit && <span className="text-amber-400 ml-1">Límite alcanzado — <a href="/planes" className="underline">actualiza tu plan</a>.</span>}
+        </p>
+      )}
 
       {isLoading ? (
         <div className="text-slate-400">Cargando...</div>

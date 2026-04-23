@@ -67,6 +67,9 @@ model Tenant {
   sucursales           Sucursal[]
   tallaConfigs         TallaConfig[]
   tallaConsultas       TallaConsulta[]
+  botName              String?
+  botTone              String             @default("AMIGABLE")
+  hazloRequests        HazloRequest[]
 }
 
 // Usuario dentro de un negocio
@@ -363,6 +366,15 @@ model Referral {
   referralCode   ReferralCode @relation(fields: [referralCodeId], references: [id])
 }
 
+model HazloRequest {
+  id          String   @id @default(cuid())
+  tenantId    String
+  descripcion String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+}
+
 // API pública (plan BUSINESS)
 model ApiKey {
   id        String   @id @default(cuid())
@@ -492,6 +504,7 @@ model Campaña {
   tenantId     String
   nombre       String
   mensaje      String
+  filtros      Json?
   status       CampañaStatus @default(BORRADOR)
   totalEnviado Int           @default(0)
   enviadaAt    DateTime?

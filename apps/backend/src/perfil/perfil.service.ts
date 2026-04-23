@@ -91,6 +91,8 @@ export class PerfilService {
         latitud: true,
         longitud: true,
         ownerPhone: true,
+        botName: true,
+        botTone: true,
       },
     });
 
@@ -128,6 +130,8 @@ export class PerfilService {
         latitud: dto.latitud,
         longitud: dto.longitud,
         ownerPhone: dto.ownerPhone,
+        botName: dto.botName,
+        botTone: dto.botTone,
       },
       select: {
         id: true,
@@ -141,6 +145,8 @@ export class PerfilService {
         ciudad: true,
         latitud: true,
         longitud: true,
+        botName: true,
+        botTone: true,
       },
     });
   }

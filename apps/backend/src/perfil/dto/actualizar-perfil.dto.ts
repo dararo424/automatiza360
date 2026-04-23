@@ -32,4 +32,12 @@ export class ActualizarPerfilDto {
   @IsOptional()
   @IsString()
   ownerPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  botName?: string;
+
+  @IsOptional()
+  @IsString()
+  botTone?: string;
 }

@@ -177,6 +177,47 @@ export class RemindersService {
     this.logger.log(`Contadores reseteados para ${result.count} tenants.`);
   }
 
+  @Cron('0 10 * * *')
+  async sendDayOneActivationEmails(): Promise<void> {
+    this.logger.log('Enviando emails de activación día 1...');
+
+    const now = new Date();
+    const frontendUrl = process.env.FRONTEND_URL ?? 'https://automatiza360-frontend.vercel.app';
+    const hace24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const hace48h = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+
+    const tenants = await this.prisma.tenant.findMany({
+      where: {
+        subscriptionStatus: SubscriptionStatus.TRIAL,
+        createdAt: { gte: hace48h, lt: hace24h },
+      },
+      include: {
+        users: {
+          where: { role: 'OWNER' },
+          select: { email: true, name: true },
+          take: 1,
+        },
+      },
+    });
+
+    this.logger.log(`Tenants para email día 1: ${tenants.length}`);
+
+    for (const tenant of tenants) {
+      const owner = tenant.users[0];
+      if (!owner?.email) continue;
+      try {
+        await this.emailService.sendActivacionDia1(owner.email, {
+          ownerName: owner.name.split(' ')[0],
+          storeName: tenant.name,
+          dashboardUrl: `${frontendUrl}/dashboard`,
+        });
+        this.logger.log(`Email día 1 enviado a ${owner.email} (${tenant.name})`);
+      } catch (err) {
+        this.logger.error(`Error email día 1 a ${owner.email}: ${(err as Error).message}`);
+      }
+    }
+  }
+
   @Cron('0 9 * * *')
   async sendTrialExpiryEmails(): Promise<void> {
     this.logger.log('Revisando tenants con trial próximo a vencer...');

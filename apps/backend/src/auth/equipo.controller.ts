@@ -10,12 +10,18 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { Role } from '@prisma/client';
+import { Plan, Role } from '@prisma/client';
 import { IsEnum } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { InvitarUsuarioDto } from './dto/invitar-usuario.dto';
+
+const AGENT_LIMITS: Record<Plan, number> = {
+  STARTER: 1,
+  PRO: 3,
+  BUSINESS: Infinity,
+};
 
 class CambiarRolDto {
   @IsEnum(Role)
@@ -41,6 +47,24 @@ export class EquipoController {
     if (user.role !== Role.OWNER && user.role !== Role.ADMIN) {
       throw new ForbiddenException('Solo OWNER o ADMIN pueden invitar usuarios');
     }
+
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: user.tenantId },
+      select: { plan: true },
+    });
+
+    const maxAgentes = AGENT_LIMITS[tenant.plan as Plan] ?? 1;
+    if (maxAgentes !== Infinity) {
+      const actuales = await this.prisma.user.count({
+        where: { tenantId: user.tenantId, active: true },
+      });
+      if (actuales >= maxAgentes + 1) {
+        throw new ForbiddenException(
+          `Tu plan ${tenant.plan} permite máximo ${maxAgentes} agente${maxAgentes !== 1 ? 's' : ''}. Actualiza tu plan para agregar más.`,
+        );
+      }
+    }
+
     const passwordHash = await bcrypt.hash(dto.password, 10);
     return this.prisma.user.create({
       data: {
