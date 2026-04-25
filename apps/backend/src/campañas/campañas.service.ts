@@ -33,9 +33,10 @@ export class CampañasService {
   }
 
   async enviar(tenantId: string, campañaId: string) {
-    const campaña = await this.prisma.campaña.findFirst({
-      where: { id: campañaId, tenantId },
-    });
+    const [campaña, tenant] = await Promise.all([
+      this.prisma.campaña.findFirst({ where: { id: campañaId, tenantId } }),
+      this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } }),
+    ]);
     if (!campaña) throw new NotFoundException('Campaña no encontrada');
 
     await this.prisma.campaña.update({
@@ -49,6 +50,8 @@ export class CampañasService {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+    const contentSid = process.env.TWILIO_CONTENT_SID;
+    const negocioName = tenant?.name ?? 'Tu negocio';
 
     let totalEnviado = 0;
     let hasError = false;
@@ -62,12 +65,26 @@ export class CampañasService {
         try {
           const to = contacto.phone.startsWith('+') ? contacto.phone : `+57${contacto.phone}`;
           const nombre = contacto.name?.split(' ')[0] ?? 'cliente';
-          const body = campaña.mensaje.replace(/\{nombre\}/gi, nombre);
-          await client.messages.create({
+
+          const params: Record<string, unknown> = {
             from: `whatsapp:${whatsappNumber}`,
             to: `whatsapp:${to}`,
-            body,
-          });
+          };
+
+          if (contentSid) {
+            // WhatsApp approved template: {{1}}=nombre, {{2}}=negocio, {{3}}=mensaje
+            params.contentSid = contentSid;
+            params.contentVariables = JSON.stringify({
+              '1': nombre,
+              '2': negocioName,
+              '3': campaña.mensaje,
+            });
+          } else {
+            // Fallback: free-form text (only works within the 24h session window)
+            params.body = campaña.mensaje.replace(/\{nombre\}/gi, nombre);
+          }
+
+          await client.messages.create(params as any);
           totalEnviado++;
           // Respect Twilio rate limits — 1 msg/s to avoid 429s on large lists
           await new Promise((r) => setTimeout(r, 1000));

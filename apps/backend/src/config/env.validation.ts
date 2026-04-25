@@ -11,6 +11,7 @@ export const validationSchema = Joi.object({
   TWILIO_AUTH_TOKEN: Joi.string().optional().allow(''),
   TWILIO_WHATSAPP_NUMBER: Joi.string().optional().allow(''),
   TWILIO_ENV: Joi.string().valid('sandbox', 'production').default('sandbox'),
+  TWILIO_CONTENT_SID: Joi.string().optional().allow(''),
   WOMPI_BASE_URL: Joi.string().optional().allow(''),
   WOMPI_EVENTS_SECRET: Joi.string().optional().allow(''),
   WOMPI_PUBLIC_KEY: Joi.string().optional().allow(''),

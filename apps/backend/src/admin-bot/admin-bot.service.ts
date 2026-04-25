@@ -951,6 +951,7 @@ export class AdminBotService {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const whatsappNumber = tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
+    const contentSid = process.env.TWILIO_CONTENT_SID;
 
     let enviados = 0;
     let errores = 0;
@@ -959,11 +960,22 @@ export class AdminBotService {
       const twilioClient = twilio.default(accountSid, authToken);
       for (const contacto of contactos) {
         try {
-          await twilioClient.messages.create({
+          const nombre = contacto.name?.split(' ')[0] ?? 'cliente';
+          const params: Record<string, unknown> = {
             from: `whatsapp:${whatsappNumber}`,
             to: `whatsapp:${this.normalizePhone(contacto.phone)}`,
-            body: mensaje,
-          });
+          };
+          if (contentSid) {
+            params.contentSid = contentSid;
+            params.contentVariables = JSON.stringify({
+              '1': nombre,
+              '2': tenant.name,
+              '3': mensaje,
+            });
+          } else {
+            params.body = mensaje.replace(/\{nombre\}/gi, nombre);
+          }
+          await twilioClient.messages.create(params as any);
           enviados++;
         } catch {
           errores++;
