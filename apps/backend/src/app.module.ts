@@ -52,6 +52,7 @@ import { TallasModule } from './tallas/tallas.module';
 import { AdminBotModule } from './admin-bot/admin-bot.module';
 import { PublicModule } from './public/public.module';
 import { HazloPorMiModule } from './hazlo-por-mi/hazlo-por-mi.module';
+import { ReportesModule } from './reportes/reportes.module';
 
 @Module({
   imports: [
@@ -111,6 +112,7 @@ import { HazloPorMiModule } from './hazlo-por-mi/hazlo-por-mi.module';
     AdminBotModule,
     PublicModule,
     HazloPorMiModule,
+    ReportesModule,
   ],
   controllers: [AppController],
   providers: [

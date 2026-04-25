@@ -30,6 +30,8 @@ async def execute_admin_tool(
     tenant_id: str,
     media_url: str | None,
     industry: str = "OTHER",
+    owner_email: str = "",
+    owner_name: str = "",
 ) -> dict | list:
     """Execute an admin tool and return the result."""
     logger.info("Admin tool call: %s  args=%s  tenant=%s", name, args, tenant_id)
@@ -274,6 +276,42 @@ async def execute_admin_tool(
                 r.raise_for_status()
                 return r.json()
 
+            # ── Reportes ─────────────────────────────────────────────────────
+            elif name == "enviar_grafica_whatsapp":
+                clean_phone = phone.replace("whatsapp:", "").strip()
+                r = await http.post(
+                    f"{BACKEND_URL}/admin-bot/reportes/whatsapp",
+                    json={
+                        "tenantId": tenant_id,
+                        "phone": clean_phone,
+                        "tipo": args.get("tipo", "ventas"),
+                        "periodo": args.get("periodo", "semana"),
+                    },
+                    headers=_headers(),
+                    timeout=30,
+                )
+                r.raise_for_status()
+                return r.json()
+
+            elif name == "enviar_reporte_email":
+                email = args.get("email") or owner_email
+                name_to_use = args.get("nombre") or owner_name
+                if not email:
+                    return {"error": "No se encontró el correo del propietario. Pídele que lo proporcione."}
+                r = await http.post(
+                    f"{BACKEND_URL}/admin-bot/reportes/email",
+                    json={
+                        "tenantId": tenant_id,
+                        "ownerEmail": email,
+                        "ownerName": name_to_use or "Administrador",
+                        "periodo": args.get("periodo", "semana"),
+                    },
+                    headers=_headers(),
+                    timeout=30,
+                )
+                r.raise_for_status()
+                return r.json()
+
             else:
                 return {"error": f"Herramienta desconocida: {name}"}
 
@@ -341,7 +379,62 @@ _TOOL_CAMPAÑA_RAPIDA = {
     },
 }
 
-_TOOLS_COMMON = [_TOOL_RESUMEN_DIA, _TOOL_RESUMEN_MES, _TOOL_BUSCAR_CONTACTO, _TOOL_REGISTRAR_GASTO, _TOOL_CAMPAÑA_RAPIDA]
+_TOOL_GRAFICA_WHATSAPP = {
+    "name": "enviar_grafica_whatsapp",
+    "description": (
+        "Genera una gráfica del negocio y la envía como imagen por WhatsApp al admin. "
+        "Úsala cuando el dueño pida 'muéstrame las ventas', 'mándame una gráfica', etc."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "tipo": {
+                "type": "string",
+                "enum": ["ventas", "actividad"],
+                "description": "'ventas' para ingresos por día. 'actividad' para órdenes y citas por día.",
+            },
+            "periodo": {
+                "type": "string",
+                "enum": ["semana", "mes"],
+                "description": "'semana' para los últimos 7 días (default). 'mes' para los últimos 30 días.",
+            },
+        },
+        "required": ["tipo"],
+    },
+}
+
+_TOOL_REPORTE_EMAIL = {
+    "name": "enviar_reporte_email",
+    "description": (
+        "Genera un reporte completo con gráficas y métricas clave, y lo envía por correo electrónico. "
+        "Úsala cuando el dueño pida 'mándame el reporte', 'quiero el informe por email', etc."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "periodo": {
+                "type": "string",
+                "enum": ["semana", "mes"],
+                "description": "'semana' para los últimos 7 días (default). 'mes' para los últimos 30 días.",
+            },
+            "email": {
+                "type": "string",
+                "description": "Correo destino. Si no se proporciona, se usa el correo registrado del propietario.",
+            },
+        },
+        "required": [],
+    },
+}
+
+_TOOLS_COMMON = [
+    _TOOL_RESUMEN_DIA,
+    _TOOL_RESUMEN_MES,
+    _TOOL_BUSCAR_CONTACTO,
+    _TOOL_REGISTRAR_GASTO,
+    _TOOL_CAMPAÑA_RAPIDA,
+    _TOOL_GRAFICA_WHATSAPP,
+    _TOOL_REPORTE_EMAIL,
+]
 
 _TOOLS_RESTAURANT = [
     {

@@ -34,12 +34,18 @@ export class AdminBotService {
       if (!user.phone) continue;
       const userPhoneNorm = normalizePhone(user.phone).slice(-10);
       if (userPhoneNorm === last10) {
+        const owner = await this.prisma.user.findFirst({
+          where: { tenantId: user.tenantId, role: 'OWNER', active: true },
+          select: { email: true, name: true },
+        });
         return {
           isAdmin: true,
           tenantId: user.tenantId,
           role: user.role,
           userId: user.id,
           industry: user.tenant.industry,
+          ownerEmail: owner?.email ?? user.email,
+          ownerName: owner?.name ?? user.name,
         };
       }
     }
@@ -60,6 +66,8 @@ export class AdminBotService {
             role: owner.role,
             userId: owner.id,
             industry: t.industry,
+            ownerEmail: owner.email,
+            ownerName: owner.name,
           };
         }
       }

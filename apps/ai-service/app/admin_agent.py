@@ -153,6 +153,16 @@ CAPACIDADES GENERALES:
 - Enviar campaña a todos los contactos (confirmar antes)
 """
 
+    base += """
+REPORTES Y GRÁFICAS (disponible para todos los negocios):
+- El admin puede pedir gráficas de ventas o actividad por WhatsApp o por correo.
+- Frases como "mándame la gráfica de ventas", "envíame el reporte al correo", "muéstrame las ventas de este mes" activan estas herramientas.
+- enviar_grafica_whatsapp: envía una imagen con la gráfica directamente al WhatsApp del admin (tipo: ventas o actividad, periodo: semana o mes).
+- enviar_reporte_email: envía un correo HTML completo con KPIs y 2 gráficas al correo del dueño.
+- Si el admin no especifica periodo, usa "mes" por defecto.
+- Si el admin no especifica tipo de gráfica, envía ventas por defecto.
+"""
+
     if media_url:
         base += f"\nEl administrador acaba de enviar una imagen. URL: {media_url}\nSi es relevante para un ticket, ofrece adjuntarla."
 
@@ -183,6 +193,8 @@ async def run_admin(
     industry = admin_info.get("industry", "OTHER")
     tenant_id = admin_info.get("tenantId", "")
     role = admin_info.get("role", "STAFF")
+    owner_email = admin_info.get("ownerEmail", "")
+    owner_name = admin_info.get("ownerName", "")
 
     system_prompt = _build_admin_prompt(industry, role, media_url)
     tools = get_admin_tools(industry)
@@ -225,6 +237,8 @@ async def run_admin(
                         tenant_id,
                         media_url,
                         industry,
+                        owner_email=owner_email,
+                        owner_name=owner_name,
                     )
                     tool_results.append({
                         "type": "tool_result",
