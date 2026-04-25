@@ -71,6 +71,8 @@ export class CampañasService {
             to: `whatsapp:${to}`,
           };
 
+          const UNSUB = '\n\nResponde STOP para no recibir más mensajes.';
+
           if (contentSid) {
             // WhatsApp approved template: {{1}}=nombre, {{2}}=negocio, {{3}}=mensaje
             params.contentSid = contentSid;
@@ -80,8 +82,8 @@ export class CampañasService {
               '3': campaña.mensaje,
             });
           } else {
-            // Fallback: free-form text (only works within the 24h session window)
-            params.body = campaña.mensaje.replace(/\{nombre\}/gi, nombre);
+            // Free-form (only within 24h session window) — append opt-out notice
+            params.body = campaña.mensaje.replace(/\{nombre\}/gi, nombre) + UNSUB;
           }
 
           await client.messages.create(params as any);
@@ -107,7 +109,7 @@ export class CampañasService {
 
   private async aplicarFiltros(tenantId: string, filtros?: FiltrosCampañaDto) {
     let contactos = await this.prisma.contact.findMany({
-      where: { tenantId },
+      where: { tenantId, unsubscribed: false },
       select: { phone: true, name: true, tags: true, puntos: true },
     });
 

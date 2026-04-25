@@ -75,6 +75,19 @@ async def handle_message(
             "Contacta al administrador."
         )
 
+    # ── Opt-out (STOP) ────────────────────────────────────────────────────────
+    if text.strip().upper() in ("STOP", "DETENER", "CANCELAR", "UNSUB", "BAJA"):
+        clean_phone_stop = phone.replace("whatsapp:", "").strip()
+        backend_client_stop = get_client(config.bot_email, config.bot_password)
+        try:
+            await backend_client_stop.marcar_desuscrito(clean_phone_stop)
+        except Exception as exc:
+            logger.warning("Could not mark unsubscribed for %s: %s", phone, exc)
+        return (
+            "Has sido eliminado de nuestra lista de mensajes. "
+            "Si cambias de opinión, escríbenos y con gusto te atendemos. 👋"
+        )
+
     # ── Reset command ─────────────────────────────────────────────────────────
     if text.lower().strip() in _RESET_COMMANDS:
         key = _session_key(to_number, phone)

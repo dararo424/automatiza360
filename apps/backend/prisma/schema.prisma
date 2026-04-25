@@ -350,6 +350,7 @@ model Contact {
   puntos          Int       @default(0)
   puntosUsados    Int       @default(0)
   fechaNacimiento DateTime?
+  unsubscribed    Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   tenantId        String

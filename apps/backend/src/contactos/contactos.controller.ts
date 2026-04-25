@@ -46,4 +46,9 @@ export class ContactosController {
   ) {
     return this.svc.canjearPuntos(user.tenantId, id, body.puntos);
   }
+
+  @Post('desuscribir')
+  desuscribir(@CurrentUser() user: any, @Body() body: { phone: string }) {
+    return this.svc.marcarDesuscrito(user.tenantId, body.phone);
+  }
 }
