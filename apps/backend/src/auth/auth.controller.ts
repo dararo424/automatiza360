@@ -36,6 +36,17 @@ export class AuthController {
     return this.authService.resetearContrasena(body.token, body.password);
   }
 
+  @Throttle({ short: { ttl: 60000, limit: 10 } })
+  @Post('refresh')
+  refresh(@Body('refreshToken') refreshToken: string) {
+    return this.authService.refreshAccessToken(refreshToken);
+  }
+
+  @Post('logout')
+  logout(@Body('refreshToken') refreshToken: string) {
+    return this.authService.logout(refreshToken);
+  }
+
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('perfil')

@@ -8,6 +8,7 @@ Uses Claude (Anthropic) for the agentic loop.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from datetime import datetime, timezone, timedelta
@@ -244,4 +245,4 @@ async def run_admin(
             session.append({"role": "assistant", "content": final_text})
             return final_text
 
-    return "Se alcanzó el límite de iteraciones. Por favor intenta de nuevo."
+    return "No pude completar la acción en el número de pasos permitidos. Por favor intenta de nuevo o sé más específico."

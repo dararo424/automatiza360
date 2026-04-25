@@ -249,12 +249,14 @@ export class AuthService {
     }
 
     const token = this.generarToken(user);
+    const refreshToken = await this.generarRefreshToken(user.id);
 
     this.audit.log({ event: 'auth.login.success', userId: user.id, tenantId: user.tenantId, metadata: { role: user.role } });
 
     return {
       mensaje: 'Inicio de sesión exitoso',
       token,
+      refreshToken,
       usuario: {
         id: user.id,
         nombre: user.name,
@@ -263,6 +265,44 @@ export class AuthService {
         tenantId: user.tenantId,
       },
     };
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    const stored = await this.prisma.refreshToken.findUnique({ where: { token: refreshToken } });
+    if (!stored || stored.revoked || stored.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token inválido o expirado');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: stored.userId },
+      include: { tenant: true },
+    });
+    if (!user || !user.active || !user.tenant.active) {
+      throw new UnauthorizedException('Usuario o negocio inactivo');
+    }
+
+    const newToken = this.generarToken(user);
+    const newRefreshToken = await this.generarRefreshToken(user.id);
+
+    // Revoke old refresh token (rotation)
+    await this.prisma.refreshToken.update({ where: { id: stored.id }, data: { revoked: true } });
+
+    return { token: newToken, refreshToken: newRefreshToken };
+  }
+
+  async logout(refreshToken: string) {
+    await this.prisma.refreshToken.updateMany({
+      where: { token: refreshToken, revoked: false },
+      data: { revoked: true },
+    });
+    return { mensaje: 'Sesión cerrada exitosamente' };
+  }
+
+  private async generarRefreshToken(userId: string): Promise<string> {
+    const token = crypto.randomBytes(48).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 días
+    await this.prisma.refreshToken.create({ data: { token, userId, expiresAt } });
+    return token;
   }
 
   async getPerfil(userId: string) {

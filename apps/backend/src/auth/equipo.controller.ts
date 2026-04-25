@@ -18,8 +18,8 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { InvitarUsuarioDto } from './dto/invitar-usuario.dto';
 
 const AGENT_LIMITS: Record<Plan, number> = {
-  STARTER: 1,
-  PRO: 3,
+  STARTER: 3,
+  PRO: 10,
   BUSINESS: Infinity,
 };
 
