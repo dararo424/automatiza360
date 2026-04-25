@@ -276,6 +276,70 @@ async def execute_admin_tool(
                 r.raise_for_status()
                 return r.json()
 
+            # ── Reseñas ──────────────────────────────────────────────────────
+            elif name == "ver_resenas":
+                r = await http.get(f"{BACKEND_URL}/admin-bot/resenas/{tenant_id}", headers=_headers())
+                r.raise_for_status()
+                return r.json()
+
+            # ── Cupones ───────────────────────────────────────────────────────
+            elif name == "ver_cupones":
+                r = await http.get(f"{BACKEND_URL}/admin-bot/cupones/{tenant_id}", headers=_headers())
+                r.raise_for_status()
+                return r.json()
+
+            elif name == "crear_cupon":
+                payload: dict = {
+                    "tenantId": tenant_id,
+                    "codigo": args["codigo"],
+                    "tipo": args["tipo"],
+                    "valor": args["valor"],
+                }
+                if "minCompra" in args:
+                    payload["minCompra"] = args["minCompra"]
+                if "maxUsos" in args:
+                    payload["maxUsos"] = args["maxUsos"]
+                if "fechaVencimiento" in args:
+                    payload["fechaVencimiento"] = args["fechaVencimiento"]
+                r = await http.post(f"{BACKEND_URL}/admin-bot/cupon", json=payload, headers=_headers())
+                r.raise_for_status()
+                return r.json()
+
+            # ── Contactos ─────────────────────────────────────────────────────
+            elif name == "listar_contactos":
+                r = await http.get(f"{BACKEND_URL}/admin-bot/contactos/recientes/{tenant_id}", headers=_headers())
+                r.raise_for_status()
+                return r.json()
+
+            elif name == "agregar_contacto":
+                payload = {"tenantId": tenant_id, "nombre": args["nombre"], "phone": args["phone"]}
+                if "email" in args:
+                    payload["email"] = args["email"]
+                if "notas" in args:
+                    payload["notas"] = args["notas"]
+                r = await http.post(f"{BACKEND_URL}/admin-bot/contacto", json=payload, headers=_headers())
+                r.raise_for_status()
+                return r.json()
+
+            # ── Turnos ────────────────────────────────────────────────────────
+            elif name == "ver_turnos":
+                params: dict = {"tenantId": tenant_id}
+                if "fecha" in args:
+                    params["fecha"] = args["fecha"]
+                r = await http.get(
+                    f"{BACKEND_URL}/admin-bot/turnos/{tenant_id}",
+                    params=params,
+                    headers=_headers(),
+                )
+                r.raise_for_status()
+                return r.json()
+
+            # ── Garantías ─────────────────────────────────────────────────────
+            elif name == "ver_garantias":
+                r = await http.get(f"{BACKEND_URL}/admin-bot/garantias/{tenant_id}", headers=_headers())
+                r.raise_for_status()
+                return r.json()
+
             # ── Reportes ─────────────────────────────────────────────────────
             elif name == "enviar_grafica_whatsapp":
                 clean_phone = phone.replace("whatsapp:", "").strip()
@@ -426,12 +490,90 @@ _TOOL_REPORTE_EMAIL = {
     },
 }
 
+_TOOL_VER_RESENAS = {
+    "name": "ver_resenas",
+    "description": "Muestra las reseñas y valoraciones recientes de clientes con puntuación y comentarios. Incluye NPS si aplica.",
+    "input_schema": {"type": "object", "properties": {}, "required": []},
+}
+
+_TOOL_VER_CUPONES = {
+    "name": "ver_cupones",
+    "description": "Lista todos los cupones de descuento activos del negocio con su código, tipo y valor.",
+    "input_schema": {"type": "object", "properties": {}, "required": []},
+}
+
+_TOOL_CREAR_CUPON = {
+    "name": "crear_cupon",
+    "description": "Crea un cupón de descuento nuevo. Tipo puede ser PORCENTAJE (ej: 20% off) o FIJO (ej: $5.000 off).",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "codigo": {"type": "string", "description": "Código del cupón (ej: DESCUENTO20, PROMO50K). Se convierte a mayúsculas."},
+            "tipo": {
+                "type": "string",
+                "enum": ["PORCENTAJE", "FIJO"],
+                "description": "PORCENTAJE para % de descuento. FIJO para monto fijo de descuento.",
+            },
+            "valor": {"type": "number", "description": "Valor del descuento (porcentaje o monto fijo)."},
+            "minCompra": {"type": "number", "description": "Compra mínima para usar el cupón (opcional, default 0)."},
+            "maxUsos": {"type": "integer", "description": "Número máximo de usos (opcional, sin límite si no se especifica)."},
+            "fechaVencimiento": {"type": "string", "description": "Fecha de vencimiento en formato YYYY-MM-DD (opcional)."},
+        },
+        "required": ["codigo", "tipo", "valor"],
+    },
+}
+
+_TOOL_LISTAR_CONTACTOS = {
+    "name": "listar_contactos",
+    "description": "Lista los 10 contactos/clientes más recientes del CRM con nombre, teléfono y puntos de fidelidad.",
+    "input_schema": {"type": "object", "properties": {}, "required": []},
+}
+
+_TOOL_AGREGAR_CONTACTO = {
+    "name": "agregar_contacto",
+    "description": "Agrega o actualiza un contacto en el CRM del negocio.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "nombre": {"type": "string", "description": "Nombre del contacto."},
+            "phone": {"type": "string", "description": "Teléfono del contacto (con código de país o local)."},
+            "email": {"type": "string", "description": "Correo electrónico (opcional)."},
+            "notas": {"type": "string", "description": "Notas internas sobre el cliente (opcional)."},
+        },
+        "required": ["nombre", "phone"],
+    },
+}
+
+_TOOL_VER_TURNOS = {
+    "name": "ver_turnos",
+    "description": "Muestra los turnos del personal para hoy o una fecha específica (entrada y salida de cada empleado).",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "fecha": {"type": "string", "description": "Fecha en formato YYYY-MM-DD. Si no se especifica, usa hoy."},
+        },
+        "required": [],
+    },
+}
+
+_TOOL_VER_GARANTIAS = {
+    "name": "ver_garantias",
+    "description": "Lista las garantías de clientes que aún están vigentes, ordenadas por las que vencen más pronto.",
+    "input_schema": {"type": "object", "properties": {}, "required": []},
+}
+
 _TOOLS_COMMON = [
     _TOOL_RESUMEN_DIA,
     _TOOL_RESUMEN_MES,
     _TOOL_BUSCAR_CONTACTO,
+    _TOOL_LISTAR_CONTACTOS,
+    _TOOL_AGREGAR_CONTACTO,
     _TOOL_REGISTRAR_GASTO,
     _TOOL_CAMPAÑA_RAPIDA,
+    _TOOL_VER_RESENAS,
+    _TOOL_VER_CUPONES,
+    _TOOL_CREAR_CUPON,
+    _TOOL_VER_TURNOS,
     _TOOL_GRAFICA_WHATSAPP,
     _TOOL_REPORTE_EMAIL,
 ]
@@ -710,7 +852,7 @@ def get_admin_tools(industry: str) -> list:
         return _TOOLS_COMMON + _TOOLS_RESTAURANT
 
     elif upper in ("TECH_STORE", "WORKSHOP"):
-        return _TOOLS_COMMON + _TOOLS_TICKETS
+        return _TOOLS_COMMON + _TOOLS_TICKETS + _TOOLS_CLOTHING + [_TOOL_VER_GARANTIAS]
 
     elif upper in ("CLINIC", "BEAUTY", "VETERINARY"):
         return _TOOLS_COMMON + _TOOLS_CITAS

@@ -770,6 +770,167 @@ export class AdminBotService {
     };
   }
 
+  // ── Reseñas recientes ──────────────────────────────────────────────────────
+
+  async verResenasRecientes(tenantId: string) {
+    const [resenas, nps] = await Promise.all([
+      this.prisma.resena.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+        take: 8,
+      }),
+      this.prisma.npsRespuesta.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+
+    const promedioResenas = resenas.length
+      ? (resenas.reduce((s, r) => s + r.rating, 0) / resenas.length).toFixed(1)
+      : null;
+
+    return {
+      promedioRating: promedioResenas,
+      totalResenas: resenas.length,
+      resenas: resenas.map((r) => ({
+        cliente: r.clientName ?? 'Anónimo',
+        rating: r.rating,
+        comentario: r.comentario ?? '',
+        fecha: r.createdAt.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }),
+      })),
+      nps: nps.map((n) => ({
+        cliente: n.clientPhone,
+        score: n.score,
+        comentario: n.comentario ?? '',
+        fecha: n.createdAt.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }),
+      })),
+    };
+  }
+
+  // ── Cupones ────────────────────────────────────────────────────────────────
+
+  async verCuponesActivos(tenantId: string) {
+    return this.prisma.cupon.findMany({
+      where: {
+        tenantId,
+        activo: true,
+        OR: [
+          { fechaVencimiento: null },
+          { fechaVencimiento: { gte: new Date() } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+  }
+
+  async crearCupon(
+    tenantId: string,
+    codigo: string,
+    tipo: string,
+    valor: number,
+    minCompra?: number,
+    maxUsos?: number,
+    fechaVencimiento?: string,
+  ) {
+    return this.prisma.cupon.create({
+      data: {
+        tenantId,
+        codigo: codigo.toUpperCase(),
+        tipo: tipo as any,
+        valor,
+        minCompra: minCompra ?? 0,
+        ...(maxUsos !== undefined && { maxUsos }),
+        ...(fechaVencimiento && { fechaVencimiento: new Date(fechaVencimiento) }),
+        activo: true,
+      },
+    });
+  }
+
+  // ── Listar contactos recientes ─────────────────────────────────────────────
+
+  async listarContactosRecientes(tenantId: string) {
+    return this.prisma.contact.findMany({
+      where: { tenantId },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+      select: { id: true, name: true, phone: true, email: true, tags: true, puntos: true, createdAt: true },
+    });
+  }
+
+  async agregarContacto(
+    tenantId: string,
+    nombre: string,
+    phone: string,
+    email?: string,
+    notas?: string,
+  ) {
+    const normalizedPhone = this.normalizePhone(phone);
+    return this.prisma.contact.upsert({
+      where: { tenantId_phone: { tenantId, phone: normalizedPhone } },
+      update: {
+        name: nombre,
+        ...(email && { email }),
+        ...(notas && { notes: notas }),
+      },
+      create: {
+        tenantId,
+        phone: normalizedPhone,
+        name: nombre,
+        ...(email && { email }),
+        ...(notas && { notes: notas }),
+      },
+    });
+  }
+
+  // ── Turnos del personal ────────────────────────────────────────────────────
+
+  async verTurnos(tenantId: string, fecha?: string) {
+    const dia = fecha ? new Date(`${fecha}T00:00:00.000Z`) : new Date();
+    dia.setUTCHours(0, 0, 0, 0);
+    const diaSig = new Date(dia);
+    diaSig.setUTCDate(diaSig.getUTCDate() + 1);
+
+    const turnos = await this.prisma.turno.findMany({
+      where: { tenantId, fecha: { gte: dia, lt: diaSig } },
+      include: { user: { select: { name: true, role: true } } },
+      orderBy: { horaInicio: 'asc' },
+    });
+
+    return {
+      fecha: dia.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }),
+      totalTurnos: turnos.length,
+      turnos: turnos.map((t) => ({
+        empleado: t.user.name,
+        rol: t.user.role,
+        horaInicio: t.horaInicio,
+        horaFin: t.horaFin,
+        notas: t.notas ?? null,
+      })),
+    };
+  }
+
+  // ── Garantías activas ──────────────────────────────────────────────────────
+
+  async verGarantiasActivas(tenantId: string) {
+    const hoy = new Date();
+    const garantias = await this.prisma.garantia.findMany({
+      where: { tenantId, fechaVencimiento: { gte: hoy } },
+      orderBy: { fechaVencimiento: 'asc' },
+      take: 15,
+    });
+
+    return garantias.map((g) => ({
+      id: g.id,
+      cliente: g.clienteNombre,
+      telefono: g.clientePhone,
+      producto: g.producto,
+      vence: g.fechaVencimiento.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }),
+      diasRestantes: Math.ceil((g.fechaVencimiento.getTime() - hoy.getTime()) / 86400000),
+    }));
+  }
+
   // ── Campaña rápida — enviar mensaje a todos los contactos ──────────────────
 
   async crearCampañaRapida(tenantId: string, mensaje: string) {
