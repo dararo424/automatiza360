@@ -64,3 +64,17 @@ export interface TendenciaDia {
 export function getTendencias(days: number = 30): Promise<TendenciaDia[]> {
   return api.get(`/dashboard/tendencias?days=${days}`).then((r) => r.data);
 }
+
+export interface RoiData {
+  mensajesAutomatizados: number;
+  minutosAhorrados: number;
+  horasAhorradas: number;
+  ahorroEstimadoCOP: number;
+  contactosTotales: number;
+  campañasEnviadas: number;
+  ordenesViaBot: number;
+}
+
+export function getRoi(): Promise<RoiData> {
+  return api.get('/dashboard/roi').then((r) => r.data);
+}

@@ -126,6 +126,90 @@ export class SubscriptionsService {
     this.logger.log(`Conversation counters reset: ${result.count} tenants`);
   }
 
+  // ── Cron: saludos de cumpleaños diariamente a las 9am Colombia ─────────────
+
+  @Cron('0 14 * * *') // 9am Colombia = 14:00 UTC
+  async enviarCumpleanosHoy(): Promise<void> {
+    const now = new Date();
+    const offsetMs = 5 * 60 * 60 * 1000;
+    const nowColombia = new Date(now.getTime() - offsetMs);
+    const mes = nowColombia.getUTCMonth() + 1;
+    const dia = nowColombia.getUTCDate();
+
+    const contactos = await this.prisma.contact.findMany({
+      where: {
+        fechaNacimiento: { not: null },
+        email: { not: null },
+        tenant: { active: true },
+      },
+      select: {
+        name: true,
+        email: true,
+        fechaNacimiento: true,
+        tenant: { select: { name: true } },
+      },
+    });
+
+    const hoyContactos = contactos.filter((c) => {
+      const fn = c.fechaNacimiento!;
+      return fn.getUTCMonth() + 1 === mes && fn.getUTCDate() === dia;
+    });
+
+    for (const c of hoyContactos) {
+      if (!c.email) continue;
+      try {
+        await this.emailService.enviarFelicitacionCumpleanos(c.email, c.name ?? 'Cliente', c.tenant.name);
+        this.logger.log(`Birthday email → ${c.email}`);
+      } catch (e) {
+        this.logger.error(`Birthday email failed for ${c.email}: ${(e as Error).message}`);
+      }
+    }
+
+    this.logger.log(`Birthday cron: ${hoyContactos.length} emails sent for ${mes}/${dia}`);
+  }
+
+  // ── Cron: digest semanal los lunes a las 8am Colombia ─────────────────────
+
+  @Cron('0 13 * * 1') // Monday 8am Colombia = 13:00 UTC
+  async enviarDigestSemanal(): Promise<void> {
+    const appUrl = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
+    const now = new Date();
+    const semanaInicio = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const tenants = await this.prisma.tenant.findMany({
+      where: { active: true, subscriptionStatus: { in: ['TRIAL', 'ACTIVE'] } },
+      include: { users: { where: { role: 'OWNER', active: true }, select: { email: true, name: true }, take: 1 } },
+    });
+
+    for (const tenant of tenants) {
+      const owner = tenant.users[0];
+      if (!owner) continue;
+
+      try {
+        const [ingresosSemanaData, ordenesSemana, citasSemana, contactosNuevos] = await Promise.all([
+          this.prisma.order.aggregate({
+            where: { tenantId: tenant.id, createdAt: { gte: semanaInicio }, status: { notIn: ['CANCELLED'] } },
+            _sum: { total: true },
+          }),
+          this.prisma.order.count({ where: { tenantId: tenant.id, createdAt: { gte: semanaInicio } } }),
+          this.prisma.appointment.count({ where: { tenantId: tenant.id, date: { gte: semanaInicio }, status: { notIn: ['CANCELLED'] } } }),
+          this.prisma.contact.count({ where: { tenantId: tenant.id, createdAt: { gte: semanaInicio } } }),
+        ]);
+
+        await this.emailService.enviarResemanalDigest(owner.email, owner.name, tenant.name, {
+          ingresosSemana: Math.round(ingresosSemanaData._sum.total ?? 0),
+          ordenesSemana,
+          citasSemana,
+          contactosNuevos,
+          appUrl,
+        });
+        this.logger.log(`Weekly digest → ${owner.email}`);
+      } catch (e) {
+        this.logger.error(`Weekly digest failed for ${owner.email}: ${(e as Error).message}`);
+      }
+    }
+  }
+
   async checkTrialStatus(tenantId: string): Promise<void> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },

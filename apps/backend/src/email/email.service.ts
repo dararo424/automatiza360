@@ -410,6 +410,77 @@ export class EmailService {
     });
   }
 
+  async enviarResemanalDigest(to: string, nombre: string, negocio: string, data: {
+    ingresosSemana: number;
+    ordenesSemana: number;
+    citasSemana: number;
+    contactosNuevos: number;
+    appUrl: string;
+  }) {
+    const fmt = (n: number) => `$${n.toLocaleString('es-CO')} COP`;
+    await this.send({
+      to,
+      subject: `📊 Resumen semanal de ${negocio} — Automatiza360`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:20px;">
+          <div style="background:#4f46e5;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+            <h1 style="color:white;margin:0;font-size:22px;">📊 Resumen semanal</h1>
+            <p style="color:#c7d2fe;margin:8px 0 0;">${negocio}</p>
+          </div>
+          <div style="background:white;padding:32px;border-radius:0 0 12px 12px;">
+            <p style="color:#475569;">Hola ${nombre}, aquí está lo que pasó esta semana:</p>
+            <table width="100%" cellpadding="16" style="border-collapse:collapse;margin:16px 0;">
+              <tr style="background:#f1f5f9;">
+                <td style="border-radius:8px;color:#64748b;font-size:14px;">💰 Ingresos</td>
+                <td style="font-size:22px;font-weight:bold;color:#0f172a;text-align:right;">${fmt(data.ingresosSemana)}</td>
+              </tr>
+              <tr>
+                <td style="color:#64748b;font-size:14px;padding:12px 16px;">🛒 Órdenes / Ventas</td>
+                <td style="font-size:22px;font-weight:bold;color:#0f172a;text-align:right;padding:12px 16px;">${data.ordenesSemana}</td>
+              </tr>
+              <tr style="background:#f1f5f9;">
+                <td style="border-radius:8px;color:#64748b;font-size:14px;">📅 Citas atendidas</td>
+                <td style="font-size:22px;font-weight:bold;color:#0f172a;text-align:right;">${data.citasSemana}</td>
+              </tr>
+              <tr>
+                <td style="color:#64748b;font-size:14px;padding:12px 16px;">👥 Contactos nuevos</td>
+                <td style="font-size:22px;font-weight:bold;color:#0f172a;text-align:right;padding:12px 16px;">${data.contactosNuevos}</td>
+              </tr>
+            </table>
+            <div style="text-align:center;margin-top:24px;">
+              <a href="${data.appUrl}/dashboard" style="display:inline-block;background:#4f46e5;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">
+                Ver panel completo →
+              </a>
+            </div>
+            <p style="color:#94a3b8;font-size:12px;margin-top:24px;text-align:center;">
+              Automatiza360 · Gestiona tu negocio desde WhatsApp
+            </p>
+          </div>
+        </div>
+      `,
+    });
+  }
+
+  async enviarFelicitacionCumpleanos(to: string, clienteNombre: string, negocioNombre: string) {
+    await this.send({
+      to,
+      subject: `🎂 ¡Feliz cumpleaños de parte de ${negocioNombre}!`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:20px;">
+          <div style="background:#ec4899;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+            <h1 style="color:white;margin:0;font-size:24px;">🎂 ¡Feliz cumpleaños!</h1>
+          </div>
+          <div style="background:white;padding:32px;border-radius:0 0 12px 12px;text-align:center;">
+            <p style="color:#475569;font-size:16px;">Hola ${clienteNombre},</p>
+            <p style="color:#475569;font-size:16px;">${negocioNombre} quiere desearte un feliz cumpleaños 🎉</p>
+            <p style="color:#475569;">¡Esperamos verte pronto!</p>
+            <p style="color:#94a3b8;font-size:12px;margin-top:24px;">Enviado por ${negocioNombre} con Automatiza360</p>
+          </div>
+        </div>
+      `,
+    });
+  }
+
   async enviarReciboPago(to: string, nombre: string, opts: { plan: string; monto: number; referencia: string; fecha: string }) {
     const appUrl = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
     const montoFmt = `$${opts.monto.toLocaleString('es-CO')} COP`;
