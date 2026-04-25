@@ -15,11 +15,13 @@ from app.agent import run
 from app.admin_agent import run_admin
 from app.backend_client import get_client
 from app.config import get_tenant_config
+from app.redis_store import delete_session, load_session, save_session
 
 logger = logging.getLogger(__name__)
 
-# Sessions keyed by "{to_number}:{from_phone}" so each tenant has isolated
-# conversation history even if the same WhatsApp number messages both bots.
+# In-memory cache for active sessions within a single process lifetime.
+# Redis is used as the persistent backing store; this dict avoids redundant
+# Redis reads for the same conversation within the same deployment instance.
 _sessions: dict[str, dict] = {}
 
 _RESET_COMMANDS = {
@@ -32,11 +34,19 @@ def _session_key(to_number: str, phone: str) -> str:
     return f"{to_number}:{phone}"
 
 
-def _get_session(to_number: str, phone: str) -> dict:
+async def _get_or_load_session(to_number: str, phone: str) -> tuple[dict, bool]:
+    """
+    Return (session, is_new) — loading from Redis if not in local cache.
+    is_new=True means this is the first message after a restart or new conversation.
+    """
     key = _session_key(to_number, phone)
-    if key not in _sessions:
-        _sessions[key] = {}
-    return _sessions[key]
+    if key in _sessions:
+        return _sessions[key], False
+
+    # Try Redis first
+    stored = await load_session(key)
+    _sessions[key] = stored
+    return stored, True
 
 
 async def handle_message(
@@ -69,6 +79,7 @@ async def handle_message(
     if text.lower().strip() in _RESET_COMMANDS:
         key = _session_key(to_number, phone)
         _sessions.pop(key, None)
+        await delete_session(key)
         logger.info("Session reset for %s on %s", phone, to_number)
         reset_reply = "¡Conversación reiniciada! 🔄\n¿En qué puedo ayudarte hoy?"
         clean_phone_reset = phone.replace("whatsapp:", "").strip()
@@ -78,25 +89,19 @@ async def handle_message(
         return reset_reply
 
     # ── Owner phone per tenant ────────────────────────────────────────────────
-    # Lookup order:
-    #   1. OWNER_PHONE_<digits-of-twilio-number>  e.g. OWNER_PHONE_15551234567
-    #   2. OWNER_PHONE  (global fallback)
     safe_number = to_number.replace("+", "")
     owner_phone = os.getenv(f"OWNER_PHONE_{safe_number}", os.getenv("OWNER_PHONE", ""))
 
     # ── Backend client + session ──────────────────────────────────────────────
     backend_client = get_client(config.bot_email, config.bot_password)
     key = _session_key(to_number, phone)
-    is_new_session = key not in _sessions
-    session = _get_session(to_number, phone)
+    session, is_new_session = await _get_or_load_session(to_number, phone)
 
-    # Número limpio sin prefijo "whatsapp:"
     clean_phone = phone.replace("whatsapp:", "").strip()
 
-    # Restore context from DB if this is a new in-memory session (e.g. after restart).
-    # Stored under "restored_context" so it does not conflict with Gemini Content objects
-    # in session["history"]. The agent can use it as a context hint if needed.
-    if is_new_session:
+    # Restore context from DB if this is a new session and Redis had no history.
+    # Stored under "restored_context" so it does not conflict with Gemini Content objects.
+    if is_new_session and not session.get("restored_context") and not session.get("history"):
         try:
             history = await backend_client.get_sesion(clean_phone)
             if history:
@@ -108,18 +113,14 @@ async def handle_message(
         except Exception as exc:
             logger.warning("Failed to restore session for %s: %s", phone, exc)
 
-    # Registrar mensaje entrante (fire-and-forget — no bloquea la respuesta)
+    # Registrar mensaje entrante (fire-and-forget)
     asyncio.create_task(
         backend_client.ingest_message(clean_phone, text, "INBOUND")
     )
 
     # ── Admin detection ───────────────────────────────────────────────────────
-    # Check if the sender is an admin of any tenant. Use the normalized phone
-    # (without "whatsapp:" prefix) for the lookup.
     admin_info = await backend_client.check_admin(clean_phone)
 
-    # Admin sessions are stored separately under an "admin_history" key so
-    # they don't mix with the customer-facing Gemini history.
     if admin_info.get("isAdmin"):
         admin_session: list = session.setdefault("admin_history", [])
         try:
@@ -159,7 +160,6 @@ async def handle_message(
                 f"su plan en: {frontend_url}/mi-plan\n\n"
                 "Gracias por tu paciencia 🙏"
             )
-        # ─────────────────────────────────────────────────────────────────────
         try:
             reply = await run(phone, text, session, backend_client, owner_phone)
         except Exception as exc:
@@ -175,5 +175,8 @@ async def handle_message(
     asyncio.create_task(
         backend_client.ingest_message(clean_phone, reply, "OUTBOUND")
     )
+
+    # Persist updated session to Redis (fire-and-forget to avoid blocking the reply)
+    asyncio.create_task(save_session(key, session))
 
     return reply
