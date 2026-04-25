@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { TwilioProvisioningService } from '../twilio/twilio-provisioning.service';
 import { EmailService } from '../email/email.service';
+import { AuditService } from '../audit/audit.service';
 
 const mockPrisma = {
   user: {
@@ -41,6 +42,7 @@ const mockEmail = {
   enviarBienvenida: jest.fn().mockResolvedValue(undefined),
   enviarRecuperacionContrasena: jest.fn().mockResolvedValue(undefined),
 };
+const mockAudit = { log: jest.fn() };
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -54,6 +56,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: mockJwt },
         { provide: TwilioProvisioningService, useValue: mockTwilio },
         { provide: EmailService, useValue: mockEmail },
+        { provide: AuditService, useValue: mockAudit },
       ],
     }).compile();
     service = module.get<AuthService>(AuthService);

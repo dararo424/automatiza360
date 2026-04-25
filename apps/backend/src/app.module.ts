@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AuditModule } from './audit/audit.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -60,6 +61,7 @@ import { HazloPorMiModule } from './hazlo-por-mi/hazlo-por-mi.module';
       validationSchema,
       validationOptions: { abortEarly: false },
     }),
+    AuditModule,
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       { name: 'short', ttl: 60000, limit: 10 },

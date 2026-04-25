@@ -4,6 +4,7 @@ import { Plan, Role, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
 import { EmailService } from '../email/email.service';
+import { AuditService } from '../audit/audit.service';
 
 type PlanKey = 'STARTER' | 'PRO' | 'BUSINESS';
 
@@ -21,6 +22,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly billingService: BillingService,
     private readonly emailService: EmailService,
+    private readonly audit: AuditService,
   ) {}
 
   async crearTransaccion(tenantId: string, plan: PlanKey) {
@@ -48,6 +50,12 @@ export class PaymentsService {
     params.set('redirect-url', redirectUrl);
 
     const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`;
+
+    this.audit.log({
+      event: 'payment.initiated',
+      tenantId,
+      metadata: { plan, referencia, monto },
+    });
 
     return {
       checkoutUrl,
@@ -127,6 +135,17 @@ export class PaymentsService {
           }).catch((e) => this.logger.error('Email confirmación pago failed', e));
         }
 
+        this.audit.log({
+          event: 'payment.completed',
+          tenantId: intent.tenantId,
+          metadata: { plan: intent.plan, referencia, wompiTransactionId: transaccion.id, monto: intent.monto },
+        });
+        this.audit.log({
+          event: 'subscription.activated',
+          tenantId: intent.tenantId,
+          metadata: { plan: intent.plan, subscriptionEndsAt: proximoMes.toISOString() },
+        });
+
         // Recompensar referidor si aplica
         await this.rewardReferrer(intent.tenantId).catch((e) =>
           this.logger.error('Error rewarding referrer:', e),
@@ -138,6 +157,12 @@ export class PaymentsService {
         await this.prisma.paymentIntent.update({
           where: { id: intent.id },
           data: { status: transaccion.status },
+        });
+
+        this.audit.log({
+          event: 'payment.failed',
+          tenantId: intent.tenantId,
+          metadata: { plan: intent.plan, referencia, status: transaccion.status, monto: intent.monto },
         });
 
         // Registrar pago fallido

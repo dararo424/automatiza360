@@ -12,6 +12,7 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { TwilioProvisioningService } from '../twilio/twilio-provisioning.service';
+import { AuditService } from '../audit/audit.service';
 import { LoginDto } from './dto/login.dto';
 import { RegistroTenantDto } from './dto/registro-tenant.dto';
 
@@ -22,6 +23,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly twilioProvisioning: TwilioProvisioningService,
     private readonly emailService: EmailService,
+    private readonly audit: AuditService,
   ) {}
 
   async registrarTenant(dto: RegistroTenantDto) {
@@ -102,6 +104,13 @@ export class AuthService {
     );
 
     const token = this.generarToken(owner);
+
+    this.audit.log({
+      event: 'auth.register',
+      userId: owner.id,
+      tenantId: tenant.id,
+      metadata: { industry: dto.industry, plan: 'TRIAL', slug },
+    });
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     await this.emailService.enviarBienvenida(
@@ -219,23 +228,29 @@ export class AuthService {
     });
 
     if (!user) {
+      this.audit.log({ event: 'auth.login.failed', metadata: { email: dto.email, reason: 'user_not_found' } });
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
     const passwordValida = await bcrypt.compare(dto.password, user.password);
     if (!passwordValida) {
+      this.audit.log({ event: 'auth.login.failed', tenantId: user.tenantId, metadata: { email: dto.email, reason: 'wrong_password' } });
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
     if (!user.active) {
+      this.audit.log({ event: 'auth.login.failed', userId: user.id, tenantId: user.tenantId, metadata: { reason: 'user_inactive' } });
       throw new ForbiddenException('El usuario está inactivo');
     }
 
     if (!user.tenant.active) {
+      this.audit.log({ event: 'auth.login.failed', userId: user.id, tenantId: user.tenantId, metadata: { reason: 'tenant_inactive' } });
       throw new ForbiddenException('El negocio está inactivo');
     }
 
     const token = this.generarToken(user);
+
+    this.audit.log({ event: 'auth.login.success', userId: user.id, tenantId: user.tenantId, metadata: { role: user.role } });
 
     return {
       mensaje: 'Inicio de sesión exitoso',
@@ -317,6 +332,8 @@ export class AuthService {
 
     await this.emailService.enviarRecuperacionContrasena(user.email, user.name, resetUrl);
 
+    this.audit.log({ event: 'auth.password_reset.requested', userId: user.id, metadata: { email } });
+
     return { message: 'Si el correo existe, recibirás un enlace en breve.' };
   }
 
@@ -343,6 +360,8 @@ export class AuthService {
       where: { id: resetToken.id },
       data: { used: true },
     });
+
+    this.audit.log({ event: 'auth.password_reset.completed', userId: resetToken.userId });
 
     return { message: 'Contraseña actualizada correctamente.' };
   }
