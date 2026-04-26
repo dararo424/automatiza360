@@ -335,4 +335,188 @@ export class EmailService {
       `,
     });
   }
+
+  // ── Lifecycle emails ────────────────────────────────────────────────────────
+
+  async enviarTrialTerminaPronto(to: string, nombre: string, diasRestantes: number, plan: string) {
+    const appUrl = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
+    await this.send({
+      to,
+      subject: `Tu prueba gratuita termina en ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} — Automatiza360`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;">
+          <h1 style="color:#0f172a;font-size:24px;">⏰ Tu trial termina pronto</h1>
+          <p style="color:#475569;">Hola ${nombre},</p>
+          <p style="color:#475569;">Tu período de prueba gratuita de Automatiza360 termina en <strong>${diasRestantes} día${diasRestantes !== 1 ? 's' : ''}</strong>. Después de eso, tu cuenta quedará suspendida.</p>
+          <p style="color:#475569;">Para seguir automatizando tu negocio, activa tu plan ahora:</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+            <tr>
+              <td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;text-align:center;">
+                <p style="font-size:20px;font-weight:bold;color:#4f46e5;margin:0;">Plan ${plan}</p>
+                <p style="color:#64748b;margin:8px 0;">Continúa desde donde dejaste</p>
+                <a href="${appUrl}/mi-plan" style="display:inline-block;background:#4f46e5;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:12px;">
+                  Activar mi plan →
+                </a>
+              </td>
+            </tr>
+          </table>
+          <p style="color:#94a3b8;font-size:13px;">Si tienes preguntas, responde este correo y te ayudamos.</p>
+        </div>
+      `,
+    });
+  }
+
+  async enviarSuscripcionExpiraPronto(to: string, nombre: string, diasRestantes: number, fechaVencimiento: string) {
+    const appUrl = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
+    await this.send({
+      to,
+      subject: `Tu suscripción vence en ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} — Automatiza360`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;">
+          <h1 style="color:#0f172a;font-size:24px;">📅 Tu suscripción está por vencer</h1>
+          <p style="color:#475569;">Hola ${nombre},</p>
+          <p style="color:#475569;">Tu suscripción a Automatiza360 vence el <strong>${fechaVencimiento}</strong> (en ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''}).</p>
+          <p style="color:#475569;">Para no interrumpir el servicio de tu negocio, renueva ahora:</p>
+          <div style="text-align:center;margin:28px 0;">
+            <a href="${appUrl}/mi-plan" style="display:inline-block;background:#4f46e5;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
+              Renovar suscripción →
+            </a>
+          </div>
+          <p style="color:#94a3b8;font-size:13px;">Si ya renovaste, ignora este mensaje.</p>
+        </div>
+      `,
+    });
+  }
+
+  async enviarSuscripcionVencida(to: string, nombre: string) {
+    const appUrl = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
+    await this.send({
+      to,
+      subject: 'Tu suscripción ha vencido — Automatiza360',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;">
+          <h1 style="color:#dc2626;font-size:24px;">⚠️ Suscripción vencida</h1>
+          <p style="color:#475569;">Hola ${nombre},</p>
+          <p style="color:#475569;">Tu suscripción a Automatiza360 ha vencido. Tu cuenta está actualmente <strong>suspendida</strong>.</p>
+          <p style="color:#475569;">Tus datos están seguros. Reactiva tu plan para volver a usar la plataforma:</p>
+          <div style="text-align:center;margin:28px 0;">
+            <a href="${appUrl}/mi-plan" style="display:inline-block;background:#4f46e5;color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
+              Reactivar mi cuenta →
+            </a>
+          </div>
+          <p style="color:#94a3b8;font-size:13px;">¿Necesitas ayuda? Responde este correo o escríbenos por WhatsApp.</p>
+        </div>
+      `,
+    });
+  }
+
+  async enviarResemanalDigest(to: string, nombre: string, negocio: string, data: {
+    ingresosSemana: number;
+    ordenesSemana: number;
+    citasSemana: number;
+    contactosNuevos: number;
+    appUrl: string;
+  }) {
+    const fmt = (n: number) => `$${n.toLocaleString('es-CO')} COP`;
+    await this.send({
+      to,
+      subject: `📊 Resumen semanal de ${negocio} — Automatiza360`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:20px;">
+          <div style="background:#4f46e5;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+            <h1 style="color:white;margin:0;font-size:22px;">📊 Resumen semanal</h1>
+            <p style="color:#c7d2fe;margin:8px 0 0;">${negocio}</p>
+          </div>
+          <div style="background:white;padding:32px;border-radius:0 0 12px 12px;">
+            <p style="color:#475569;">Hola ${nombre}, aquí está lo que pasó esta semana:</p>
+            <table width="100%" cellpadding="16" style="border-collapse:collapse;margin:16px 0;">
+              <tr style="background:#f1f5f9;">
+                <td style="border-radius:8px;color:#64748b;font-size:14px;">💰 Ingresos</td>
+                <td style="font-size:22px;font-weight:bold;color:#0f172a;text-align:right;">${fmt(data.ingresosSemana)}</td>
+              </tr>
+              <tr>
+                <td style="color:#64748b;font-size:14px;padding:12px 16px;">🛒 Órdenes / Ventas</td>
+                <td style="font-size:22px;font-weight:bold;color:#0f172a;text-align:right;padding:12px 16px;">${data.ordenesSemana}</td>
+              </tr>
+              <tr style="background:#f1f5f9;">
+                <td style="border-radius:8px;color:#64748b;font-size:14px;">📅 Citas atendidas</td>
+                <td style="font-size:22px;font-weight:bold;color:#0f172a;text-align:right;">${data.citasSemana}</td>
+              </tr>
+              <tr>
+                <td style="color:#64748b;font-size:14px;padding:12px 16px;">👥 Contactos nuevos</td>
+                <td style="font-size:22px;font-weight:bold;color:#0f172a;text-align:right;padding:12px 16px;">${data.contactosNuevos}</td>
+              </tr>
+            </table>
+            <div style="text-align:center;margin-top:24px;">
+              <a href="${data.appUrl}/dashboard" style="display:inline-block;background:#4f46e5;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">
+                Ver panel completo →
+              </a>
+            </div>
+            <p style="color:#94a3b8;font-size:12px;margin-top:24px;text-align:center;">
+              Automatiza360 · Gestiona tu negocio desde WhatsApp
+            </p>
+          </div>
+        </div>
+      `,
+    });
+  }
+
+  async enviarFelicitacionCumpleanos(to: string, clienteNombre: string, negocioNombre: string) {
+    await this.send({
+      to,
+      subject: `🎂 ¡Feliz cumpleaños de parte de ${negocioNombre}!`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;padding:20px;">
+          <div style="background:#ec4899;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+            <h1 style="color:white;margin:0;font-size:24px;">🎂 ¡Feliz cumpleaños!</h1>
+          </div>
+          <div style="background:white;padding:32px;border-radius:0 0 12px 12px;text-align:center;">
+            <p style="color:#475569;font-size:16px;">Hola ${clienteNombre},</p>
+            <p style="color:#475569;font-size:16px;">${negocioNombre} quiere desearte un feliz cumpleaños 🎉</p>
+            <p style="color:#475569;">¡Esperamos verte pronto!</p>
+            <p style="color:#94a3b8;font-size:12px;margin-top:24px;">Enviado por ${negocioNombre} con Automatiza360</p>
+          </div>
+        </div>
+      `,
+    });
+  }
+
+  async enviarReciboPago(to: string, nombre: string, opts: { plan: string; monto: number; referencia: string; fecha: string }) {
+    const appUrl = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
+    const montoFmt = `$${opts.monto.toLocaleString('es-CO')} COP`;
+    await this.send({
+      to,
+      subject: `Recibo de pago — Automatiza360 Plan ${opts.plan}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;">
+          <h1 style="color:#16a34a;font-size:24px;">✅ Pago confirmado</h1>
+          <p style="color:#475569;">Hola ${nombre}, tu pago fue procesado exitosamente.</p>
+          <table width="100%" cellpadding="12" style="border:1px solid #e2e8f0;border-radius:8px;margin:24px 0;border-collapse:collapse;">
+            <tr style="background:#f8fafc;">
+              <td style="color:#64748b;border-bottom:1px solid #e2e8f0;">Plan</td>
+              <td style="font-weight:bold;border-bottom:1px solid #e2e8f0;">${opts.plan}</td>
+            </tr>
+            <tr>
+              <td style="color:#64748b;border-bottom:1px solid #e2e8f0;">Monto</td>
+              <td style="font-weight:bold;border-bottom:1px solid #e2e8f0;">${montoFmt}</td>
+            </tr>
+            <tr style="background:#f8fafc;">
+              <td style="color:#64748b;border-bottom:1px solid #e2e8f0;">Referencia</td>
+              <td style="font-family:monospace;border-bottom:1px solid #e2e8f0;">${opts.referencia}</td>
+            </tr>
+            <tr>
+              <td style="color:#64748b;">Fecha</td>
+              <td>${opts.fecha}</td>
+            </tr>
+          </table>
+          <div style="text-align:center;">
+            <a href="${appUrl}/mi-plan" style="display:inline-block;background:#4f46e5;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">
+              Ver mi plan →
+            </a>
+          </div>
+          <p style="color:#94a3b8;font-size:12px;margin-top:24px;">Guarda este correo como comprobante de pago. Ref: ${opts.referencia}</p>
+        </div>
+      `,
+    });
+  }
 }

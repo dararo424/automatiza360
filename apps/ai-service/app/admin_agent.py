@@ -8,6 +8,7 @@ Uses Claude (Anthropic) for the agentic loop.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from datetime import datetime, timezone, timedelta
@@ -55,8 +56,6 @@ CAPACIDADES RESTAURANTE / PANADERÍA:
 - Ver y gestionar órdenes: ver pendientes, detalle de una orden, cambiar estado (CONFIRMED → PREPARING → READY → DELIVERED)
   → Al pasar a READY, el cliente recibe WhatsApp automático
 - Registrar gastos: "gasté $45.000 en ingredientes hoy"
-- Buscar contacto por nombre o teléfono
-- Enviar campaña a todos los contactos (confirmar antes)
 - Resumen del día y del mes
 
 FLUJO ÓRDENES: ver_ordenes_pendientes → ver_detalle_orden → cambiar_estado_orden
@@ -69,10 +68,9 @@ CAPACIDADES TIENDA TECH / TALLER:
 - Buscar ticket por nombre de cliente
 - Cambiar estado de ticket (RECEIVED → DIAGNOSING → WAITING_PARTS → REPAIRING → READY → DELIVERED → CANCELLED)
 - Ver cotizaciones pendientes de respuesta
-- Ver productos con stock bajo
+- Ver productos con stock bajo / agregar producto / actualizar stock o precio
+- Ver garantías vigentes de clientes
 - Registrar gastos
-- Buscar contacto por nombre o teléfono
-- Enviar campaña a todos los contactos (confirmar antes)
 - Resumen del día y del mes
 
 FLUJO TICKET NUEVO: crear_ticket (con foto si la manda) → buscar_ticket para seguimiento → cambiar_estado_ticket
@@ -80,14 +78,12 @@ FLUJO TICKET NUEVO: crear_ticket (con foto si la manda) → buscar_ticket para s
     elif upper in ("CLINIC", "BEAUTY", "VETERINARY"):
         base += """
 CAPACIDADES CLÍNICA / SALÓN / VETERINARIA:
-- Ver citas del día (o cualquier fecha): hora, cliente, servicio, profesional, estado
+- Ver citas del día o de mañana (pasar fecha "hoy" o "mañana" como YYYY-MM-DD)
 - Crear cita manualmente para un cliente (reservas por teléfono o presencial)
 - Cambiar estado de una cita individual (CONFIRMED, COMPLETED, NO_SHOW, CANCELLED)
 - Reagendar una cita → notifica automáticamente al cliente por WhatsApp
 - Cancelar citas en rango horario + notificar pacientes afectados automáticamente
 - Registrar gastos
-- Buscar contacto por nombre o teléfono
-- Enviar campaña a todos los contactos (confirmar antes)
 - Resumen del día y del mes
 
 FLUJO CANCELACIÓN MASIVA:
@@ -106,30 +102,26 @@ CAPACIDADES TIENDA DE ROPA:
 - Eliminar (desactivar) un producto
 - Ver productos con stock bajo
 - Registrar gastos
-- Buscar contacto por nombre o teléfono
-- Enviar campaña a todos los contactos (confirmar antes)
 - Resumen del día y del mes
 """
     elif upper == "GYM":
         base += """
 CAPACIDADES GIMNASIO:
-- Ver clases / sesiones del día (ver_citas_dia)
+- Ver clases / sesiones del día o de mañana (ver_citas_dia con fecha)
 - Crear reserva de clase para un cliente (crear_cita_admin)
 - Cambiar estado de una sesión (CONFIRMED, COMPLETED, NO_SHOW)
 - Registrar gastos del gimnasio
-- Buscar miembro por nombre o teléfono
-- Enviar mensaje a todos los miembros (campañas)
+- Ver turnos del personal de hoy
 - Resumen del día y del mes
 """
     elif upper == "HOTEL":
         base += """
 CAPACIDADES HOTEL:
-- Ver reservas del día (ver_citas_dia — las reservas son citas)
+- Ver reservas del día o de mañana (ver_citas_dia — las reservas son citas)
 - Crear reserva manualmente para un huésped (crear_cita_admin)
 - Cambiar estado de reserva (CONFIRMED = check-in, COMPLETED = check-out, CANCELLED)
 - Registrar gastos del hotel
-- Buscar huésped por nombre o teléfono
-- Enviar mensaje a todos los huéspedes (campañas)
+- Ver turnos del personal
 - Resumen del día y del mes
 """
     elif upper == "PHARMACY":
@@ -140,17 +132,24 @@ CAPACIDADES FARMACIA:
 - Actualizar precio de un producto
 - Agregar o actualizar medicamento en el catálogo
 - Registrar gastos
-- Buscar cliente por nombre o teléfono
-- Enviar campaña a todos los contactos (confirmar antes)
 - Resumen del día y del mes
 """
     else:
         base += """
 CAPACIDADES GENERALES:
 - Resumen del día y del mes
-- Buscar contacto por nombre o teléfono
 - Registrar gastos
 - Enviar campaña a todos los contactos (confirmar antes)
+"""
+
+    base += """
+CAPACIDADES COMUNES (todos los negocios):
+- Contactos: buscar_contacto por nombre/teléfono, listar_contactos (últimos 10), agregar_contacto nuevo
+- Campañas: crear_campaña_rapida → envía mensaje a TODOS los contactos (confirmar antes)
+- Reseñas: ver_resenas → últimas valoraciones y comentarios de clientes con promedio
+- Cupones: ver_cupones → cupones activos; crear_cupon → nuevo código de descuento (PORCENTAJE o FIJO)
+- Turnos: ver_turnos → horario del personal de hoy o de cualquier fecha
+- Gráficas y reportes: enviar_grafica_whatsapp (imagen por WA), enviar_reporte_email (HTML al correo)
 """
 
     if media_url:
@@ -183,6 +182,8 @@ async def run_admin(
     industry = admin_info.get("industry", "OTHER")
     tenant_id = admin_info.get("tenantId", "")
     role = admin_info.get("role", "STAFF")
+    owner_email = admin_info.get("ownerEmail", "")
+    owner_name = admin_info.get("ownerName", "")
 
     system_prompt = _build_admin_prompt(industry, role, media_url)
     tools = get_admin_tools(industry)
@@ -225,6 +226,8 @@ async def run_admin(
                         tenant_id,
                         media_url,
                         industry,
+                        owner_email=owner_email,
+                        owner_name=owner_name,
                     )
                     tool_results.append({
                         "type": "tool_result",
@@ -242,4 +245,4 @@ async def run_admin(
             session.append({"role": "assistant", "content": final_text})
             return final_text
 
-    return "Se alcanzó el límite de iteraciones. Por favor intenta de nuevo."
+    return "No pude completar la acción en el número de pasos permitidos. Por favor intenta de nuevo o sé más específico."

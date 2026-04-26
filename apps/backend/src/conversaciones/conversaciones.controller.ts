@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -21,7 +21,7 @@ export class ConversacionesController {
   }
 
   /** Llamado por el AI service antes de procesar cada mensaje de cliente. */
-  @SkipThrottle()
+  @Throttle({ medium: { ttl: 60000, limit: 120 } }) // max 2 msg/s por tenant — evita abuso de cuota
   @Post('track')
   track(@CurrentUser() user: any, @Body() body: { clientPhone: string }) {
     return this.svc.checkAndTrackConversation(user.tenantId, body.clientPhone);

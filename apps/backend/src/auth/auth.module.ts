@@ -12,10 +12,13 @@ import { TwilioModule } from '../twilio/twilio.module';
   imports: [
     PassportModule,
     JwtModule.registerAsync({
-      useFactory: () => ({
-        secret: process.env.JWT_SECRET ?? 'secret',
-        signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as any },
-      }),
+      useFactory: () => {
+        const secret = process.env.JWT_SECRET;
+        if (!secret || secret.length < 32) {
+          throw new Error('JWT_SECRET env var is required and must be at least 32 characters');
+        }
+        return { secret, signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as any } };
+      },
     }),
     TwilioModule,
   ],

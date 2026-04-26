@@ -20,8 +20,14 @@ describe('DashboardService', () => {
     conversation: {
       count: jest.fn().mockResolvedValue(0),
       findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue(null),
     },
     message: { count: jest.fn().mockResolvedValue(0) },
+    contact: { count: jest.fn().mockResolvedValue(0) },
+    gasto: { aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 0 } }) },
+    resena: {
+      aggregate: jest.fn().mockResolvedValue({ _avg: { rating: 0 }, _count: { rating: 0 } }),
+    },
     tenant: {
       findUnique: jest.fn().mockResolvedValue({
         conversationCountMonth: 0,

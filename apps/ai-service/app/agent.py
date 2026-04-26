@@ -545,4 +545,4 @@ async def run(
         logger.info("Escalation triggered for phone=%s tenant=%s", clean_phone, client.bot_email)
         await client.escalar_conversacion_por_telefono(clean_phone)
 
-    return reply
+    return reply + "\n\n_Powered by Automatiza360_ 🤖"

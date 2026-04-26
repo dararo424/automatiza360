@@ -13,7 +13,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
-import { getMetricasDashboard, getTendencias } from '../api/dashboard';
+import { getMetricasDashboard, getTendencias, getRoi } from '../api/dashboard';
+import { QrCard } from '../components/ui/QrCard';
 import { StatCard } from '../components/ui/StatCard';
 import { Badge } from '../components/ui/Badge';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -468,6 +469,50 @@ function MiEnlaceCard() {
   );
 }
 
+function RoiWidget() {
+  const { data: roi, isLoading } = useQuery({
+    queryKey: ['dashboard-roi'],
+    queryFn: getRoi,
+    staleTime: 10 * 60_000,
+  });
+
+  if (isLoading || !roi) return null;
+  if (roi.mensajesAutomatizados === 0) return null;
+
+  const fmt = (n: number) =>
+    `$${n.toLocaleString('es-CO')} COP`;
+
+  return (
+    <div className="bg-gradient-to-r from-indigo-900 to-purple-900 border border-indigo-700 rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-2xl">🤖</span>
+        <div>
+          <p className="text-white font-semibold text-sm">Automatiza360 este mes</p>
+          <p className="text-indigo-300 text-xs">Tiempo y dinero que ahorraste</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white/10 rounded-lg p-3 text-center">
+          <p className="text-indigo-200 text-xs mb-1">Mensajes enviados</p>
+          <p className="text-white text-xl font-bold">{roi.mensajesAutomatizados.toLocaleString('es-CO')}</p>
+        </div>
+        <div className="bg-white/10 rounded-lg p-3 text-center">
+          <p className="text-indigo-200 text-xs mb-1">Horas ahorradas</p>
+          <p className="text-white text-xl font-bold">{roi.horasAhorradas}</p>
+        </div>
+        <div className="bg-white/10 rounded-lg p-3 text-center">
+          <p className="text-indigo-200 text-xs mb-1">Ahorro estimado</p>
+          <p className="text-green-300 text-lg font-bold">{fmt(roi.ahorroEstimadoCOP)}</p>
+        </div>
+        <div className="bg-white/10 rounded-lg p-3 text-center">
+          <p className="text-indigo-200 text-xs mb-1">Órdenes via bot</p>
+          <p className="text-white text-xl font-bold">{roi.ordenesViaBot}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DashboardContent() {
   const { user } = useAuth();
   const industry = user?.tenant?.industry;
@@ -485,11 +530,24 @@ export function DashboardPage() {
     <div className="space-y-6">
       <OnboardingChecklist />
       <DashboardContent />
+      <RoiWidget />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <NpsCard />
         <ResenasCard />
       </div>
       <MiEnlaceCard />
+      <QrSection />
     </div>
   );
+}
+
+function QrSection() {
+  const { user } = useAuth();
+  const slug = user?.tenant?.slug;
+  const frontendUrl = window.location.origin;
+  const url = slug ? `${frontendUrl}/negocio/${slug}` : null;
+
+  if (!url) return null;
+
+  return <QrCard url={url} label={url} />;
 }
