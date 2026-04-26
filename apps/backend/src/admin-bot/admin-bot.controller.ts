@@ -35,6 +35,17 @@ export class AdminBotController {
     return this.service.checkAdmin(phone);
   }
 
+  // ── Tenant config (consumido por AI service para personalidad del bot) ────
+
+  @Get('tenant-config/:tenantId')
+  getTenantConfig(
+    @Param('tenantId') tenantId: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.getTenantConfig(tenantId);
+  }
+
   // ── Menú del día ───────────────────────────────────────────────────────────
 
   @Post('menu-dia')

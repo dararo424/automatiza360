@@ -249,10 +249,26 @@ export function PlanPortalPage() {
 
       {/* Programa de referidos */}
       <div className="bg-slate-800 rounded-xl p-5 mb-6">
-        <h2 className="text-white font-semibold mb-1">Programa de referidos</h2>
-        <p className="text-slate-400 text-sm mb-4">
-          Comparte tu código y gana beneficios cuando tus referidos se suscriban.
-        </p>
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <div>
+            <h2 className="text-white font-semibold">Programa de referidos</h2>
+            <p className="text-slate-400 text-sm">
+              Cada amigo que pague te suma <strong className="text-emerald-400">30 días gratis</strong>.
+            </p>
+          </div>
+          {(() => {
+            const recompensados = referrals.filter((r) => r.rewardGiven).length;
+            if (recompensados === 0) return null;
+            return (
+              <div className="bg-emerald-950 border border-emerald-700 rounded-lg px-3 py-2 text-center shrink-0">
+                <p className="text-emerald-300 text-xs">Días ganados</p>
+                <p className="text-emerald-200 font-bold text-xl leading-none mt-0.5">+{recompensados * 30}</p>
+              </div>
+            );
+          })()}
+        </div>
+        <div className="mt-4" />
+
         {codigo ? (
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             <div className="bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 flex-1">
@@ -276,11 +292,15 @@ export function PlanPortalPage() {
               {referrals.map((r) => (
                 <div key={r.id} className="flex justify-between items-center text-sm bg-slate-700 rounded-lg px-3 py-2">
                   <span className="text-slate-300 font-mono text-xs">{r.referredTenantId.substring(0, 12)}...</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    r.status === 'ACTIVE' ? 'bg-emerald-700 text-emerald-200' : 'bg-slate-600 text-slate-300'
-                  }`}>
-                    {r.status}
-                  </span>
+                  {r.rewardGiven || r.status === 'REWARDED' ? (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-700 text-emerald-200">
+                      ✓ +30 días
+                    </span>
+                  ) : (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-900 text-amber-200">
+                      Esperando pago
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

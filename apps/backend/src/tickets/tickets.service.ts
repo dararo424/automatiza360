@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { TicketStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
+import { FlujoService } from '../flujos/flujos.service';
 import { CrearTicketDto } from './dto/crear-ticket.dto';
 import { ActualizarTicketDto } from './dto/actualizar-ticket.dto';
 import { ActualizarEstadoTicketDto } from './dto/actualizar-estado-ticket.dto';
@@ -21,9 +22,11 @@ export class TicketsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificacionesService: NotificacionesService,
+    private readonly flujos: FlujoService,
   ) {}
 
   async crear(dto: CrearTicketDto, tenantId: string) {
+    await this.flujos.assertFlujoActivo(tenantId, 'soporte');
     return this.prisma.$transaction(async (tx) => {
       const count = await tx.ticket.count({ where: { tenantId } });
       const number = count + 1;

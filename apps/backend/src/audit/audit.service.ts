@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 export type AuditEvent =
   // Auth
@@ -12,7 +13,16 @@ export type AuditEvent =
   | 'payment.completed'
   | 'payment.failed'
   | 'subscription.activated'
-  | 'subscription.cancelled';
+  | 'subscription.cancelled'
+  | 'subscription.reactivated'
+  // Plan changes
+  | 'plan.upgraded'
+  | 'trial.extended'
+  // Referrals
+  | 'referral.rewarded'
+  // Hazlo por mí
+  | 'hazlo.requested'
+  | 'hazlo.completed';
 
 export interface AuditEntry {
   event: AuditEvent;
@@ -26,6 +36,8 @@ export interface AuditEntry {
 export class AuditService {
   private readonly logger = new Logger('AUDIT');
 
+  constructor(private readonly prisma: PrismaService) {}
+
   log(entry: AuditEntry): void {
     this.logger.log(
       JSON.stringify({
@@ -37,5 +49,19 @@ export class AuditService {
         ...(entry.metadata ? { metadata: entry.metadata } : {}),
       }),
     );
+
+    this.prisma.auditLog
+      .create({
+        data: {
+          event: entry.event,
+          userId: entry.userId ?? null,
+          tenantId: entry.tenantId ?? null,
+          ip: entry.ip ?? null,
+          ...(entry.metadata ? { metadata: entry.metadata as object } : {}),
+        },
+      })
+      .catch((err: unknown) => {
+        this.logger.error(`Failed to persist audit log: ${(err as Error).message}`);
+      });
   }
 }

@@ -6,6 +6,7 @@ import { ContactosService } from '../contactos/contactos.service';
 import { AutomacionesService } from '../automaciones/automaciones.service';
 import { CuponesService } from '../cupones/cupones.service';
 import { PushService } from '../push/push.service';
+import { FlujoService } from '../flujos/flujos.service';
 
 const mockPrisma = {
   product: { findMany: jest.fn() },
@@ -23,6 +24,7 @@ const mockContactos = { upsertByPhone: jest.fn() };
 const mockAutomaciones = { dispararTrigger: jest.fn().mockResolvedValue(undefined) };
 const mockCupones = { validar: jest.fn(), aplicar: jest.fn() };
 const mockPush = { sendToTenant: jest.fn().mockResolvedValue(undefined) };
+const mockFlujos = { assertFlujoActivo: jest.fn().mockResolvedValue(undefined) };
 
 const TENANT_ID = 'tenant-1';
 
@@ -43,6 +45,7 @@ describe('OrdenesService', () => {
         { provide: AutomacionesService, useValue: mockAutomaciones },
         { provide: CuponesService, useValue: mockCupones },
         { provide: PushService, useValue: mockPush },
+        { provide: FlujoService, useValue: mockFlujos },
       ],
     }).compile();
     service = module.get<OrdenesService>(OrdenesService);
