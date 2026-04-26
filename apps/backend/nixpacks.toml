@@ -8,7 +8,10 @@ cmds = [
 ]
 
 [phases.build]
-cmds = ["pnpm build"]
+cmds = [
+  "pnpm prisma generate",
+  "pnpm build"
+]
 
 [start]
-cmd = "pnpm start:prod"
+cmd = "pnpm start:migrate"

@@ -207,6 +207,13 @@ class BackendClient:
             logger.warning("escalar_conversacion_por_telefono failed: %s", exc)
             return None
 
+    async def marcar_desuscrito(self, phone: str) -> None:
+        """Marca un contacto como desuscrito para no recibir campañas."""
+        try:
+            await self._request("POST", "/contactos/desuscribir", json={"phone": phone})
+        except Exception as exc:
+            logger.warning("marcar_desuscrito failed for %s: %s", phone, exc)
+
     async def check_admin(self, phone: str) -> dict:
         """Verifica si el número es admin (OWNER/ADMIN/STAFF) de este tenant."""
         internal_key = os.environ.get("INTERNAL_API_KEY", "")

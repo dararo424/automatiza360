@@ -28,4 +28,9 @@ export class DashboardController {
   ) {
     return this.dashboard.getTendencias(user.tenantId, days ? parseInt(days, 10) : 30);
   }
+
+  @Get('roi')
+  getRoi(@CurrentUser() user: { tenantId: string }) {
+    return this.dashboard.getRoi(user.tenantId);
+  }
 }

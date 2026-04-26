@@ -10,6 +10,7 @@ import { ContactosService } from '../contactos/contactos.service';
 import { AutomacionesService } from '../automaciones/automaciones.service';
 import { CuponesService } from '../cupones/cupones.service';
 import { PushService } from '../push/push.service';
+import { FlujoService } from '../flujos/flujos.service';
 import { CrearOrdenDto } from './dto/crear-orden.dto';
 import { CrearOrdenBotDto } from './dto/crear-orden-bot.dto';
 import { ActualizarEstadoDto } from './dto/actualizar-estado.dto';
@@ -37,9 +38,11 @@ export class OrdenesService {
     private readonly automacionesService: AutomacionesService,
     private readonly cuponesService: CuponesService,
     private readonly pushService: PushService,
+    private readonly flujos: FlujoService,
   ) {}
 
   async crear(dto: CrearOrdenDto, tenantId: string) {
+    await this.flujos.assertFlujoActivo(tenantId, 'ventas');
     const productIds = [...new Set(dto.items.map((i) => i.productId))];
 
     const products = await this.prisma.product.findMany({
@@ -103,6 +106,7 @@ export class OrdenesService {
   }
 
   async crearDesdeBot(dto: CrearOrdenBotDto, tenantId: string) {
+    await this.flujos.assertFlujoActivo(tenantId, 'ventas');
     const nombres = dto.items.map((i) => i.nombre_producto.toLowerCase());
 
     const products = await this.prisma.product.findMany({

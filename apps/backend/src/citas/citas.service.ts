@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CalendarService } from '../calendar/calendar.service';
 import { AutomacionesService } from '../automaciones/automaciones.service';
 import { PushService } from '../push/push.service';
+import { FlujoService } from '../flujos/flujos.service';
 import { CrearCitaBotDto } from './dto/crear-cita-bot.dto';
 
 @Injectable()
@@ -21,6 +22,7 @@ export class CitasService {
     private readonly calendar: CalendarService,
     private readonly automacionesService: AutomacionesService,
     private readonly pushService: PushService,
+    private readonly flujos: FlujoService,
   ) {}
 
   listarServicios(tenantId: string) {
@@ -245,6 +247,7 @@ export class CitasService {
   }
 
   async crearCitaBot(dto: CrearCitaBotDto, tenantId: string) {
+    await this.flujos.assertFlujoActivo(tenantId, 'citas');
     const services = await this.prisma.service.findMany({
       where: { tenantId, active: true },
     });

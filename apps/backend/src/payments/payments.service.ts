@@ -1,9 +1,10 @@
 import * as crypto from 'crypto';
-import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Plan, Role, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
 import { EmailService } from '../email/email.service';
+import { AuditService } from '../audit/audit.service';
 
 type PlanKey = 'STARTER' | 'PRO' | 'BUSINESS';
 
@@ -21,6 +22,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly billingService: BillingService,
     private readonly emailService: EmailService,
+    private readonly audit: AuditService,
   ) {}
 
   async crearTransaccion(tenantId: string, plan: PlanKey) {
@@ -48,6 +50,12 @@ export class PaymentsService {
     params.set('redirect-url', redirectUrl);
 
     const checkoutUrl = `https://checkout.wompi.co/p/?${params.toString()}`;
+
+    this.audit.log({
+      event: 'payment.initiated',
+      tenantId,
+      metadata: { plan, referencia, monto },
+    });
 
     return {
       checkoutUrl,
@@ -118,14 +126,37 @@ export class PaymentsService {
           include: { users: { where: { role: Role.OWNER }, take: 1 } },
         });
         if (tenant?.users[0]?.email) {
-          this.emailService.sendConfirmacionPago(tenant.users[0].email, {
-            ownerName: tenant.users[0].name,
-            storeName: tenant.name,
-            plan: intent.plan,
-            monto: intent.monto / 100,
-            referencia,
-          }).catch((e) => this.logger.error('Email confirmación pago failed', e));
+          const ownerEmail = tenant.users[0].email;
+          const ownerName = tenant.users[0].name;
+          const montoFinal = intent.monto / 100;
+          const fechaPago = new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+          Promise.all([
+            this.emailService.sendConfirmacionPago(ownerEmail, {
+              ownerName,
+              storeName: tenant.name,
+              plan: intent.plan,
+              monto: montoFinal,
+              referencia,
+            }),
+            this.emailService.enviarReciboPago(ownerEmail, ownerName, {
+              plan: intent.plan,
+              monto: montoFinal,
+              referencia,
+              fecha: fechaPago,
+            }),
+          ]).catch((e) => this.logger.error('Email pago failed', e));
         }
+
+        this.audit.log({
+          event: 'payment.completed',
+          tenantId: intent.tenantId,
+          metadata: { plan: intent.plan, referencia, wompiTransactionId: transaccion.id, monto: intent.monto },
+        });
+        this.audit.log({
+          event: 'subscription.activated',
+          tenantId: intent.tenantId,
+          metadata: { plan: intent.plan, subscriptionEndsAt: proximoMes.toISOString() },
+        });
 
         // Recompensar referidor si aplica
         await this.rewardReferrer(intent.tenantId).catch((e) =>
@@ -138,6 +169,12 @@ export class PaymentsService {
         await this.prisma.paymentIntent.update({
           where: { id: intent.id },
           data: { status: transaccion.status },
+        });
+
+        this.audit.log({
+          event: 'payment.failed',
+          tenantId: intent.tenantId,
+          metadata: { plan: intent.plan, referencia, status: transaccion.status, monto: intent.monto },
         });
 
         // Registrar pago fallido
@@ -264,5 +301,51 @@ export class PaymentsService {
     ]);
 
     this.logger.log(`Referrer ${referrerTenantId} rewarded 30 days for referring ${newPayingTenantId}`);
+  }
+
+  async solicitarReembolso(tenantId: string, referencia: string, razon?: string) {
+    const intent = await this.prisma.paymentIntent.findFirst({
+      where: { referencia, tenantId, status: 'APPROVED' },
+    });
+    if (!intent) {
+      throw new NotFoundException('Transacción aprobada no encontrada para esa referencia');
+    }
+    if (!intent.wompiTransactionId) {
+      throw new BadRequestException('Esta transacción no tiene ID de Wompi registrado');
+    }
+
+    const wompiUrl = process.env.WOMPI_BASE_URL ?? 'https://sandbox.wompi.co/v1';
+    const privKey = process.env.WOMPI_PRIVATE_KEY;
+    if (!privKey) throw new BadRequestException('WOMPI_PRIVATE_KEY no configurado');
+
+    const res = await fetch(`${wompiUrl}/transactions/${intent.wompiTransactionId}/void`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${privKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ reason: razon ?? 'Solicitud de reembolso del cliente' }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({})) as any;
+      throw new BadRequestException(`Wompi rechazó el reembolso: ${err?.error?.messages?.join(', ') ?? res.statusText}`);
+    }
+
+    const data = await res.json() as any;
+
+    await this.prisma.paymentIntent.update({
+      where: { id: intent.id },
+      data: { status: 'VOIDED' },
+    });
+
+    this.audit.log({
+      event: 'payment.failed',
+      tenantId,
+      metadata: { referencia, wompiTransactionId: intent.wompiTransactionId, action: 'void', razon },
+    });
+
+    this.logger.log(`Reembolso solicitado: ${intent.wompiTransactionId} → ${data?.data?.status}`);
+    return { ok: true, status: data?.data?.status, referencia };
   }
 }

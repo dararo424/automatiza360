@@ -3,9 +3,10 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { AppointmentStatus, Industry, OrderStatus, TicketStatus } from '@prisma/client';
-import * as twilio from 'twilio';
+import { AppointmentStatus, OrderStatus, TicketStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AdminBotResumenesService } from './admin-bot-resumenes.service';
+import { AdminBotMessagingService } from './admin-bot-messaging.service';
 
 function normalizePhone(phone: string): string {
   return phone.replace(/[\s+\-().]/g, '');
@@ -15,9 +16,40 @@ function normalizePhone(phone: string): string {
 export class AdminBotService {
   private readonly logger = new Logger(AdminBotService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly resumenes: AdminBotResumenesService,
+    private readonly messaging: AdminBotMessagingService,
+  ) {}
 
   // ── Check admin ────────────────────────────────────────────────────────────
+
+  async getTenantConfig(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        industry: true,
+        descripcion: true,
+        horario: true,
+        direccion: true,
+        ciudad: true,
+        botName: true,
+        botTone: true,
+        flujosActivos: true,
+        plan: true,
+        subscriptionStatus: true,
+      },
+    });
+    if (!tenant) throw new NotFoundException('Tenant no encontrado');
+    return {
+      ...tenant,
+      botName: tenant.botName ?? 'Asistente',
+      botTone: tenant.botTone ?? 'AMIGABLE',
+    };
+  }
 
   async checkAdmin(phone: string) {
     const normalized = normalizePhone(phone);
@@ -34,12 +66,18 @@ export class AdminBotService {
       if (!user.phone) continue;
       const userPhoneNorm = normalizePhone(user.phone).slice(-10);
       if (userPhoneNorm === last10) {
+        const owner = await this.prisma.user.findFirst({
+          where: { tenantId: user.tenantId, role: 'OWNER', active: true },
+          select: { email: true, name: true },
+        });
         return {
           isAdmin: true,
           tenantId: user.tenantId,
           role: user.role,
           userId: user.id,
           industry: user.tenant.industry,
+          ownerEmail: owner?.email ?? user.email,
+          ownerName: owner?.name ?? user.name,
         };
       }
     }
@@ -60,6 +98,8 @@ export class AdminBotService {
             role: owner.role,
             userId: owner.id,
             industry: t.industry,
+            ownerEmail: owner.email,
+            ownerName: owner.name,
           };
         }
       }
@@ -175,115 +215,10 @@ export class AdminBotService {
     });
   }
 
-  // ── Resumen del día ────────────────────────────────────────────────────────
+  // ── Resumen del día (delegado) ─────────────────────────────────────────────
 
-  async resumenDia(tenantId: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
-    if (!tenant) throw new NotFoundException('Tenant no encontrado');
-
-    const hoy = new Date();
-    hoy.setUTCHours(0, 0, 0, 0);
-    const manana = new Date(hoy);
-    manana.setUTCDate(manana.getUTCDate() + 1);
-
-    const industry = tenant.industry;
-
-    if (industry === 'RESTAURANT' || industry === 'BAKERY') {
-      const ordenes = await this.prisma.order.findMany({
-        where: { tenantId, createdAt: { gte: hoy, lt: manana } },
-        include: { items: true },
-      });
-      const pendientes = ordenes.filter((o) => o.status === OrderStatus.PENDING || o.status === OrderStatus.CONFIRMED || o.status === OrderStatus.PREPARING);
-      const ingresos = ordenes
-        .filter((o) => o.status !== OrderStatus.CANCELLED)
-        .reduce((sum, o) => sum + o.total, 0);
-
-      return {
-        industria: industry,
-        totalOrdenes: ordenes.length,
-        ordenesPendientes: pendientes.length,
-        ingresosDelDia: ingresos,
-        ordenes: ordenes.map((o) => ({
-          numero: o.number,
-          estado: o.status,
-          total: o.total,
-          items: o.items.map((i) => `${i.quantity}x ${i.name}`).join(', '),
-        })),
-      };
-    }
-
-    if (industry === 'TECH_STORE' || industry === 'WORKSHOP') {
-      const ticketsAbiertos = await this.prisma.ticket.findMany({
-        where: {
-          tenantId,
-          status: { notIn: [TicketStatus.DELIVERED, TicketStatus.CANCELLED] },
-        },
-      });
-      const ticketsCerradosHoy = await this.prisma.ticket.findMany({
-        where: {
-          tenantId,
-          status: TicketStatus.DELIVERED,
-          updatedAt: { gte: hoy, lt: manana },
-        },
-      });
-      const ingresos = ticketsCerradosHoy.reduce((sum, t) => sum + (t.price ?? 0), 0);
-
-      return {
-        industria: industry,
-        ticketsAbiertos: ticketsAbiertos.length,
-        ticketsCerradosHoy: ticketsCerradosHoy.length,
-        ingresosDelDia: ingresos,
-      };
-    }
-
-    if (industry === 'CLINIC' || industry === 'BEAUTY' || industry === 'VETERINARY') {
-      const citas = await this.prisma.appointment.findMany({
-        where: { tenantId, date: { gte: hoy, lt: manana } },
-        include: { service: true, professional: true },
-      });
-      const completadas = citas.filter((c) => c.status === AppointmentStatus.COMPLETED);
-      const pendientes = citas.filter(
-        (c) => c.status === AppointmentStatus.SCHEDULED || c.status === AppointmentStatus.CONFIRMED,
-      );
-
-      return {
-        industria: industry,
-        totalCitas: citas.length,
-        citasCompletadas: completadas.length,
-        citasPendientes: pendientes.length,
-        citas: citas.map((c) => ({
-          hora: c.date.toISOString(),
-          cliente: c.clientName,
-          servicio: c.service.name,
-          profesional: c.professional?.name ?? null,
-          estado: c.status,
-        })),
-      };
-    }
-
-    if (industry === 'CLOTHING_STORE') {
-      const ordenes = await this.prisma.order.findMany({
-        where: { tenantId, createdAt: { gte: hoy, lt: manana } },
-      });
-      const bajoStockProductos = await this.prisma.$queryRaw<
-        Array<{ name: string; stock: number; minStock: number }>
-      >`
-        SELECT name, stock, "minStock" FROM "Product"
-        WHERE "tenantId" = ${tenantId} AND active = true AND stock <= "minStock"
-      `;
-
-      return {
-        industria: industry,
-        ordenesDelDia: ordenes.length,
-        productosStockBajo: bajoStockProductos.map((p) => ({
-          nombre: p.name,
-          stock: p.stock,
-          minStock: p.minStock,
-        })),
-      };
-    }
-
-    return { industria: industry, mensaje: 'Industria sin resumen específico configurado' };
+  resumenDia(tenantId: string) {
+    return this.resumenes.resumenDia(tenantId);
   }
 
   // ── Tickets ────────────────────────────────────────────────────────────────
@@ -373,9 +308,9 @@ export class AdminBotService {
     return { canceladas: citas.length, clientesAfectados };
   }
 
-  // ── Notificación de cancelación a pacientes ────────────────────────────────
+  // ── Notificación de cancelación a pacientes (delegado) ────────────────────
 
-  async notificarPacientesCancelacion(
+  notificarPacientesCancelacion(
     tenantId: string,
     industry: string,
     pacientes: Array<{
@@ -385,91 +320,12 @@ export class AdminBotService {
       hora: string;
       profesional?: string | null;
     }>,
-  ): Promise<{ enviados: number; errores: number; detalle: Array<{ nombre: string; ok: boolean; error?: string }> }> {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
-    if (!tenant) throw new NotFoundException('Tenant no encontrado');
-
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const whatsappNumber = tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
-
-    if (!accountSid || !authToken || !whatsappNumber) {
-      throw new Error('Credenciales Twilio no configuradas');
-    }
-
-    const twilioClient = twilio.default(accountSid, authToken);
-    let enviados = 0;
-    let errores = 0;
-    const detalle: Array<{ nombre: string; ok: boolean; error?: string }> = [];
-
-    for (const paciente of pacientes) {
-      try {
-        const toNumber = this.normalizePhone(paciente.telefono);
-        const mensaje = this.buildCancelacionMessage(paciente, tenant.name, industry);
-
-        await twilioClient.messages.create({
-          from: `whatsapp:${whatsappNumber}`,
-          to: `whatsapp:${toNumber}`,
-          body: mensaje,
-        });
-
-        enviados++;
-        detalle.push({ nombre: paciente.nombre, ok: true });
-        this.logger.log(`Cancelación notificada a ${toNumber} (${paciente.nombre})`);
-      } catch (error) {
-        errores++;
-        detalle.push({ nombre: paciente.nombre, ok: false, error: (error as Error).message });
-        this.logger.error(`Error notificando a ${paciente.nombre}: ${(error as Error).message}`);
-      }
-    }
-
-    return { enviados, errores, detalle };
-  }
-
-  private buildCancelacionMessage(
-    paciente: { nombre: string; servicio: string; hora: string; profesional?: string | null },
-    storeName: string,
-    industry: string,
-  ): string {
-    const hora = new Date(paciente.hora).toLocaleTimeString('es-CO', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'America/Bogota',
-    });
-    const conProfesional = paciente.profesional ? ` con ${paciente.profesional}` : '';
-
-    switch (industry.toUpperCase() as Industry) {
-      case Industry.CLINIC:
-        return (
-          `🏥 Hola ${paciente.nombre}, lamentamos informarte que tu cita médica${conProfesional} ` +
-          `de hoy a las ${hora} en ${storeName} ha sido cancelada por un imprevisto del profesional.\n\n` +
-          `Por favor escríbenos para reagendarla lo antes posible. Pedimos disculpas. 🙏`
-        );
-      case Industry.BEAUTY:
-        return (
-          `💅 Hola ${paciente.nombre}, tu cita de ${paciente.servicio}${conProfesional} ` +
-          `de hoy a las ${hora} en ${storeName} ha sido cancelada.\n\n` +
-          `Escríbenos para reagendarla en la fecha que más te convenga. ¡Disculpa los inconvenientes! ✨`
-        );
-      case Industry.VETERINARY:
-        return (
-          `🐾 Hola ${paciente.nombre}, tu cita en ${storeName}${conProfesional} ` +
-          `programada hoy a las ${hora} ha sido cancelada por un imprevisto.\n\n` +
-          `Comunícate con nosotros para reagendarla. Pedimos disculpas. 🙏`
-        );
-      default:
-        return (
-          `📅 Hola ${paciente.nombre}, tu cita de ${paciente.servicio} en ${storeName} ` +
-          `de hoy a las ${hora} ha sido cancelada.\n\n` +
-          `Escríbenos para reagendarla. Disculpa los inconvenientes.`
-        );
-    }
+  ) {
+    return this.messaging.notificarPacientesCancelacion(tenantId, industry, pacientes);
   }
 
   private normalizePhone(phone: string): string {
-    const cleaned = phone.replace(/[\s\-]/g, '');
-    return cleaned.startsWith('+') ? cleaned : `+57${cleaned}`;
+    return this.messaging.normalizePhone(phone);
   }
 
   // ── Órdenes pendientes ─────────────────────────────────────────────────────
@@ -715,120 +571,150 @@ export class AdminBotService {
     `;
   }
 
-  // ── Resumen del mes ────────────────────────────────────────────────────────
+  // ── Resumen del mes (delegado) ─────────────────────────────────────────────
 
-  async resumenMes(tenantId: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
-    if (!tenant) throw new NotFoundException('Tenant no encontrado');
+  resumenMes(tenantId: string) {
+    return this.resumenes.resumenMes(tenantId);
+  }
 
-    const ahora = new Date();
-    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-    const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
-    const finMesAnterior = new Date(inicioMes.getTime() - 1);
+  // ── Reseñas recientes (delegado) ───────────────────────────────────────────
 
-    const [ordenesEste, ordenesPrevio, citasEste, citasPrevio, contactosEste, gastosEste] = await Promise.all([
-      this.prisma.order.aggregate({
-        where: { tenantId, createdAt: { gte: inicioMes }, status: { not: OrderStatus.CANCELLED } },
-        _count: { id: true },
-        _sum: { total: true },
-      }),
-      this.prisma.order.aggregate({
-        where: { tenantId, createdAt: { gte: inicioMesAnterior, lte: finMesAnterior }, status: { not: OrderStatus.CANCELLED } },
-        _count: { id: true },
-        _sum: { total: true },
-      }),
-      this.prisma.appointment.count({ where: { tenantId, createdAt: { gte: inicioMes } } }),
-      this.prisma.appointment.count({ where: { tenantId, createdAt: { gte: inicioMesAnterior, lte: finMesAnterior } } }),
-      this.prisma.contact.count({ where: { tenantId, createdAt: { gte: inicioMes } } }),
-      this.prisma.gasto.aggregate({
-        where: { tenantId, fecha: { gte: inicioMes } },
-        _sum: { monto: true },
-      }),
-    ]);
+  verResenasRecientes(tenantId: string) {
+    return this.resumenes.verResenasRecientes(tenantId);
+  }
 
-    const pct = (cur: number, prev: number) =>
-      prev === 0 ? null : Math.round(((cur - prev) / prev) * 100);
+  // ── Cupones ────────────────────────────────────────────────────────────────
+
+  async verCuponesActivos(tenantId: string) {
+    return this.prisma.cupon.findMany({
+      where: {
+        tenantId,
+        activo: true,
+        OR: [
+          { fechaVencimiento: null },
+          { fechaVencimiento: { gte: new Date() } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+  }
+
+  async crearCupon(
+    tenantId: string,
+    codigo: string,
+    tipo: string,
+    valor: number,
+    minCompra?: number,
+    maxUsos?: number,
+    fechaVencimiento?: string,
+  ) {
+    return this.prisma.cupon.create({
+      data: {
+        tenantId,
+        codigo: codigo.toUpperCase(),
+        tipo: tipo as any,
+        valor,
+        minCompra: minCompra ?? 0,
+        ...(maxUsos !== undefined && { maxUsos }),
+        ...(fechaVencimiento && { fechaVencimiento: new Date(fechaVencimiento) }),
+        activo: true,
+      },
+    });
+  }
+
+  // ── Listar contactos recientes ─────────────────────────────────────────────
+
+  async listarContactosRecientes(tenantId: string) {
+    return this.prisma.contact.findMany({
+      where: { tenantId },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
+      select: { id: true, name: true, phone: true, email: true, tags: true, puntos: true, createdAt: true },
+    });
+  }
+
+  async agregarContacto(
+    tenantId: string,
+    nombre: string,
+    phone: string,
+    email?: string,
+    notas?: string,
+  ) {
+    const normalizedPhone = this.normalizePhone(phone);
+    return this.prisma.contact.upsert({
+      where: { tenantId_phone: { tenantId, phone: normalizedPhone } },
+      update: {
+        name: nombre,
+        ...(email && { email }),
+        ...(notas && { notes: notas }),
+      },
+      create: {
+        tenantId,
+        phone: normalizedPhone,
+        name: nombre,
+        ...(email && { email }),
+        ...(notas && { notes: notas }),
+      },
+    });
+  }
+
+  // ── Turnos del personal ────────────────────────────────────────────────────
+
+  async verTurnos(tenantId: string, fecha?: string) {
+    const dia = fecha ? new Date(`${fecha}T00:00:00.000Z`) : new Date();
+    dia.setUTCHours(0, 0, 0, 0);
+    const diaSig = new Date(dia);
+    diaSig.setUTCDate(diaSig.getUTCDate() + 1);
+
+    const turnos = await this.prisma.turno.findMany({
+      where: { tenantId, fecha: { gte: dia, lt: diaSig } },
+      include: { user: { select: { name: true, role: true } } },
+      orderBy: { horaInicio: 'asc' },
+    });
 
     return {
-      mes: ahora.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }),
-      ordenes: {
-        cantidad: ordenesEste._count.id,
-        ingresos: ordenesEste._sum.total ?? 0,
-        vsAnterior: pct(ordenesEste._count.id, ordenesPrevio._count.id),
-      },
-      citas: { cantidad: citasEste, vsAnterior: pct(citasEste, citasPrevio) },
-      contactosNuevos: contactosEste,
-      gastosTotal: gastosEste._sum.monto ?? 0,
+      fecha: dia.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }),
+      totalTurnos: turnos.length,
+      turnos: turnos.map((t) => ({
+        empleado: t.user.name,
+        rol: t.user.role,
+        horaInicio: t.horaInicio,
+        horaFin: t.horaFin,
+        notas: t.notas ?? null,
+      })),
     };
   }
 
-  // ── Campaña rápida — enviar mensaje a todos los contactos ──────────────────
+  // ── Garantías activas ──────────────────────────────────────────────────────
 
-  async crearCampañaRapida(tenantId: string, mensaje: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
-    if (!tenant) throw new NotFoundException('Tenant no encontrado');
-
-    const contactos = await this.prisma.contact.findMany({
-      where: { tenantId, phone: { not: '' } },
-      select: { phone: true, name: true },
+  async verGarantiasActivas(tenantId: string) {
+    const hoy = new Date();
+    const garantias = await this.prisma.garantia.findMany({
+      where: { tenantId, fechaVencimiento: { gte: hoy } },
+      orderBy: { fechaVencimiento: 'asc' },
+      take: 15,
     });
 
-    if (contactos.length === 0) return { enviados: 0, errores: 0, mensaje: 'No hay contactos registrados' };
-
-    const campaña = await this.prisma.campaña.create({
-      data: { tenantId, nombre: `Campaña rápida ${new Date().toLocaleDateString('es-CO')}`, mensaje, status: 'ENVIANDO' as any },
-    });
-
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const whatsappNumber = tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
-
-    let enviados = 0;
-    let errores = 0;
-
-    if (accountSid && authToken && whatsappNumber) {
-      const twilioClient = twilio.default(accountSid, authToken);
-      for (const contacto of contactos) {
-        try {
-          await twilioClient.messages.create({
-            from: `whatsapp:${whatsappNumber}`,
-            to: `whatsapp:${this.normalizePhone(contacto.phone)}`,
-            body: mensaje,
-          });
-          enviados++;
-        } catch {
-          errores++;
-        }
-      }
-    }
-
-    await this.prisma.campaña.update({
-      where: { id: campaña.id },
-      data: { status: 'ENVIADA' as any, totalEnviado: enviados, enviadaAt: new Date() },
-    });
-
-    return { enviados, errores, total: contactos.length };
+    return garantias.map((g) => ({
+      id: g.id,
+      cliente: g.clienteNombre,
+      telefono: g.clientePhone,
+      producto: g.producto,
+      vence: g.fechaVencimiento.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }),
+      diasRestantes: Math.ceil((g.fechaVencimiento.getTime() - hoy.getTime()) / 86400000),
+    }));
   }
 
-  // ── Helper: enviar WhatsApp a un cliente ───────────────────────────────────
+  // ── Campaña rápida (delegado) ──────────────────────────────────────────────
 
-  async sendWhatsAppToClient(tenantId: string, toPhone: string, body: string): Promise<void> {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const whatsappNumber = tenant?.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
+  crearCampañaRapida(tenantId: string, mensaje: string) {
+    return this.messaging.crearCampañaRapida(tenantId, mensaje);
+  }
 
-    if (!accountSid || !authToken || !whatsappNumber) return;
+  // ── Helper: enviar WhatsApp a un cliente (delegado) ───────────────────────
 
-    try {
-      const twilioClient = twilio.default(accountSid, authToken);
-      await twilioClient.messages.create({
-        from: `whatsapp:${whatsappNumber}`,
-        to: `whatsapp:${this.normalizePhone(toPhone)}`,
-        body,
-      });
-    } catch (err) {
-      this.logger.error(`sendWhatsAppToClient error: ${(err as Error).message}`);
-    }
+  sendWhatsAppToClient(tenantId: string, toPhone: string, body: string): Promise<void> {
+    return this.messaging.sendWhatsAppToClient(tenantId, toPhone, body);
   }
 }

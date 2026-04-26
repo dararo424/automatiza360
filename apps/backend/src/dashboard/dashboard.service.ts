@@ -235,4 +235,35 @@ export class DashboardService {
       plan: tenant?.plan ?? 'STARTER',
     };
   }
+
+  async getRoi(tenantId: string) {
+    const now = new Date();
+    const mesInicio = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Minutes saved per automated interaction (conservative estimate)
+    const MINUTOS_POR_MENSAJE = 3;
+    // Average hourly wage for a Colombian small business employee (~COP/hour)
+    const COSTO_HORA_COP = 15000;
+
+    const [mensajesSalientes, contactosTotales, campañasEnviadas, ordenesBot] = await Promise.all([
+      this.prisma.message.count({ where: { conversation: { tenantId }, direction: 'OUTBOUND', createdAt: { gte: mesInicio } } }),
+      this.prisma.contact.count({ where: { tenantId } }),
+      this.prisma.campaña.count({ where: { tenantId, createdAt: { gte: mesInicio } } }),
+      this.prisma.order.count({ where: { tenantId, createdAt: { gte: mesInicio }, phone: { not: null } } }),
+    ]);
+
+    const minutosAhorrados = mensajesSalientes * MINUTOS_POR_MENSAJE;
+    const horasAhorradas = Math.round(minutosAhorrados / 60);
+    const ahorroEstimadoCOP = Math.round((minutosAhorrados / 60) * COSTO_HORA_COP);
+
+    return {
+      mensajesAutomatizados: mensajesSalientes,
+      minutosAhorrados,
+      horasAhorradas,
+      ahorroEstimadoCOP,
+      contactosTotales,
+      campañasEnviadas,
+      ordenesViaBot: ordenesBot,
+    };
+  }
 }

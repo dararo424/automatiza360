@@ -141,7 +141,12 @@ async def webhook(
         From, to_number, text[:120], media_url or "none",
     )
 
-    reply = await handle_message(From, text, to_number, media_url)
+    try:
+        reply = await handle_message(From, text, to_number, media_url)
+    except Exception as exc:
+        logger.error("Unhandled error in handle_message from=%s: %s", From, exc, exc_info=True)
+        reply = "⚠️ Ocurrió un error inesperado. Por favor intenta de nuevo en unos momentos."
+
     if voice_prefix:
         reply = voice_prefix + reply
     logger.info("Outgoing  to=%s  text=%r", From, reply[:120])

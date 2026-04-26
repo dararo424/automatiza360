@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Plan } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -78,5 +78,20 @@ export class FlujoService {
     });
 
     return { activos: flujos, limite, plan: planKey };
+  }
+
+  async assertFlujoActivo(tenantId: string, flujoId: string): Promise<void> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { flujosActivos: true },
+    });
+    const activos = tenant.flujosActivos
+      ? tenant.flujosActivos.split(',').filter(Boolean)
+      : [];
+    if (!activos.includes(flujoId)) {
+      throw new ForbiddenException(
+        `El flujo "${flujoId}" no está activo en tu plan. Actívalo en /mi-plan.`,
+      );
+    }
   }
 }
