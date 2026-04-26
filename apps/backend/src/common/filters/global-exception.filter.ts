@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import * as Sentry from '@sentry/nestjs';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -34,6 +35,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       } else if ((exception as any).code === 'P2025') {
         status = HttpStatus.NOT_FOUND;
         message = 'Registro no encontrado';
+      } else {
+        Sentry.captureException(exception, {
+          extra: { method: request.method, url: request.url },
+        });
       }
       this.logger.error(
         `${request.method} ${request.url} → ${exception.message}`,

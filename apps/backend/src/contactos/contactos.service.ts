@@ -151,4 +151,11 @@ export class ContactosService {
       },
     });
   }
+
+  async marcarDesuscrito(tenantId: string, phone: string) {
+    return this.prisma.contact.updateMany({
+      where: { tenantId, phone },
+      data: { unsubscribed: true },
+    });
+  }
 }

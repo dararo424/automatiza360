@@ -52,4 +52,13 @@ export class PaymentsController {
   getSubscripcion(@CurrentUser() user: { tenantId: string }) {
     return this.payments.getSubscripcion(user.tenantId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('reembolso')
+  solicitarReembolso(
+    @CurrentUser() user: { tenantId: string },
+    @Body() body: { referencia: string; razon?: string },
+  ) {
+    return this.payments.solicitarReembolso(user.tenantId, body.referencia, body.razon);
+  }
 }

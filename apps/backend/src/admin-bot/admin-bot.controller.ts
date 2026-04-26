@@ -327,4 +327,94 @@ export class AdminBotController {
     verifyInternalKey(key);
     return this.service.crearCampañaRapida(body.tenantId, body.mensaje);
   }
+
+  // ── Reseñas ────────────────────────────────────────────────────────────────
+
+  @Get('resenas/:tenantId')
+  verResenasRecientes(
+    @Param('tenantId') tenantId: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.verResenasRecientes(tenantId);
+  }
+
+  // ── Cupones ────────────────────────────────────────────────────────────────
+
+  @Get('cupones/:tenantId')
+  verCuponesActivos(
+    @Param('tenantId') tenantId: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.verCuponesActivos(tenantId);
+  }
+
+  @Post('cupon')
+  crearCupon(
+    @Body() body: {
+      tenantId: string;
+      codigo: string;
+      tipo: string;
+      valor: number;
+      minCompra?: number;
+      maxUsos?: number;
+      fechaVencimiento?: string;
+    },
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.crearCupon(
+      body.tenantId,
+      body.codigo,
+      body.tipo,
+      body.valor,
+      body.minCompra,
+      body.maxUsos,
+      body.fechaVencimiento,
+    );
+  }
+
+  // ── Contactos ──────────────────────────────────────────────────────────────
+
+  @Get('contactos/recientes/:tenantId')
+  listarContactosRecientes(
+    @Param('tenantId') tenantId: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.listarContactosRecientes(tenantId);
+  }
+
+  @Post('contacto')
+  agregarContacto(
+    @Body() body: { tenantId: string; nombre: string; phone: string; email?: string; notas?: string },
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.agregarContacto(body.tenantId, body.nombre, body.phone, body.email, body.notas);
+  }
+
+  // ── Turnos ─────────────────────────────────────────────────────────────────
+
+  @Get('turnos/:tenantId')
+  verTurnos(
+    @Param('tenantId') tenantId: string,
+    @Query('fecha') fecha: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.verTurnos(tenantId, fecha);
+  }
+
+  // ── Garantías ──────────────────────────────────────────────────────────────
+
+  @Get('garantias/:tenantId')
+  verGarantiasActivas(
+    @Param('tenantId') tenantId: string,
+    @Headers('x-internal-key') key: string,
+  ) {
+    verifyInternalKey(key);
+    return this.service.verGarantiasActivas(tenantId);
+  }
 }

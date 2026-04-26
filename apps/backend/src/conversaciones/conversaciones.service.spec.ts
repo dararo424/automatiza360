@@ -10,6 +10,7 @@ describe('ConversacionesService', () => {
     tenant: { findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
     conversation: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -36,22 +37,31 @@ describe('ConversacionesService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should return blocked when plan limit reached', async () => {
+  it('checkAndTrackConversation: retorna allowed=false cuando se alcanzó el límite del plan', async () => {
     mockPrisma.tenant.findUniqueOrThrow.mockResolvedValue({
-      id: 'tenant-id',
       plan: 'STARTER',
-      conversationCountMonth: 500,
+      conversationCountMonth: 500, // límite STARTER = 500
     });
+    // Conversación nueva este mes (no contada aún)
+    mockPrisma.conversation.findUnique.mockResolvedValue(null);
+
+    const result = await service.checkAndTrackConversation('tenant-id', '+57300');
+    expect(result.allowed).toBe(false);
+    expect(result.used).toBe(500);
+    expect(result.limit).toBe(500);
+  });
+
+  it('ingestMessage: siempre ingresa el mensaje independientemente del plan', async () => {
     mockPrisma.conversation.upsert.mockResolvedValue({ id: 'conv-id' });
+    mockPrisma.message.create.mockResolvedValue({ id: 'msg-id', body: 'hola' });
 
     const result = await service.ingestMessage('tenant-id', {
       clientPhone: '+57300',
       body: 'hola',
       direction: 'INBOUND' as any,
     });
-    expect(result).toEqual(
-      expect.objectContaining({ blocked: true, reason: 'plan_limit_reached' }),
-    );
+    expect(result.blocked).toBe(false);
+    expect(result.conversationId).toBe('conv-id');
   });
 
   it('getSesion should return empty array when conversation not found', async () => {

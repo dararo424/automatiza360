@@ -16,6 +16,7 @@ export default () => ({
     authToken: process.env.TWILIO_AUTH_TOKEN,
     whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER,
     env: process.env.TWILIO_ENV ?? 'sandbox',
+    contentSid: process.env.TWILIO_CONTENT_SID ?? '',
   },
   wompi: {
     baseUrl: process.env.WOMPI_BASE_URL,
