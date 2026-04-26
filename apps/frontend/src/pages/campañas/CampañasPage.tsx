@@ -236,7 +236,7 @@ function filtrosLabel(filtros?: FiltrosCampaña | null): string | null {
 export function CampañasPage() {
   const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
-  const { canUseCampanas, agentLimit, isLoading: planLoading } = usePlanFeatures();
+  const { canUseCampanas, isLoading: planLoading } = usePlanFeatures();
 
   const { data: campañas = [], isLoading } = useQuery({
     queryKey: ['campañas'],
