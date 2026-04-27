@@ -10,8 +10,26 @@ import {
   Query,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AppointmentStatus, OrderStatus, TicketStatus } from '@prisma/client';
 import { AdminBotService } from './admin-bot.service';
+import {
+  ActualizarPrecioDto,
+  ActualizarStockDto,
+  CambiarEstadoCitaDto,
+  CambiarEstadoOrdenDto,
+  CambiarEstadoTicketDto,
+  CancelarCitasRangoDto,
+  CargarMenuDiaDto,
+  CrearCampañaRapidaDto,
+  CrearCitaAdminDto,
+  CrearContactoAdminDto,
+  CrearCuponAdminDto,
+  CrearOActualizarProductoDto,
+  CrearTicketAdminDto,
+  EliminarProductoDto,
+  NotificarCancelacionDto,
+  ReagendarCitaDto,
+  RegistrarGastoDto,
+} from './dto/admin-bot.dto';
 
 function verifyInternalKey(key: string | undefined) {
   const expected = process.env.INTERNAL_API_KEY;
@@ -50,55 +68,55 @@ export class AdminBotController {
 
   @Post('menu-dia')
   cargarMenuDia(
-    @Body() body: { tenantId: string; items: Array<{ nombre: string; precio: number; descripcion?: string }> },
+    @Body() dto: CargarMenuDiaDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.cargarMenuDia(body.tenantId, body.items);
+    return this.service.cargarMenuDia(dto.tenantId, dto.items);
   }
 
   // ── Productos ──────────────────────────────────────────────────────────────
 
   @Post('producto')
   crearOActualizarProducto(
-    @Body() body: { tenantId: string; nombre: string; precio: number; stock?: number; descripcion?: string },
+    @Body() dto: CrearOActualizarProductoDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
     return this.service.crearOActualizarProducto(
-      body.tenantId,
-      body.nombre,
-      body.precio,
-      body.stock,
-      body.descripcion,
+      dto.tenantId,
+      dto.nombre,
+      dto.precio,
+      dto.stock,
+      dto.descripcion,
     );
   }
 
   @Patch('producto/stock')
   actualizarStock(
-    @Body() body: { tenantId: string; nombre: string; stock: number },
+    @Body() dto: ActualizarStockDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.actualizarStock(body.tenantId, body.nombre, body.stock);
+    return this.service.actualizarStock(dto.tenantId, dto.nombre, dto.stock);
   }
 
   @Patch('producto/precio')
   actualizarPrecio(
-    @Body() body: { tenantId: string; nombre: string; precio: number },
+    @Body() dto: ActualizarPrecioDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.actualizarPrecio(body.tenantId, body.nombre, body.precio);
+    return this.service.actualizarPrecio(dto.tenantId, dto.nombre, dto.precio);
   }
 
   @Delete('producto')
   eliminarProducto(
-    @Body() body: { tenantId: string; nombre: string },
+    @Body() dto: EliminarProductoDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.eliminarProducto(body.tenantId, body.nombre);
+    return this.service.eliminarProducto(dto.tenantId, dto.nombre);
   }
 
   // ── Resumen del día ────────────────────────────────────────────────────────
@@ -117,11 +135,11 @@ export class AdminBotController {
   @Patch('ticket/:id/estado')
   cambiarEstadoTicket(
     @Param('id') id: string,
-    @Body() body: { tenantId: string; estado: TicketStatus; fotoUrl?: string },
+    @Body() dto: CambiarEstadoTicketDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.cambiarEstadoTicket(id, body.tenantId, body.estado, body.fotoUrl);
+    return this.service.cambiarEstadoTicket(id, dto.tenantId, dto.estado, dto.fotoUrl);
   }
 
   @Get('ticket/buscar')
@@ -138,38 +156,28 @@ export class AdminBotController {
 
   @Post('citas/cancelar-rango')
   cancelarCitasRango(
-    @Body() body: { tenantId: string; fecha: string; horaDesde?: string; profesionalId?: string },
+    @Body() dto: CancelarCitasRangoDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
     return this.service.cancelarCitasRango(
-      body.tenantId,
-      body.fecha,
-      body.horaDesde,
-      body.profesionalId,
+      dto.tenantId,
+      dto.fecha,
+      dto.horaDesde,
+      dto.profesionalId,
     );
   }
 
   @Post('citas/notificar-cancelacion')
   notificarCancelacion(
-    @Body() body: {
-      tenantId: string;
-      industry: string;
-      pacientes: Array<{
-        nombre: string;
-        telefono: string;
-        servicio: string;
-        hora: string;
-        profesional?: string | null;
-      }>;
-    },
+    @Body() dto: NotificarCancelacionDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
     return this.service.notificarPacientesCancelacion(
-      body.tenantId,
-      body.industry,
-      body.pacientes,
+      dto.tenantId,
+      dto.industry,
+      dto.pacientes,
     );
   }
 
@@ -197,11 +205,11 @@ export class AdminBotController {
   @Patch('orden/:numero/estado')
   cambiarEstadoOrden(
     @Param('numero') numero: string,
-    @Body() body: { tenantId: string; estado: OrderStatus },
+    @Body() dto: CambiarEstadoOrdenDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.cambiarEstadoOrden(body.tenantId, parseInt(numero, 10), body.estado);
+    return this.service.cambiarEstadoOrden(dto.tenantId, parseInt(numero, 10), dto.estado);
   }
 
   // ── Citas avanzadas ────────────────────────────────────────────────────────
@@ -218,47 +226,39 @@ export class AdminBotController {
 
   @Post('citas/crear')
   crearCitaAdmin(
-    @Body() body: {
-      tenantId: string;
-      clientName: string;
-      clientPhone: string;
-      serviceName: string;
-      fecha: string;
-      hora: string;
-      profesionalNombre?: string;
-    },
+    @Body() dto: CrearCitaAdminDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
     return this.service.crearCitaAdmin(
-      body.tenantId,
-      body.clientName,
-      body.clientPhone,
-      body.serviceName,
-      body.fecha,
-      body.hora,
-      body.profesionalNombre,
+      dto.tenantId,
+      dto.clientName,
+      dto.clientPhone,
+      dto.serviceName,
+      dto.fecha,
+      dto.hora,
+      dto.profesionalNombre,
     );
   }
 
   @Patch('citas/:id/estado')
   cambiarEstadoCita(
     @Param('id') id: string,
-    @Body() body: { tenantId: string; estado: AppointmentStatus },
+    @Body() dto: CambiarEstadoCitaDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.cambiarEstadoCita(body.tenantId, id, body.estado);
+    return this.service.cambiarEstadoCita(dto.tenantId, id, dto.estado);
   }
 
   @Patch('citas/:id/reagendar')
   reagendarCita(
     @Param('id') id: string,
-    @Body() body: { tenantId: string; nuevaFecha: string; nuevaHora: string },
+    @Body() dto: ReagendarCitaDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.reagendarCita(body.tenantId, id, body.nuevaFecha, body.nuevaHora);
+    return this.service.reagendarCita(dto.tenantId, id, dto.nuevaFecha, dto.nuevaHora);
   }
 
   // ── Contactos ──────────────────────────────────────────────────────────────
@@ -277,22 +277,29 @@ export class AdminBotController {
 
   @Post('gasto')
   registrarGasto(
-    @Body() body: { tenantId: string; descripcion: string; monto: number; categoria: string },
+    @Body() dto: RegistrarGastoDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.registrarGasto(body.tenantId, body.descripcion, body.monto, body.categoria);
+    return this.service.registrarGasto(dto.tenantId, dto.descripcion, dto.monto, dto.categoria);
   }
 
   // ── Ticket nuevo ───────────────────────────────────────────────────────────
 
   @Post('ticket')
   crearTicket(
-    @Body() body: { tenantId: string; clientName: string; clientPhone: string; device: string; issue: string; fotoUrl?: string },
+    @Body() dto: CrearTicketAdminDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.crearTicket(body.tenantId, body.clientName, body.clientPhone, body.device, body.issue, body.fotoUrl);
+    return this.service.crearTicket(
+      dto.tenantId,
+      dto.clientName,
+      dto.clientPhone,
+      dto.device,
+      dto.issue,
+      dto.fotoUrl,
+    );
   }
 
   // ── Cotizaciones pendientes ────────────────────────────────────────────────
@@ -332,11 +339,11 @@ export class AdminBotController {
 
   @Post('campaña/rapida')
   crearCampañaRapida(
-    @Body() body: { tenantId: string; mensaje: string },
+    @Body() dto: CrearCampañaRapidaDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.crearCampañaRapida(body.tenantId, body.mensaje);
+    return this.service.crearCampañaRapida(dto.tenantId, dto.mensaje);
   }
 
   // ── Reseñas ────────────────────────────────────────────────────────────────
@@ -363,26 +370,18 @@ export class AdminBotController {
 
   @Post('cupon')
   crearCupon(
-    @Body() body: {
-      tenantId: string;
-      codigo: string;
-      tipo: string;
-      valor: number;
-      minCompra?: number;
-      maxUsos?: number;
-      fechaVencimiento?: string;
-    },
+    @Body() dto: CrearCuponAdminDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
     return this.service.crearCupon(
-      body.tenantId,
-      body.codigo,
-      body.tipo,
-      body.valor,
-      body.minCompra,
-      body.maxUsos,
-      body.fechaVencimiento,
+      dto.tenantId,
+      dto.codigo,
+      dto.tipo,
+      dto.valor,
+      dto.minCompra,
+      dto.maxUsos,
+      dto.fechaVencimiento,
     );
   }
 
@@ -399,11 +398,11 @@ export class AdminBotController {
 
   @Post('contacto')
   agregarContacto(
-    @Body() body: { tenantId: string; nombre: string; phone: string; email?: string; notas?: string },
+    @Body() dto: CrearContactoAdminDto,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.agregarContacto(body.tenantId, body.nombre, body.phone, body.email, body.notas);
+    return this.service.agregarContacto(dto.tenantId, dto.nombre, dto.phone, dto.email, dto.notas);
   }
 
   // ── Turnos ─────────────────────────────────────────────────────────────────
@@ -411,7 +410,7 @@ export class AdminBotController {
   @Get('turnos/:tenantId')
   verTurnos(
     @Param('tenantId') tenantId: string,
-    @Query('fecha') fecha: string,
+    @Query('fecha') fecha: string | undefined,
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);

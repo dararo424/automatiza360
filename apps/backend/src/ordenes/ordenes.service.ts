@@ -213,9 +213,13 @@ export class OrdenesService {
 
   async generarLinkPago(tenantId: string, orderId: string): Promise<{ url: string }> {
     const orden = await this.buscarUno(orderId, tenantId);
+    return this.buildLinkPago(orden.id, orden.total);
+  }
+
+  private async buildLinkPago(orderId: string, total: number): Promise<{ url: string }> {
     const publicKey = process.env.WOMPI_PUBLIC_KEY;
     if (!publicKey) throw new BadRequestException('WOMPI_PUBLIC_KEY no configurada');
-    const amountInCents = Math.round(orden.total * 100);
+    const amountInCents = Math.round(total * 100);
     const referencia = `ORD-${orderId}`;
 
     // Firma de integridad requerida por Wompi para evitar manipulación del monto
@@ -233,6 +237,72 @@ export class OrdenesService {
       'redirect-url': `${process.env.FRONTEND_URL ?? ''}/pago-resultado`,
     });
     return { url: `https://checkout.wompi.co/p/?${params.toString()}` };
+  }
+
+  async enviarLinkPagoWhatsApp(
+    tenantId: string,
+    orderId: string,
+  ): Promise<{ ok: true; url: string; sentTo: string } | { ok: false; reason: string }> {
+    const orden = await this.buscarUno(orderId, tenantId);
+
+    if (!orden.phone) {
+      return { ok: false, reason: 'La orden no tiene teléfono del cliente' };
+    }
+
+    const { url } = await this.buildLinkPago(orden.id, orden.total);
+
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { name: true, twilioNumber: true },
+    });
+    const sid = process.env.TWILIO_ACCOUNT_SID;
+    const token = process.env.TWILIO_AUTH_TOKEN;
+    const from = tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
+
+    if (!sid || !token || !from) {
+      return { ok: false, reason: 'Twilio no está configurado' };
+    }
+
+    const totalFmt = orden.total.toLocaleString('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    });
+    const body =
+      `💳 Hola! Tu pedido #${orden.number} en ${tenant.name} está listo para pagar.\n\n` +
+      `Total: *${totalFmt}*\n\n` +
+      `Paga seguro con tarjeta, Nequi o PSE en este enlace:\n${url}\n\n` +
+      `Una vez confirmado, prepararemos tu pedido. ¡Gracias! 🙏`;
+
+    const to = orden.phone.startsWith('whatsapp:') ? orden.phone : `whatsapp:${orden.phone}`;
+    const params = new URLSearchParams({
+      From: `whatsapp:${from}`,
+      To: to,
+      Body: body,
+    });
+    const apiUrl = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+    const credentials = Buffer.from(`${sid}:${token}`).toString('base64');
+
+    try {
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        this.logger.error('Twilio link-pago error %d for order #%d: %s', res.status, orden.number, text);
+        return { ok: false, reason: `Twilio respondió ${res.status}` };
+      }
+      this.logger.log('Link de pago enviado por WhatsApp para orden #%d → %s', orden.number, orden.phone);
+      return { ok: true, url, sentTo: orden.phone };
+    } catch (err: any) {
+      this.logger.error('Failed to send payment link for order #%d: %s', orden.number, err?.message ?? err);
+      return { ok: false, reason: err?.message ?? 'Error de red' };
+    }
   }
 
   async actualizarEstado(
