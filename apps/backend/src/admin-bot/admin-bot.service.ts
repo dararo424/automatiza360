@@ -55,53 +55,77 @@ export class AdminBotService {
     const normalized = normalizePhone(phone);
     // Últimos 10 dígitos para comparar sin código de país
     const last10 = normalized.slice(-10);
+    if (last10.length < 10) return { isAdmin: false };
 
-    // Buscar usuario (OWNER/ADMIN/STAFF) cuyo phone coincida
-    const users = await this.prisma.user.findMany({
-      where: { active: true, role: { in: ['OWNER', 'ADMIN', 'STAFF'] } },
-      include: { tenant: true },
-    });
+    // Match en DB usando REGEXP_REPLACE para normalizar y LIKE con sufijo de 10 dígitos.
+    // Una sola query con JOIN — no traemos toda la tabla a memoria.
+    const userMatches = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        tenantId: string;
+        role: string;
+        email: string;
+        name: string;
+        industry: string;
+      }>
+    >`
+      SELECT u.id, u."tenantId", u.role::text, u.email, u.name, t.industry::text
+      FROM "User" u
+      JOIN "Tenant" t ON t.id = u."tenantId"
+      WHERE u.active = true
+        AND u.role IN ('OWNER','ADMIN','STAFF')
+        AND u.phone IS NOT NULL
+        AND REGEXP_REPLACE(u.phone, '[^0-9]', '', 'g') LIKE ${'%' + last10}
+      LIMIT 1
+    `;
 
-    for (const user of users) {
-      if (!user.phone) continue;
-      const userPhoneNorm = normalizePhone(user.phone).slice(-10);
-      if (userPhoneNorm === last10) {
-        const owner = await this.prisma.user.findFirst({
-          where: { tenantId: user.tenantId, role: 'OWNER', active: true },
-          select: { email: true, name: true },
-        });
-        return {
-          isAdmin: true,
-          tenantId: user.tenantId,
-          role: user.role,
-          userId: user.id,
-          industry: user.tenant.industry,
-          ownerEmail: owner?.email ?? user.email,
-          ownerName: owner?.name ?? user.name,
-        };
-      }
+    if (userMatches.length > 0) {
+      const match = userMatches[0];
+      const owner =
+        match.role === 'OWNER'
+          ? { email: match.email, name: match.name }
+          : await this.prisma.user.findFirst({
+              where: { tenantId: match.tenantId, role: 'OWNER', active: true },
+              select: { email: true, name: true },
+            });
+      return {
+        isAdmin: true,
+        tenantId: match.tenantId,
+        role: match.role,
+        userId: match.id,
+        industry: match.industry,
+        ownerEmail: owner?.email ?? match.email,
+        ownerName: owner?.name ?? match.name,
+      };
     }
 
     // Fallback: buscar por Tenant.ownerPhone (para owners que no tengan phone en User)
-    const tenants = await this.prisma.tenant.findMany({ where: { active: true } });
-    for (const t of tenants) {
-      if (!t.ownerPhone) continue;
-      const ownerNorm = normalizePhone(t.ownerPhone).slice(-10);
-      if (ownerNorm === last10) {
-        const owner = await this.prisma.user.findFirst({
-          where: { tenantId: t.id, role: 'OWNER', active: true },
-        });
-        if (owner) {
-          return {
-            isAdmin: true,
-            tenantId: t.id,
-            role: owner.role,
-            userId: owner.id,
-            industry: t.industry,
-            ownerEmail: owner.email,
-            ownerName: owner.name,
-          };
-        }
+    const tenantMatches = await this.prisma.$queryRaw<
+      Array<{ id: string; industry: string }>
+    >`
+      SELECT id, industry::text
+      FROM "Tenant"
+      WHERE active = true
+        AND "ownerPhone" IS NOT NULL
+        AND REGEXP_REPLACE("ownerPhone", '[^0-9]', '', 'g') LIKE ${'%' + last10}
+      LIMIT 1
+    `;
+
+    if (tenantMatches.length > 0) {
+      const t = tenantMatches[0];
+      const owner = await this.prisma.user.findFirst({
+        where: { tenantId: t.id, role: 'OWNER', active: true },
+      });
+      if (owner) {
+        return {
+          isAdmin: true,
+          tenantId: t.id,
+          role: owner.role,
+          userId: owner.id,
+          industry: t.industry,
+          ownerEmail: owner.email,
+          ownerName: owner.name,
+        };
       }
     }
 

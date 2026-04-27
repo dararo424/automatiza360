@@ -58,6 +58,11 @@ export class OrdenesController {
     return this.ordenesService.generarLinkPago(user.tenantId, id);
   }
 
+  @Post(':id/enviar-link-pago')
+  enviarLinkPagoWhatsApp(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.ordenesService.enviarLinkPagoWhatsApp(user.tenantId, id);
+  }
+
   @Get(':id')
   buscarUno(@Param('id') id: string, @CurrentUser() user: any) {
     return this.ordenesService.buscarUno(id, user.tenantId);

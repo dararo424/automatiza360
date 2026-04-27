@@ -70,6 +70,9 @@ model Tenant {
   botName              String?
   botTone              String             @default("AMIGABLE")
   hazloRequests        HazloRequest[]
+
+  @@index([active, ownerPhone])
+  @@index([subscriptionStatus])
 }
 
 // Usuario dentro de un negocio
@@ -89,6 +92,9 @@ model User {
   turnos              Turno[]
   passwordResetTokens PasswordResetToken[]
   refreshTokens       RefreshToken[]
+
+  @@index([tenantId, role, active])
+  @@index([phone])
 }
 
 model PasswordResetToken {
