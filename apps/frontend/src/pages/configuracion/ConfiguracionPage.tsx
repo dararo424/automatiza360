@@ -7,6 +7,7 @@ import { getInstagramStatus, getInstagramConnectUrl, disconnectInstagram } from 
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { NotificadosVentasSection } from '../../components/configuracion/NotificadosVentasSection';
 import { PagosConfigSection } from '../../components/configuracion/PagosConfigSection';
+import { WhatsappBusinessSection } from '../../components/configuracion/WhatsappBusinessSection';
 
 const APP_URL = import.meta.env.VITE_APP_URL ?? window.location.origin;
 
@@ -440,6 +441,9 @@ export function ConfiguracionPage() {
           </button>
         </div>
       </div>
+
+      {/* WhatsApp Business del bot */}
+      <WhatsappBusinessSection />
 
       {/* Notificaciones de ventas */}
       <NotificadosVentasSection />

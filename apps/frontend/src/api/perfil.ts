@@ -17,8 +17,19 @@ export interface PerfilTenant {
   botTone?: string;
 }
 
+export interface WhatsappStatus {
+  mode: 'SANDBOX' | 'PRODUCCION';
+  botNumber: string | null;
+  sandboxNumber: string | null;
+  sandboxWord: string | null;
+  twilioEnv?: string;
+}
+
 export const getMiPerfil = (): Promise<PerfilTenant> =>
   api.get('/perfil').then((r) => r.data);
+
+export const getWhatsappStatus = (): Promise<WhatsappStatus> =>
+  api.get('/perfil/whatsapp-status').then((r) => r.data);
 
 export const actualizarPerfil = (data: Partial<PerfilTenant>): Promise<PerfilTenant> =>
   api.patch('/perfil', data).then((r) => r.data);

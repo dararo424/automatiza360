@@ -93,6 +93,8 @@ export class PerfilService {
         ownerPhone: true,
         botName: true,
         botTone: true,
+        twilioNumber: true,
+        subscriptionStatus: true,
       },
     });
 
@@ -149,6 +151,33 @@ export class PerfilService {
         botTone: true,
       },
     });
+  }
+
+  async getWhatsappStatus(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { twilioNumber: true, subscriptionStatus: true },
+    });
+    const env = process.env.TWILIO_ENV ?? 'sandbox';
+    const sandboxNumber = process.env.TWILIO_SANDBOX_NUMBER ?? '+14155238886';
+    const sandboxWord = process.env.TWILIO_SANDBOX_WORD ?? 'automatiza360';
+
+    if (tenant.twilioNumber) {
+      return {
+        mode: 'PRODUCCION' as const,
+        botNumber: tenant.twilioNumber,
+        sandboxNumber: null,
+        sandboxWord: null,
+      };
+    }
+
+    return {
+      mode: 'SANDBOX' as const,
+      botNumber: null,
+      sandboxNumber,
+      sandboxWord,
+      twilioEnv: env,
+    };
   }
 
   async getPagosConfig(tenantId: string) {
