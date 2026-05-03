@@ -14,6 +14,8 @@ class TenantConfig:
     twilio_number: str  # e.g. "+15551234567" or "default"
     bot_email: str
     bot_password: str
+    instagram_page_id: str = ""        # Meta Page ID — routes Instagram DMs to this tenant
+    meta_page_access_token: str = ""   # Page Access Token from Meta Developer Portal
 
 
 def load_tenant_configs() -> list[TenantConfig]:
@@ -42,6 +44,18 @@ def load_tenant_configs() -> list[TenantConfig]:
 
 
 TENANT_CONFIGS: list[TenantConfig] = load_tenant_configs()
+
+
+def get_tenant_by_instagram_page(page_id: str) -> TenantConfig | None:
+    """Return the TenantConfig whose instagram_page_id matches page_id."""
+    for cfg in TENANT_CONFIGS:
+        if cfg.instagram_page_id == page_id:
+            return cfg
+    # Fallback: first tenant that has a page access token configured
+    for cfg in TENANT_CONFIGS:
+        if cfg.meta_page_access_token:
+            return cfg
+    return TENANT_CONFIGS[0] if TENANT_CONFIGS else None
 
 
 def get_tenant_config(to_number: str) -> TenantConfig | None:

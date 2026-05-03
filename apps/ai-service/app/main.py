@@ -68,6 +68,66 @@ def health():
     return {"status": "ok", "tenants": tenants}
 
 
+# ── Instagram DM Webhook ──────────────────────────────────────────────────────
+
+@app.get("/instagram-webhook")
+async def instagram_webhook_verify(
+    request: Request,
+):
+    """
+    Meta webhook verification — responds to the hub.challenge handshake.
+    Set INSTAGRAM_VERIFY_TOKEN in env and use the same value in the Meta
+    Developer Portal when configuring the webhook.
+    """
+    params = dict(request.query_params)
+    mode      = params.get("hub.mode")
+    token     = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge")
+
+    expected = os.getenv("INSTAGRAM_VERIFY_TOKEN", "")
+    if mode == "subscribe" and token == expected and challenge:
+        logger.info("Instagram webhook verified successfully")
+        return Response(content=challenge, media_type="text/plain")
+
+    logger.warning("Instagram webhook verification failed — check INSTAGRAM_VERIFY_TOKEN")
+    raise HTTPException(status_code=403, detail="Verification failed")
+
+
+@app.post("/instagram-webhook")
+async def instagram_webhook(request: Request):
+    """
+    Receives Instagram DM events from Meta and routes them to the Gemini agent.
+    Validates the X-Hub-Signature-256 header using META_APP_SECRET.
+    """
+    import hashlib
+    import hmac
+    import json
+
+    body = await request.body()
+
+    # Signature validation
+    app_secret = os.getenv("META_APP_SECRET", "")
+    if app_secret:
+        signature = request.headers.get("X-Hub-Signature-256", "")
+        expected_sig = "sha256=" + hmac.new(
+            app_secret.encode(), body, hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(signature, expected_sig):
+            logger.warning("Invalid Meta signature — possible spoofed request")
+            raise HTTPException(status_code=403, detail="Invalid signature")
+
+    payload = json.loads(body)
+
+    if payload.get("object") not in ("instagram", "page"):
+        return {"status": "ignored"}
+
+    from app.instagram_handler import handle_instagram_event
+    await handle_instagram_event(payload)
+
+    # Meta requires a 200 OK within 20s — processing happens async
+    return {"status": "ok"}
+
+
 @app.post("/import-inventory")
 async def import_inventory(file: UploadFile = File(...)):
     ext = Path(file.filename or "").suffix.lower()
