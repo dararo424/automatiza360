@@ -75,6 +75,15 @@ model Tenant {
   instagramPageName    String?
   metaPageAccessToken  String?
   instagramConnectedAt DateTime?
+  // Cobros del bot (link enviado al cliente final por WhatsApp)
+  paymentMode          PaymentMode    @default(MANUAL)
+  paymentText          String?
+  wompiPublicKey       String?
+  wompiIntegritySecret String?
+  // Resumen WhatsApp (configurable por tenant)
+  resumenMatinalHora   String         @default("08:00")
+  resumenCierreHora    String         @default("20:00")
+  notificadosVentas    NotificadoVentas[]
 
   @@index([active, ownerPhone])
   @@index([subscriptionStatus])
@@ -420,6 +429,26 @@ model HazloRequest {
   @@index([tenantId, createdAt])
 }
 
+model NotificadoVentas {
+  id               String   @id @default(cuid())
+  tenantId         String
+  name             String
+  phone            String
+  rol              String   @default("VENDEDOR") // VENDEDOR | OWNER | MANAGER
+  resumenMatinal   Boolean  @default(true)
+  resumenCierre    Boolean  @default(false)
+  notifInstantanea Boolean  @default(false)
+  montoMinimo      Float?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, phone])
+  @@index([tenantId, active])
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   event     String
@@ -473,6 +502,12 @@ enum Plan {
   STARTER
   PRO
   BUSINESS
+}
+
+enum PaymentMode {
+  MANUAL  // El bot solo genera la cotización; el equipo contacta al cliente.
+  TEXT    // El bot envía un mensaje predefinido (transferencia bancaria, etc.).
+  WOMPI   // El bot envía link de pago Wompi automatizado.
 }
 
 enum Industry {

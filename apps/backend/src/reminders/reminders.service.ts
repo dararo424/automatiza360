@@ -4,6 +4,7 @@ import { AppointmentStatus, Industry, SubscriptionStatus } from '@prisma/client'
 import * as twilio from 'twilio';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { NotificadosVentasService } from '../notificados-ventas/notificados-ventas.service';
 
 @Injectable()
 export class RemindersService {
@@ -12,7 +13,50 @@ export class RemindersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
+    private readonly notificados: NotificadosVentasService,
   ) {}
+
+  /**
+   * Resumen matinal de ventas — corre todos los días a las 8am Colombia.
+   * Envía a los notificados con resumenMatinal=true un WhatsApp con
+   * lo que pasó entre 8pm anoche y 8am hoy (cotizaciones, ventas, reparaciones).
+   */
+  @Cron('0 8 * * *', { timeZone: 'America/Bogota' })
+  async sendResumenMatinal(): Promise<void> {
+    this.logger.log('Iniciando resumen matinal de ventas (8am Colombia)...');
+    const tenants = await this.prisma.tenant.findMany({
+      where: { active: true, subscriptionStatus: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] } },
+      select: { id: true, name: true },
+    });
+    this.logger.log(`Procesando resumen matinal para ${tenants.length} tenants`);
+    for (const tenant of tenants) {
+      try {
+        await this.notificados.enviarResumenMatinal(tenant.id);
+      } catch (err) {
+        this.logger.error(`Error en resumen matinal de ${tenant.name}: ${(err as Error).message}`);
+      }
+    }
+  }
+
+  /**
+   * Resumen de cierre de día — corre todos los días a las 8pm Colombia.
+   * Envía a los notificados con resumenCierre=true.
+   */
+  @Cron('0 20 * * *', { timeZone: 'America/Bogota' })
+  async sendResumenCierre(): Promise<void> {
+    this.logger.log('Iniciando resumen de cierre de día (8pm Colombia)...');
+    const tenants = await this.prisma.tenant.findMany({
+      where: { active: true, subscriptionStatus: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] } },
+      select: { id: true, name: true },
+    });
+    for (const tenant of tenants) {
+      try {
+        await this.notificados.enviarResumenCierre(tenant.id);
+      } catch (err) {
+        this.logger.error(`Error en resumen cierre de ${tenant.name}: ${(err as Error).message}`);
+      }
+    }
+  }
 
   @Cron('0 8 * * 1')
   async sendWeeklyReport(): Promise<void> {

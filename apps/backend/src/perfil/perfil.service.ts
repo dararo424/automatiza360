@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
+import { ActualizarPagosConfigDto, ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 
 @Injectable()
 export class PerfilService {
@@ -147,6 +147,44 @@ export class PerfilService {
         longitud: true,
         botName: true,
         botTone: true,
+      },
+    });
+  }
+
+  async getPagosConfig(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: {
+        paymentMode: true,
+        paymentText: true,
+        wompiPublicKey: true,
+        wompiIntegritySecret: true,
+      },
+    });
+    // Nunca devolver el secret completo, solo si está configurado
+    return {
+      paymentMode: tenant.paymentMode,
+      paymentText: tenant.paymentText,
+      wompiPublicKey: tenant.wompiPublicKey,
+      wompiIntegritySecretConfigured: Boolean(tenant.wompiIntegritySecret),
+    };
+  }
+
+  async actualizarPagosConfig(tenantId: string, dto: ActualizarPagosConfigDto) {
+    return this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        ...(dto.paymentMode !== undefined && { paymentMode: dto.paymentMode }),
+        ...(dto.paymentText !== undefined && { paymentText: dto.paymentText }),
+        ...(dto.wompiPublicKey !== undefined && { wompiPublicKey: dto.wompiPublicKey }),
+        ...(dto.wompiIntegritySecret !== undefined && {
+          wompiIntegritySecret: dto.wompiIntegritySecret,
+        }),
+      },
+      select: {
+        paymentMode: true,
+        paymentText: true,
+        wompiPublicKey: true,
       },
     });
   }

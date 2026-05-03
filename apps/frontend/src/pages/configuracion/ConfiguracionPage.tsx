@@ -5,6 +5,8 @@ import { getMiPerfil, actualizarPerfil } from '../../api/perfil';
 import { crearSolicitudHazlo, getMisSolicitudesHazlo } from '../../api/hazlo-por-mi';
 import { getInstagramStatus, getInstagramConnectUrl, disconnectInstagram } from '../../api/integraciones';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { NotificadosVentasSection } from '../../components/configuracion/NotificadosVentasSection';
+import { PagosConfigSection } from '../../components/configuracion/PagosConfigSection';
 
 const APP_URL = import.meta.env.VITE_APP_URL ?? window.location.origin;
 
@@ -419,6 +421,12 @@ export function ConfiguracionPage() {
           </button>
         </div>
       </div>
+
+      {/* Notificaciones de ventas */}
+      <NotificadosVentasSection />
+
+      {/* Cobros del bot */}
+      <PagosConfigSection />
 
       {/* Hazlo por mí */}
       <div className="bg-gradient-to-br from-indigo-950 to-slate-900 border border-indigo-800 rounded-xl p-6">
