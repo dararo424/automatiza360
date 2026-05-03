@@ -518,7 +518,7 @@ function DashboardContent() {
   const industry = user?.tenant?.industry;
 
   if (industry === 'RESTAURANT') return <RestaurantDashboard />;
-  if (industry === 'TECH_STORE') return <TechStoreDashboard />;
+  if (industry === 'TECH_STORE' || industry === 'JEWELRY') return <TechStoreDashboard />;
   if (industry === 'CLINIC' || industry === 'BEAUTY') return <ClinicBeautyDashboard />;
 
   // OTHER / fallback — muestra métricas genéricas

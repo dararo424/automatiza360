@@ -10,6 +10,7 @@ export type Industry =
   | 'HOTEL'
   | 'BAKERY'
   | 'WORKSHOP'
+  | 'JEWELRY'
   | 'OTHER';
 export type AppointmentStatus =
   | 'SCHEDULED'

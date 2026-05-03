@@ -568,6 +568,7 @@ _INDUSTRY_TOOLS: dict[str, list[types.Tool]] = {
     "BAKERY":         TOOLS_BAKERY,
     "WORKSHOP":       TOOLS_WORKSHOP,
     "TECH_STORE":     TOOLS_TECH_STORE,
+    "JEWELRY":        TOOLS_TECH_STORE,
 }
 
 

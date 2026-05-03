@@ -15,6 +15,7 @@ const INDUSTRY_COLORS: Record<string, string> = {
   TECH_STORE: 'bg-blue-500',
   CLINIC: 'bg-green-500',
   BEAUTY: 'bg-pink-500',
+  JEWELRY: 'bg-amber-500',
   OTHER: 'bg-slate-500',
 };
 
@@ -76,6 +77,14 @@ export function AdminTenantsPage() {
             <option value="TECH_STORE">Tech Store</option>
             <option value="CLINIC">Clínica</option>
             <option value="BEAUTY">Belleza</option>
+            <option value="CLOTHING_STORE">Tienda de Ropa</option>
+            <option value="GYM">Gimnasio</option>
+            <option value="PHARMACY">Farmacia</option>
+            <option value="VETERINARY">Veterinaria</option>
+            <option value="HOTEL">Hotel</option>
+            <option value="BAKERY">Panadería</option>
+            <option value="WORKSHOP">Taller</option>
+            <option value="JEWELRY">Relojería / Joyería</option>
             <option value="OTHER">Otro</option>
           </select>
         </div>
