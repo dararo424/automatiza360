@@ -44,6 +44,12 @@ export class PerfilController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('perfil/whatsapp-status')
+  getWhatsappStatus(@CurrentUser() user: any) {
+    return this.perfilService.getWhatsappStatus(user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('perfil/pagos-config')
   getPagosConfig(@CurrentUser() user: any) {
     return this.perfilService.getPagosConfig(user.tenantId);
