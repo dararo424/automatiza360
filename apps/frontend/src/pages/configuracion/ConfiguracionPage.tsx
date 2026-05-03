@@ -140,6 +140,7 @@ export function ConfiguracionPage() {
     longitud: '',
     botName: '',
     botTone: 'AMIGABLE',
+    ownerPhone: '',
   });
 
   const [copied, setCopied] = useState(false);
@@ -158,6 +159,7 @@ export function ConfiguracionPage() {
         longitud: perfil.longitud != null ? String(perfil.longitud) : '',
         botName: perfil.botName ?? '',
         botTone: perfil.botTone ?? 'AMIGABLE',
+        ownerPhone: perfil.ownerPhone ?? '',
       });
     }
   }, [perfil]);
@@ -169,6 +171,7 @@ export function ConfiguracionPage() {
         latitud: form.latitud !== '' ? parseFloat(form.latitud) : undefined,
         longitud: form.longitud !== '' ? parseFloat(form.longitud) : undefined,
         botName: form.botName || undefined,
+        ownerPhone: form.ownerPhone || undefined,
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['mi-perfil'] });
@@ -257,6 +260,22 @@ export function ConfiguracionPage() {
             placeholder="Ej: Lun-Vie 9am-6pm, Sáb 9am-2pm"
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            WhatsApp del dueño
+          </label>
+          <input
+            type="tel"
+            value={form.ownerPhone}
+            onChange={(e) => setForm((f) => ({ ...f, ownerPhone: e.target.value }))}
+            placeholder="+57 300 123 4567"
+            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Tu WhatsApp personal — el bot lo usa para identificarte cuando le escribes "resumen del día" o lo administras por voz.
+          </p>
         </div>
 
         <div>
