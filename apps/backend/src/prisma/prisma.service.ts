@@ -58,6 +58,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get refreshToken() { return this.client.refreshToken; }
   get hazloRequest() { return this.client.hazloRequest; }
   get auditLog() { return this.client.auditLog; }
+  get notificadoVentas() { return this.client.notificadoVentas; }
 
   // Transaction support
   $transaction: PrismaClient['$transaction'] = (...args: any[]) =>
