@@ -33,9 +33,20 @@ export const crearNotificadoVentas = (
 ): Promise<NotificadoVentas> =>
   api.post('/notificados-ventas', dto).then((r) => r.data);
 
+export interface ActualizarNotificadoVentasDto {
+  name?: string;
+  phone?: string;
+  rol?: RolNotificado;
+  resumenMatinal?: boolean;
+  resumenCierre?: boolean;
+  notifInstantanea?: boolean;
+  montoMinimo?: number | null;
+  active?: boolean;
+}
+
 export const actualizarNotificadoVentas = (
   id: string,
-  dto: Partial<CrearNotificadoVentasDto> & { active?: boolean },
+  dto: ActualizarNotificadoVentasDto,
 ): Promise<NotificadoVentas> =>
   api.patch(`/notificados-ventas/${id}`, dto).then((r) => r.data);
 
