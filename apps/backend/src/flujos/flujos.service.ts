@@ -11,9 +11,9 @@ export interface Flujo {
 }
 
 export const FLUJOS_DISPONIBLES: Flujo[] = [
-  { id: 'ventas', nombre: 'Ventas y Pedidos', descripcion: 'Bot toma pedidos y órdenes por WhatsApp', emoji: '🛒', industrias: ['RESTAURANT', 'TECH_STORE', 'CLOTHING_STORE', 'PHARMACY', 'BAKERY', 'OTHER'] },
-  { id: 'citas', nombre: 'Reserva de Citas', descripcion: 'Agenda citas y gestiona disponibilidad', emoji: '📅', industrias: ['CLINIC', 'BEAUTY', 'GYM', 'VETERINARY', 'HOTEL', 'OTHER'] },
-  { id: 'soporte', nombre: 'Soporte y Tickets', descripcion: 'Gestión de reparaciones y soporte técnico', emoji: '🔧', industrias: ['TECH_STORE', 'WORKSHOP', 'OTHER'] },
+  { id: 'ventas', nombre: 'Ventas y Pedidos', descripcion: 'Bot toma pedidos y órdenes por WhatsApp', emoji: '🛒', industrias: ['RESTAURANT', 'TECH_STORE', 'CLOTHING_STORE', 'PHARMACY', 'BAKERY', 'JEWELRY', 'OTHER'] },
+  { id: 'citas', nombre: 'Reserva de Citas', descripcion: 'Agenda citas y gestiona disponibilidad', emoji: '📅', industrias: ['CLINIC', 'BEAUTY', 'GYM', 'VETERINARY', 'HOTEL', 'JEWELRY', 'OTHER'] },
+  { id: 'soporte', nombre: 'Soporte y Tickets', descripcion: 'Gestión de reparaciones y soporte técnico', emoji: '🔧', industrias: ['TECH_STORE', 'WORKSHOP', 'JEWELRY', 'OTHER'] },
   { id: 'catalogo', nombre: 'Catálogo e Inventario', descripcion: 'Consulta de productos, precios y stock', emoji: '📦', industrias: ['ALL'] },
   { id: 'campanas', nombre: 'Campañas y Promociones', descripcion: 'Envío masivo de mensajes y cupones', emoji: '📣', industrias: ['ALL'] },
   { id: 'pagos', nombre: 'Cobros por WhatsApp', descripcion: 'Links de pago Wompi enviados por el bot', emoji: '💳', industrias: ['ALL'] },

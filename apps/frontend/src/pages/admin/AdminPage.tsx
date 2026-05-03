@@ -7,6 +7,7 @@ const INDUSTRY_COLORS: Record<string, string> = {
   TECH_STORE: 'bg-blue-500',
   CLINIC: 'bg-green-500',
   BEAUTY: 'bg-pink-500',
+  JEWELRY: 'bg-amber-500',
   OTHER: 'bg-slate-500',
 };
 

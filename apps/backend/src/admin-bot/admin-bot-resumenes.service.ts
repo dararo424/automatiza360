@@ -70,6 +70,43 @@ export class AdminBotResumenesService {
       };
     }
 
+    if (industry === 'JEWELRY') {
+      // Relojerías/joyerías combinan venta de catálogo + tickets de reparación/servicio
+      const [ordenes, ticketsAbiertos, ticketsCerradosHoy] = await Promise.all([
+        this.prisma.order.findMany({
+          where: { tenantId, createdAt: { gte: hoy, lt: manana } },
+        }),
+        this.prisma.ticket.count({
+          where: {
+            tenantId,
+            status: { notIn: [TicketStatus.DELIVERED, TicketStatus.CANCELLED] },
+          },
+        }),
+        this.prisma.ticket.findMany({
+          where: {
+            tenantId,
+            status: TicketStatus.DELIVERED,
+            updatedAt: { gte: hoy, lt: manana },
+          },
+        }),
+      ]);
+
+      const ingresosVenta = ordenes
+        .filter((o) => o.status !== OrderStatus.CANCELLED)
+        .reduce((sum, o) => sum + o.total, 0);
+      const ingresosServicio = ticketsCerradosHoy.reduce((sum, t) => sum + (t.price ?? 0), 0);
+
+      return {
+        industria: industry,
+        ventasDelDia: ordenes.length,
+        ingresosVenta,
+        ticketsAbiertos,
+        ticketsCerradosHoy: ticketsCerradosHoy.length,
+        ingresosServicio,
+        ingresosDelDia: ingresosVenta + ingresosServicio,
+      };
+    }
+
     if (industry === 'CLINIC' || industry === 'BEAUTY' || industry === 'VETERINARY') {
       const citas = await this.prisma.appointment.findMany({
         where: { tenantId, date: { gte: hoy, lt: manana } },

@@ -96,6 +96,14 @@ function getSections(industry: Industry): NavSection[] {
       { to: '/cotizaciones', label: 'Cotizaciones', emoji: '📄' },
       { to: '/inventario', label: 'Inventario', emoji: '📦' },
     ],
+    JEWELRY: [
+      { to: '/productos', label: 'Catálogo', emoji: '⌚' },
+      { to: '/inventario', label: 'Inventario', emoji: '📦' },
+      { to: '/ordenes', label: 'Ventas', emoji: '🛒' },
+      { to: '/tickets', label: 'Reparaciones', emoji: '🔧' },
+      { to: '/garantias', label: 'Garantías', emoji: '🛡️' },
+      { to: '/agenda', label: 'Citas servicio', emoji: '📅' },
+    ],
   };
 
   const operaciones = operacionesPorIndustria[industry] ?? [];

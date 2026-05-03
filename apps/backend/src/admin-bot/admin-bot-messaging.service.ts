@@ -121,6 +121,12 @@ export class AdminBotMessagingService {
           `programada hoy a las ${hora} ha sido cancelada por un imprevisto.\n\n` +
           `Comunícate con nosotros para reagendarla. Pedimos disculpas. 🙏`
         );
+      case Industry.JEWELRY:
+        return (
+          `⌚ Hola ${paciente.nombre}, tu cita de ${paciente.servicio}${conProfesional} ` +
+          `de hoy a las ${hora} en ${storeName} ha sido cancelada.\n\n` +
+          `Tu pieza está segura con nosotros. Escríbenos para reagendar el servicio. ✨`
+        );
       default:
         return (
           `📅 Hola ${paciente.nombre}, tu cita de ${paciente.servicio} en ${storeName} ` +

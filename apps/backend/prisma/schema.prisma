@@ -487,6 +487,7 @@ enum Industry {
   HOTEL
   BAKERY
   WORKSHOP
+  JEWELRY
   OTHER
 }
 
