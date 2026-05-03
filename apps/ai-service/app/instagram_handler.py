@@ -28,6 +28,8 @@ import asyncio
 import logging
 import os
 
+import httpx
+
 from app.agent import run
 from app.backend_client import get_client
 from app.config import get_tenant_by_instagram_page
@@ -82,6 +84,46 @@ async def handle_instagram_event(payload: dict) -> None:
             )
 
 
+async def _get_tenant_config_for_page(page_id: str) -> dict | None:
+    """
+    Look up tenant config for a given Instagram Page ID.
+    First tries the backend (dynamic OAuth tokens), then falls back to
+    statically configured TenantConfig (env vars).
+    """
+    backend_url = os.getenv("BACKEND_URL", "http://localhost:3000")
+    internal_key = os.getenv("INTERNAL_API_KEY", "")
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get(
+                f"{backend_url}/instagram/tenant-by-page",
+                params={"pageId": page_id},
+                headers={"X-Internal-Key": internal_key},
+            )
+            if r.status_code == 200 and r.json():
+                data = r.json()
+                return {
+                    "pageAccessToken": data.get("pageAccessToken"),
+                    "botEmail": data.get("botEmail"),
+                    "botPassword": None,  # resolved via botEmail below
+                    "tenantId": data.get("tenantId"),
+                    "source": "backend",
+                }
+    except Exception as exc:
+        logger.debug("Backend instagram config lookup failed: %s", exc)
+
+    # Fallback: static env var config
+    cfg = get_tenant_by_instagram_page(page_id)
+    if cfg and cfg.meta_page_access_token:
+        return {
+            "pageAccessToken": cfg.meta_page_access_token,
+            "botEmail": cfg.bot_email,
+            "botPassword": cfg.bot_password,
+            "tenantId": None,
+            "source": "env",
+        }
+    return None
+
+
 async def _process_instagram_message(
     page_id: str,
     psid: str,
@@ -89,13 +131,14 @@ async def _process_instagram_message(
     media_url: str | None,
 ) -> None:
     """Process a single Instagram DM and send the reply."""
-    config = get_tenant_by_instagram_page(page_id)
-    if config is None:
+    tenant = await _get_tenant_config_for_page(page_id)
+    if not tenant:
         logger.warning("No tenant configured for instagram page_id=%s", page_id)
         return
 
-    if not config.meta_page_access_token:
-        logger.error("Tenant %s has no meta_page_access_token", config.bot_email)
+    page_access_token = tenant["pageAccessToken"]
+    if not page_access_token:
+        logger.error("No page access token for page_id=%s", page_id)
         return
 
     # Opt-out handling — same keywords as WhatsApp
@@ -112,7 +155,7 @@ async def _process_instagram_message(
     fake_phone = f"instagram:{psid}"
     owner_phone = os.getenv("OWNER_PHONE", "")
 
-    backend_client = get_client(config.bot_email, config.bot_password)
+    backend_client = get_client(tenant["botEmail"], tenant.get("botPassword") or "")
     key = _session_key(page_id, psid)
 
     # Load or create session
@@ -150,4 +193,4 @@ async def _process_instagram_message(
     asyncio.create_task(save_session(key, session))
 
     # Send reply via Meta Graph API
-    await send_instagram_message(psid, reply, config.meta_page_access_token)
+    await send_instagram_message(psid, reply, page_access_token)

@@ -70,6 +70,11 @@ model Tenant {
   botName              String?
   botTone              String             @default("AMIGABLE")
   hazloRequests        HazloRequest[]
+  // Instagram DMs integration
+  instagramPageId      String?
+  instagramPageName    String?
+  metaPageAccessToken  String?
+  instagramConnectedAt DateTime?
 }
 
 // Usuario dentro de un negocio

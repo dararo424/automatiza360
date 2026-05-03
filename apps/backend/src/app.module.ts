@@ -53,6 +53,7 @@ import { AdminBotModule } from './admin-bot/admin-bot.module';
 import { PublicModule } from './public/public.module';
 import { HazloPorMiModule } from './hazlo-por-mi/hazlo-por-mi.module';
 import { ReportesModule } from './reportes/reportes.module';
+import { InstagramModule } from './instagram/instagram.module';
 
 @Module({
   imports: [
@@ -113,6 +114,7 @@ import { ReportesModule } from './reportes/reportes.module';
     PublicModule,
     HazloPorMiModule,
     ReportesModule,
+    InstagramModule,
   ],
   controllers: [AppController],
   providers: [

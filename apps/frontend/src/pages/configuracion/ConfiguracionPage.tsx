@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMiPerfil, actualizarPerfil } from '../../api/perfil';
 import { crearSolicitudHazlo, getMisSolicitudesHazlo } from '../../api/hazlo-por-mi';
+import { getInstagramStatus, getInstagramConnectUrl, disconnectInstagram } from '../../api/integraciones';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
 const APP_URL = import.meta.env.VITE_APP_URL ?? window.location.origin;
@@ -11,6 +13,113 @@ const BOT_TONES = [
   { key: 'AMIGABLE', label: 'Amigable', desc: 'Cercano y cálido' },
   { key: 'COSTEÑO', label: 'Costeño', desc: 'Descomplicado y alegre' },
 ];
+
+function InstagramCard() {
+  const queryClient = useQueryClient();
+  const location = useLocation();
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  // Read result from OAuth callback redirect (?instagram=connected|error|...)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const result = params.get('instagram');
+    if (result === 'connected') setFeedback('✅ Instagram conectado exitosamente');
+    else if (result === 'error') setFeedback('❌ Error al conectar. Intenta de nuevo.');
+    else if (result === 'no_pages') setFeedback('⚠️ No se encontraron páginas de Facebook en tu cuenta.');
+    else if (result === 'no_instagram_account') setFeedback('⚠️ Conecta una cuenta de Instagram Business a tu página de Facebook primero.');
+    else if (result === 'cancelled') setFeedback(null);
+  }, [location.search]);
+
+  const { data: status, isLoading } = useQuery({
+    queryKey: ['instagram-status'],
+    queryFn: getInstagramStatus,
+  });
+
+  const connectMutation = useMutation({
+    mutationFn: async () => {
+      const { url } = await getInstagramConnectUrl();
+      window.location.href = url;
+    },
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: disconnectInstagram,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['instagram-status'] });
+      setFeedback('Instagram desconectado.');
+    },
+  });
+
+  if (isLoading) return null;
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 flex items-center justify-center text-white text-xl">
+          📷
+        </div>
+        <div>
+          <h2 className="text-white font-semibold">Instagram DMs</h2>
+          <p className="text-slate-400 text-xs">Responde automáticamente los mensajes directos de tu Instagram</p>
+        </div>
+        {status?.connected && (
+          <span className="ml-auto bg-green-900/40 text-green-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-green-800">
+            Conectado
+          </span>
+        )}
+      </div>
+
+      {feedback && (
+        <p className="text-sm mb-4 text-slate-300">{feedback}</p>
+      )}
+
+      {status?.connected ? (
+        <div className="space-y-3">
+          <div className="bg-slate-800 rounded-lg px-4 py-3 flex items-center gap-3">
+            <span className="text-2xl">📄</span>
+            <div>
+              <p className="text-white text-sm font-medium">{status.pageName}</p>
+              <p className="text-slate-500 text-xs">ID: {status.pageId}</p>
+              {status.connectedAt && (
+                <p className="text-slate-500 text-xs">
+                  Conectado el {new Date(status.connectedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              )}
+            </div>
+          </div>
+          <p className="text-slate-400 text-xs">
+            El bot responderá automáticamente todos los DMs que lleguen a tu Instagram Business.
+          </p>
+          <button
+            onClick={() => disconnectMutation.mutate()}
+            disabled={disconnectMutation.isPending}
+            className="text-red-400 hover:text-red-300 text-sm underline transition-colors"
+          >
+            {disconnectMutation.isPending ? 'Desconectando...' : 'Desconectar Instagram'}
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-slate-400 text-sm">
+            Conecta tu cuenta de Instagram Business para que el bot responda automáticamente a tus DMs — igual que WhatsApp.
+          </p>
+          <div className="bg-slate-800 rounded-lg p-3 text-xs text-slate-400 space-y-1">
+            <p className="font-medium text-slate-300">Requisitos:</p>
+            <p>• Cuenta de Instagram Business (no personal)</p>
+            <p>• Vinculada a una Página de Facebook</p>
+          </div>
+          <button
+            onClick={() => connectMutation.mutate()}
+            disabled={connectMutation.isPending}
+            className="w-full bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 hover:opacity-90 text-white font-semibold py-2.5 px-4 rounded-lg transition-opacity disabled:opacity-50 text-sm"
+          >
+            {connectMutation.isPending ? 'Redirigiendo a Instagram...' : 'Conectar Instagram →'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ConfiguracionPage() {
   const qc = useQueryClient();
@@ -365,6 +474,9 @@ export function ConfiguracionPage() {
             )}
           </div>
         </div>
+
+        {/* Integraciones */}
+        <InstagramCard />
       </div>
     </div>
   );
