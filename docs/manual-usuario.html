@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual de Usuario — Automatiza360</title>
+<style>
+  :root {
+    --indigo: #4f46e5;
+    --indigo-light: #818cf8;
+    --dark: #0f172a;
+    --slate: #1e293b;
+    --text: #334155;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --green: #16a34a;
+    --pink: #db2777;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: var(--text);
+    background: #f8fafc;
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  /* Cover */
+  .cover {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+    color: white;
+    padding: 80px 60px;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .cover-logo { font-size: 48px; font-weight: 900; color: #818cf8; margin-bottom: 16px; }
+  .cover-title { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+  .cover-subtitle { font-size: 18px; color: #c7d2fe; margin-bottom: 32px; }
+  .cover-meta { font-size: 13px; color: #94a3b8; }
+  /* Layout */
+  .container { max-width: 900px; margin: 0 auto; padding: 48px 40px; }
+  /* TOC */
+  .toc { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 48px; }
+  .toc h2 { font-size: 20px; color: var(--dark); margin-bottom: 20px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 8px; }
+  .toc a { color: var(--indigo); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc .sub { padding-left: 20px; margin-top: 4px; list-style-type: disc; }
+  .toc .sub li { margin-bottom: 4px; font-size: 13px; color: var(--muted); }
+  /* Sections */
+  .section { margin-bottom: 56px; }
+  .section-header {
+    background: linear-gradient(135deg, var(--indigo) 0%, #7c3aed 100%);
+    color: white;
+    padding: 20px 28px;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 0;
+  }
+  .section-header .section-num { font-size: 13px; opacity: 0.7; margin-bottom: 4px; }
+  .section-header h2 { font-size: 22px; font-weight: 700; }
+  .section-body {
+    background: white;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 32px;
+  }
+  /* Sub-sections */
+  h3 {
+    font-size: 17px;
+    color: var(--dark);
+    font-weight: 700;
+    margin: 28px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  h3:first-child { margin-top: 0; }
+  h4 { font-size: 15px; color: var(--indigo); font-weight: 600; margin: 20px 0 8px; }
+  p { margin-bottom: 12px; color: var(--text); }
+  /* Lists */
+  ul, ol { padding-left: 24px; margin-bottom: 16px; }
+  li { margin-bottom: 6px; }
+  /* Steps */
+  .steps { counter-reset: step; padding-left: 0; list-style: none; }
+  .steps li {
+    counter-increment: step;
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+  .steps li::before {
+    content: counter(step);
+    background: var(--indigo);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  /* Callouts */
+  .callout {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .callout-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .callout-tip  { background: #f0fdf4; border-left: 4px solid #22c55e; }
+  .callout-warn { background: #fffbeb; border-left: 4px solid #f59e0b; }
+  .callout-icon { font-size: 20px; flex-shrink: 0; }
+  .callout-text { font-size: 14px; color: var(--text); }
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; }
+  th { background: var(--indigo); color: white; padding: 10px 14px; text-align: left; font-weight: 600; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:nth-child(even) td { background: #f8fafc; }
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 2px;
+  }
+  .tag-green { background: #dcfce7; color: #166534; }
+  .tag-blue  { background: #dbeafe; color: #1e40af; }
+  .tag-purple{ background: #ede9fe; color: #5b21b6; }
+  .tag-pink  { background: #fce7f3; color: #9d174d; }
+  /* Kbd */
+  kbd {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--dark);
+  }
+  /* Screen mockup */
+  .screen {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-family: monospace;
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+  .screen .bubble-in  { color: #e2e8f0; }
+  .screen .bubble-out { color: #818cf8; }
+  .screen .label { font-size: 11px; opacity: 0.5; margin-top: 4px; }
+  /* Grid cards */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .card {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .card-icon { font-size: 28px; margin-bottom: 8px; }
+  .card-title { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+  .card-desc { font-size: 13px; color: var(--muted); }
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 48px 40px;
+    color: var(--muted);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+    background: white;
+  }
+  .footer strong { color: var(--indigo); }
+  /* Print */
+  @media print {
+    .cover { page-break-after: always; }
+    .section { page-break-inside: avoid; }
+    body { background: white; }
+  }
+  @media (max-width: 600px) {
+    .container { padding: 24px 20px; }
+    .cover { padding: 40px 24px; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PORTADA -->
+<div class="cover">
+  <div class="cover-logo">A360</div>
+  <div class="cover-title">Manual de Usuario</div>
+  <div class="cover-subtitle">Automatiza360 — Gestiona tu negocio desde WhatsApp</div>
+  <div class="cover-meta">Versión 1.0 &nbsp;·&nbsp; Mayo 2026 &nbsp;·&nbsp; automatiza360.com</div>
+</div>
+
+<div class="container">
+
+<!-- ÍNDICE -->
+<div class="toc" id="toc">
+  <h2>📋 Contenido</h2>
+  <ol>
+    <li><a href="#s1">Primeros pasos — Registro y configuración</a></li>
+    <li><a href="#s2">Panel principal (Dashboard)</a></li>
+    <li><a href="#s3">Bot de WhatsApp para clientes</a></li>
+    <li><a href="#s4">Bot de administración (WhatsApp)</a></li>
+    <li><a href="#s5">Gestión de pedidos y órdenes</a></li>
+    <li><a href="#s6">Agenda y citas</a></li>
+    <li><a href="#s7">Tickets de reparación</a></li>
+    <li><a href="#s8">Productos e inventario</a></li>
+    <li><a href="#s9">Contactos y programa de lealtad</a></li>
+    <li><a href="#s10">Campañas de WhatsApp</a></li>
+    <li><a href="#s11">Gastos y caja</a></li>
+    <li><a href="#s12">Equipo y usuarios</a></li>
+    <li><a href="#s13">Integraciones (Instagram)</a></li>
+    <li><a href="#s14">Configuración del negocio</a></li>
+    <li><a href="#s15">Planes y facturación</a></li>
+    <li><a href="#s16">Preguntas frecuentes</a></li>
+  </ol>
+</div>
+
+<!-- SECCIÓN 1 -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-num">Sección 1</div>
+    <h2>🚀 Primeros pasos — Registro y configuración</h2>
+  </div>
+  <div class="section-body">
+    <h3>1.1 Crear tu cuenta</h3>
+    <p>El proceso de registro toma menos de 3 minutos y no requiere tarjeta de crédito. Tienes <strong>14 días de prueba gratuita</strong>.</p>
+    <ol class="steps">
+      <li>Ingresa a <strong>automatiza360.com</strong> y haz clic en <em>"Crear cuenta gratis"</em>.</li>
+      <li>Escribe el <strong>nombre de tu negocio</strong> y tu <strong>nombre completo</strong>.</li>
+      <li>Selecciona la <strong>industria</strong> de tu negocio (restaurante, clínica, tienda, etc.).</li>
+      <li>Ingresa tu <strong>correo electrónico</strong> y crea una <strong>contraseña</strong> segura.</li>
+      <li>Acepta los términos y haz clic en <em>"Crear mi negocio"</em>.</li>
+    </ol>
+    <div class="callout callout-tip">
+      <div class="callout-icon">✅</div>
+      <div class="callout-text">Recibirás un correo de bienvenida con los siguientes pasos para configurar tu bot de WhatsApp.</div>
+    </div>
+
+    <h3>1.2 Checklist de onboarding</h3>
+    <p>Al ingresar por primera vez verás una <strong>lista de tareas</strong> en tu panel principal. Completa cada paso para tener tu negocio listo:</p>
+    <table>
+      <tr><th>Paso</th><th>Descripción</th></tr>
+      <tr><td>📝 Perfil del negocio</td><td>Nombre, descripción, horarios y dirección</td></tr>
+      <tr><td>📦 Agregar productos</td><td>Crea tu catálogo o menú inicial</td></tr>
+      <tr><td>👥 Invitar equipo</td><td>Agrega a tus empleados o socios</td></tr>
+      <tr><td>📱 Activar WhatsApp</td><td>Conecta tu número de WhatsApp Business</td></tr>
+      <tr><td>🔗 Compartir enlace</td><td>Difunde tu página pública y código QR</td></tr>
+    </table>
+
+    <h3>1.3 Tu página pública y código QR</h3>
+    <p>Automatiza360 crea automáticamente una <strong>página pública</strong> para tu negocio con la URL:</p>
+    <div class="screen">
+      https://automatiza360.com/negocio/<strong>tu-negocio</strong>
+    </div>
+    <p>Esta página muestra tu información, horarios y un botón directo a WhatsApp. Desde el panel puedes <strong>descargar tu código QR</strong> para imprimir y poner en tu negocio.</p>
+  </div>
+</div>
+
+<!-- SECCIÓN 2 -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-num">Sección 2</div>
+    <h2>📊 Panel principal (Dashboard)</h2>
+  </div>
+  <div class="section-body">
+    <p>El dashboard es la pantalla principal de Automatiza360. Muestra un resumen en tiempo real del estado de tu negocio.</p>
+
+    <h3>2.1 Métricas del día</h3>
+    <div class="grid-2">
+      <div class="card"><div class="card-icon">🛒</div><div class="card-title">Órdenes / Citas</div><div class="card-desc">Total del día vs. ayer para ver si estás por encima o debajo.</div></div>
+      <div class="card"><div class="card-icon">💰</div><div class="card-title">Ingresos del mes</div><div class="card-desc">Suma de todas las ventas no canceladas del mes en curso.</div></div>
+      <div class="card"><div class="card-icon">💬</div><div class="card-title">Conversaciones</div><div class="card-desc">Clientes atendidos por el bot este mes vs. tu cuota del plan.</div></div>
+      <div class="card"><div class="card-icon">⚠️</div><div class="card-title">Stock bajo</div><div class="card-desc">Productos por debajo del stock mínimo configurado.</div></div>
+    </div>
+
+    <h3>2.2 Gráfica de tendencias</h3>
+    <p>La gráfica muestra la evolución de <strong>ventas, citas e ingresos</strong> de los últimos 30 días. Úsala para identificar los días pico de tu negocio.</p>
+
+    <h3>2.3 Widget de ROI</h3>
+    <p>Este widget calcula cuánto tiempo y dinero te ha ahorrado el bot este mes:</p>
+    <ul>
+      <li><strong>Mensajes automatizados</strong>: total de respuestas enviadas por el bot</li>
+      <li><strong>Horas ahorradas</strong>: estimado en base a 3 minutos por mensaje</li>
+      <li><strong>Ahorro estimado</strong>: en pesos colombianos</li>
+    </ul>
+
+    <h3>2.4 Últimas actividades</h3>
+    <p>Ver las últimas 5 órdenes y próximas citas sin tener que navegar a cada módulo.</p>
+  </div>
+</div>
+
+<!-- SECCIÓN 3 -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-num">Sección 3</div>
+    <h2>🤖 Bot de WhatsApp para clientes</h2>
+  </div>
+  <div class="section-body">
+    <p>El bot de WhatsApp es tu empleado virtual disponible <strong>24 horas, 7 días a la semana</strong>. Atiende a tus clientes, toma pedidos, agenda citas y responde preguntas — todo de forma automática.</p>
+
+    <h3>3.1 ¿Qué puede hacer el bot?</h3>
+    <p>Las capacidades del bot se adaptan según el tipo de negocio:</p>
+    <table>
+      <tr><th>Industria</th><th>Funciones principales</th></tr>
+      <tr><td>🍽️ Restaurante / Panadería</td><td>Mostrar menú del día, tomar pedidos completos, confirmar pago</td></tr>
+      <tr><td>🔧 Tienda Tech / Taller</td><td>Registrar equipos para reparación, consultar estado, cotizaciones</td></tr>
+      <tr><td>🏥 Clínica / Consultorio</td><td>Ver disponibilidad, agendar citas, enviar recordatorios</td></tr>
+      <tr><td>💅 Salón / Spa / Veterinaria</td><td>Reservar por profesional y servicio, modificar citas</td></tr>
+      <tr><td>👗 Tienda de ropa</td><td>Consultar tallas, catálogo de productos, hacer pedidos</td></tr>
+      <tr><td>💊 Farmacia</td><td>Consultar disponibilidad de medicamentos, precios</td></tr>
+    </table>
+
+    <h3>3.2 Funciones comunes (todos los negocios)</h3>
+    <ul>
+      <li><strong>Notas de voz</strong>: el bot transcribe y entiende los audios de los clientes</li>
+      <li><strong>Cupones de descuento</strong>: valida y aplica códigos automáticamente</li>
+      <li><strong>Puntos de lealtad</strong>: informa al cliente sus puntos acumulados</li>
+      <li><strong>Escalación humana</strong>: si el cliente pide un humano, te avisa en tiempo real</li>
+      <li><strong>Reinicio</strong>: el cliente escribe <kbd>menu</kbd> o <kbd>reiniciar</kbd> para empezar de nuevo</li>
+    </ul>
+
+    <h3>3.3 Ejemplo de conversación (Restaurante)</h3>
+    <div class="screen">
+      <div class="bubble-in">👤 Cliente: hola, qué hay hoy?</div>
+      <div class="bubble-out">🤖 Bot: ¡Hola! Hoy tenemos:<br>• Bandeja paisa — $18.000<br>• Sancocho de gallina — $15.000<br>• Ajiaco — $16.000<br>¿Qué te gustaría pedir? 😊</div>
+      <br>
+      <div class="bubble-in">👤 Cliente: una bandeja paisa por favor, pago con efectivo</div>
+      <div class="bubble-out">🤖 Bot: ¡Perfecto! Resumen de tu pedido:<br>• Bandeja paisa x1 — $18.000<br>Pago: Efectivo<br>¿Confirmas el pedido?</div>
+      <br>
+      <div class="bubble-in">👤 Cliente: sí</div>
+      <div class="bubble-out">🤖 Bot: ✅ Pedido #47 confirmado. Te avisamos cuando esté listo. ¡Gracias!<br><br><em>Powered by Automatiza360 🤖</em></div>
+    </div>
+
+    <h3>3.4 Opt-out (desuscripción)</h3>
+    <p>Si un cliente no desea recibir más mensajes, puede escribir <kbd>STOP</kbd> en cualquier momento. El sistema lo registra automáticamente y no le enviarás más campañas a ese número.</p>
+
+    <div class="callout callout-info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-text">El bot responde en el mismo idioma y tono configurado para tu negocio. Puedes ajustar el nombre del bot y su tono (Formal / Amigable / Costeño) desde Configuración.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN 4 -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-num">Sección 4</div>
+    <h2>🧑‍💼 Bot de administración (WhatsApp)</h2>
+  </div>
+  <div class="section-body">
+    <p>El bot de administración te permite gestionar tu negocio <strong>desde el mismo número de WhatsApp</strong>, sin abrir ninguna app. Escríbele como si fuera un asistente personal.</p>
+
+    <div class="callout callout-tip">
+      <div class="callout-icon">💡</div>
+      <div class="callout-text">El sistema detecta automáticamente si quien escribe es dueño, admin o empleado, y activa el modo de administración. Tus clientes nunca ven estas conversaciones.</div>
+    </div>
+
+    <h3>4.1 Comandos disponibles</h3>
+    <table>
+      <tr><th>Lo que escribes</th><th>Lo que hace el bot</th></tr>
+      <tr><td>"resumen del día"</td><td>Muestra ingresos, órdenes, citas y gastos de hoy</td></tr>
+      <tr><td>"órdenes pendientes"</td><td>Lista las órdenes que faltan por preparar</td></tr>
+      <tr><td>"citas de mañana"</td><td>Muestra el horario completo del día siguiente</td></tr>
+      <tr><td>"gasté $45.000 en ingredientes"</td><td>Registra el gasto automáticamente</td></tr>
+      <tr><td>"hoy hay bandeja paisa $18.000"</td><td>Actualiza el menú del día (restaurantes)</td></tr>
+      <tr><td>"estado del ticket de Juan García"</td><td>Busca y muestra el ticket de reparación</td></tr>
+      <tr><td>"cancelar citas de mañana desde las 2pm"</td><td>Cancela en rango y notifica a los pacientes</td></tr>
+      <tr><td>"últimas reseñas"</td><td>Muestra valoraciones recientes de clientes</td></tr>
+      <tr><td>"crear cupón 20% descuento"</td><td>Crea un código de descuento nuevo</td></tr>
+    </table>
+
+    <h3>4.2 Enviar reportes por WhatsApp o email</h3>
+    <p>Puedes pedirle al bot que te envíe:</p>
+    <ul>
+      <li><strong>Gráfica por WhatsApp</strong>: imagen con las ventas de la semana</li>
+      <li><strong>Reporte ejecutivo por email</strong>: PDF con métricas del mes</li>
+    </ul>
+
+    <h3>4.3 Cambiar estado de órdenes y citas</h3>
+    <p>En lugar de abrir el panel, puedes cambiar estados directamente por WhatsApp:</p>
+    <div class="screen">
+      <div class="bubble-in">👤 Dueño: orden 47 está lista</div>
+      <div class="bubble-out">🤖 Admin Bot: ✅ Orden #47 marcada como LISTA. El cliente fue notificado por WhatsApp automáticamente.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN 5 -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-num">Sección 5</div>
+    <h2>🛒 Gestión de pedidos y órdenes</h2>
+  </div>
+  <div class="section-body">
+    <h3>5.1 Ver pedidos</h3>
+    <p>Ve a <strong>Órdenes</strong> en el menú lateral. Verás todos los pedidos ordenados por fecha, con filtros por estado:</p>
+    <ul>
+      <li><span class="tag tag-blue">PENDIENTE</span> — Pedido recibido, sin confirmar</li>
+      <li><span class="tag tag-purple">CONFIRMADO</span> — Confirmado, en preparación</li>
+      <li><span class="tag tag-pink">PREPARANDO</span> — En cocina o proceso</li>
+      <li><span class="tag tag-green">LISTO</span> — Listo para entrega/recogida</li>
+      <li><span class="tag tag-green">ENTREGADO</span> — Completado</li>
+    </ul>
+
+    <h3>5.2 Cambiar estado</h3>
+    <p>Haz clic en cualquier orden y selecciona el nuevo estado. Al pasar a <span class="tag tag-green">LISTO</span>, el cliente recibe automáticamente un WhatsApp de notificación.</p>
+
+    <h3>5.3 Detalle de orden</h3>
+    <p>Cada orden muestra: lista de ítems, cantidades, total, método de pago, teléfono del cliente y historial de cambios de estado.</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-text">Las órdenes canceladas no se eliminan — quedan en el historial para efectos contables. Puedes filtrarlas para no verlas en la vista principal.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN 6 -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-num">Sección 6</div>
+    <h2>📅 Agenda y citas</h2>
+  </div>
+  <div class="section-body">
+    <h3>6.1 Ver agenda</h3>
+    <p>Ve a <strong>Agenda</strong> en el menú. Puedes ver las citas en formato lista, día o semana, y filtrar por profesional o servicio.</p>
+
+    <h3>6.2 Crear cita manualmente</h3>
+    <ol class="steps">
+      <li>Haz clic en el botón <em>"Nueva cita"</em> (esquina superior derecha).</li>
+      <li>Selecciona el servicio y el profesional.</li>
+      <li>Elige la fecha y hora disponible.</li>
+      <li>Ingresa el nombre y teléfono del cliente.</li>
+      <li>Guarda — el cliente recibe confirmación por WhatsApp.</li>
+    </ol>
+
+    <h3>6.3 Recordatorios automáticos</h3>
+    <p>El sistema envía automáticamente un recordatorio por WhatsApp <strong>24 horas antes</strong> de cada cita. No necesitas hacer nada.</p>
+
+    <h3>6.4 Estados de citas</h3>
+    <table>
+      <tr><th>Estado</th><th>Significado</th></tr>
+      <tr><td><span class="tag tag-blue">AGENDADA</span></td><td>Cita creada, pendiente de confirmación</td></tr>
+      <tr><td><span class="tag tag-green">CONFIRMADA</span></td><td>Cliente confirmó asistencia</td></tr>
+      <tr><td><span class="tag tag-green">COMPLETADA</span></td><td>Servicio realizado</td></tr>
+      <tr><td><span class="tag tag-pink">NO ASISTIÓ</span></td><td>Cliente no se presentó (no-show)</td></tr>
+      <tr><td><span class="tag tag-blue">CANCELADA</span></td><td>Cancelada por el negocio o el cliente</td></tr>
+    </table>
+
+    <h3>6.5 Cancelación masiva</h3>
+    <p>Si necesitas cancelar varias citas (por ejemplo, por una emergencia), puedes hacerlo desde el bot de admin escribiendo:</p>
+    <div class="screen">
+      <div class="bubble-in">👤 "cancela las citas del viernes desde las 2pm"</div>
+      <div class="bubble-out">🤖 "¿Cancelo 4 citas del viernes 16 de mayo desde las 2:00 PM? (Clientes: María, Pedro, Luisa, Carlos)"</div>
+      <div class="bubble-in">👤 "sí"</div>
+      <div class="bubble-out">🤖 "✅ Cancelé 4 citas y notifiqué a los pacientes por WhatsApp."</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN 7 -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-num">Sección 7</div>
+    <h2>🔧 Tickets de reparación</h2>
+  </div>
+  <div class="section-body">
+    <p>Módulo diseñado para talleres y tiendas tech. Gestiona el flujo completo desde que el cliente deja el equipo hasta que lo recoge.</p>
+
+    <h3>7.1 Crear un ticket</h3>
+    <ol class="steps">
+      <li>Ve a <strong>Tickets</strong> y haz clic en <em>"Nuevo ticket"</em>.</li>
+      <li>Ingresa datos del cliente (nombre, teléfono) y del equipo (dispositivo, falla reportada).</li>
+      <li>Opcionalmente adjunta fotos del equipo.</li>
+      <li>El ticket se crea con estado <span class="tag tag-blue">RECIBIDO</span> y se le asigna un número único.</li>
+    </ol>
+
+    <h3>7.2 Flujo de estados</h3>
+    <div class="screen" style="font-family: sans-serif; font-size: 13px;">
+      RECIBIDO → DIAGNÓSTICO → ESPERANDO PIEZAS → REPARANDO → LISTO → ENTREGADO
+    </div>
+
+    <h3>7.3 Garantías</h3>
+    <p>Al marcar un ticket como <span class="tag tag-green">ENTREGADO</span>, puedes definir el período de garantía. El sistema guarda las garantías vigentes y el bot puede consultarlas cuando el cliente regrese.</p>
+
+    <h3>7.4 Crear tickets desde WhatsApp (Admin Bot)</h3>
+    <div class="screen">
+      <div class="bubble-in">👤 "nuevo ticket: Juan García, cel 3001234567, Samsung S22, no enciende"</div>
+      <div class="bubble-out">🤖 "✅ Ticket #89 creado para Juan García — Samsung S22. Si tienes foto del equipo, mándala y la adjunto."</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN 8 -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-num">Sección 8</div>
+    <h2>📦 Productos e inventario</h2>
+  </div>
+  <div class="section-body">
+    <h3>8.1 Agregar un producto</h3>
+    <ol class="steps">
+      <li>Ve a <strong>Productos</strong> o <strong>Inventario</strong>.</li>
+      <li>Haz clic en <em>"Nuevo producto"</em>.</li>
+      <li>Completa: nombre, precio, stock actual, stock mínimo y categoría.</li>
+      <li>Sube una foto (opcional).</li>
+      <li>Guarda — el producto ya está disponible para el bot.</li>
+    </ol>
+
+    <h3>8.2 Alertas de stock bajo</h3>
+    <p>Cuando el stock de un producto cae por debajo del <strong>stock mínimo</strong> configurado, aparece una alerta en el dashboard. El bot de admin también puede listar los productos con stock bajo al escribir <kbd>"stock bajo"</kbd>.</p>
+
+    <h3>8.3 Importar inventario masivo</h3>
+    <p>Puedes importar tu catálogo completo desde:</p>
+    <ul>
+      <li>Archivo <strong>Excel (.xlsx)</strong></li>
+      <li>Archivo <strong>PDF</strong> con lista de productos</li>
+      <li><strong>Foto</strong> de una lista escrita o impresa</li>
+    </ul>
+    <p>El sistema usa inteligencia artificial para extraer los productos automáticamente.</p>
+
+    <h3>8.4 Menú del día (Restaurantes)</h3>
+    <p>Ve a <strong>Menú del día</strong> para publicar los platos disponibles hoy con sus precios. El bot los mostrará automáticamente a los clientes que pregunten.</p>
+  </div>
+</div>
+
+<!-- SECCIÓN 9 -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <div class="section-num">Sección 9</div>
+    <h2>👥 Contactos y programa de lealtad</h2>
+  </div>
+  <div class="section-body">
+    <h3>9.1 Base de contactos</h3>
+    <p>Todos los clientes que han interactuado con tu bot se guardan automáticamente como contactos. Puedes ver su historial de compras, citas y conversaciones.</p>
+
+    <h3>9.2 Programa de puntos</h3>
+    <p>Cada compra acumula puntos automáticamente (<strong>1 punto por cada $10.000 COP</strong>):</p>
+    <table>
+      <tr><th>Acción</th><th>Puntos</th></tr>
+      <tr><td>Compra de $10.000</td><td>+1 punto</td></tr>
+      <tr><td>Compra de $100.000</td><td>+10 puntos</td></tr>
+      <tr><td>Canje de puntos</td><td>Se descuentan del total</td></tr>
+    </table>
+    <p>El bot informa al cliente sus puntos disponibles y les permite canjearlos en su próxima compra.</p>
+
+    <h3>9.3 Segmentación por etiquetas</h3>
+    <p>Puedes asignar etiquetas a tus contactos (ej: <span class="tag tag-purple">VIP</span> <span class="tag tag-green">frecuente</span> <span class="tag tag-blue">nuevo</span>) y usar esas etiquetas para enviar campañas segmentadas.</p>
+
+    <h3>9.4 Fecha de cumpleaños</h3>
+    <p>Al agregar la fecha de cumpleaños de un contacto, el sistema envía automáticamente un <strong>mensaje de felicitación</strong> el día de su cumpleaños. Es una forma sencilla de crear fidelidad con tus clientes.</p>
+  </div>
+</div>
+
+<!-- SECCIÓN 10 -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <div class="section-num">Sección 10</div>
+    <h2>📢 Campañas de WhatsApp</h2>
+  </div>
+  <div class="section-body">
+    <div class="callout callout-info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-text">Las campañas de WhatsApp están disponibles en los planes <strong>Pro</strong> y <strong>Business</strong>.</div>
+    </div>
+
+    <h3>10.1 Crear una campaña</h3>
+    <ol class="steps">
+      <li>Ve a <strong>Campañas</strong> y haz clic en <em>"Nueva campaña"</em>.</li>
+      <li>Escribe el mensaje. Usa <kbd>{nombre}</kbd> para personalizar con el nombre del cliente.</li>
+      <li>Define los filtros de segmentación (opcional).</li>
+      <li>Haz clic en <em>"Ver destinatarios"</em> para confirmar cuántos recibirán el mensaje.</li>
+      <li>Haz clic en <em>"Enviar campaña"</em>.</li>
+    </ol>
+
+    <h3>10.2 Filtros de segmentación</h3>
+    <table>
+      <tr><th>Filtro</th><th>Uso</th></tr>
+      <tr><td>Por etiquetas</td><td>Solo contactos con etiqueta específica</td></tr>
+      <tr><td>Sin compras en N días</td><td>Reactivar clientes inactivos</td></tr>
+      <tr><td>Compras recientes</td><td>Premiar a clientes frecuentes</td></tr>
+      <tr><td>Puntos mínimos</td><td>Campañas exclusivas para clientes VIP</td></tr>
+    </table>
+
+    <h3>10.3 Ejemplo de mensaje</h3>
+    <div class="screen">
+      ¡Hola {nombre}! 👋 Este fin de semana tenemos <strong>20% de descuento</strong> en todos nuestros servicios.<br>
+      Usa el código <strong>FINDE20</strong> al agendar tu cita.<br>
+      ¡Te esperamos! 😊<br><br>
+      <span style="color:#64748b; font-size:12px;">Responde STOP para no recibir más mensajes.</span>
+    </div>
+
+    <h3>10.4 Cupones de descuento</h3>
+    <p>Ve a <strong>Cupones</strong> para crear códigos de descuento. Puedes definir:</p>
+    <ul>
+      <li><strong>Tipo</strong>: porcentaje (%) o monto fijo ($)</li>
+      <li><strong>Fecha de vencimiento</strong></li>
+      <li><strong>Código personalizado</strong></li>
+    </ul>
+  </div>
+</div>
+
+<!-- SECCIÓN 11 -->
+<div class="section" id="s11">
+  <div class="section-header">
+    <div class="section-num">Sección 11</div>
+    <h2>💵 Gastos y caja</h2>
+  </div>
+  <div class="section-body">
+    <h3>11.1 Registrar gastos</h3>
+    <p>Ve a <strong>Gastos</strong> para registrar los costos del negocio. Puedes categorizarlos (insumos, servicios, nómina, etc.) y ver el comparativo ingresos vs. gastos del mes.</p>
+
+    <h3>11.2 Registrar desde WhatsApp</h3>
+    <p>La forma más rápida de registrar un gasto es desde el bot de admin:</p>
+    <div class="screen">
+      <div class="bubble-in">👤 "gasté $80.000 en ingredientes para la cocina"</div>
+      <div class="bubble-out">🤖 "✅ Gasto de $80.000 registrado en categoría Insumos."</div>
+    </div>
+
+    <h3>11.3 Módulo de caja</h3>
+    <p>El módulo de <strong>Caja</strong> muestra el flujo de dinero del día: cuánto entró (ventas) y cuánto salió (gastos), con el saldo neto.</p>
+  </div>
+</div>
+
+<!-- SECCIÓN 12 -->
+<div class="section" id="s12">
+  <div class="section-header">
+    <div class="section-num">Sección 12</div>
+    <h2>👨‍👩‍👧 Equipo y usuarios</h2>
+  </div>
+  <div class="section-body">
+    <h3>12.1 Roles disponibles</h3>
+    <table>
+      <tr><th>Rol</th><th>Permisos</th></tr>
+      <tr><td>🔑 Dueño (Owner)</td><td>Acceso total, configuración, facturación</td></tr>
+      <tr><td>⚙️ Admin</td><td>Gestión completa excepto facturación</td></tr>
+      <tr><td>👤 Staff</td><td>Operación diaria, sin configuración</td></tr>
+    </table>
+
+    <h3>12.2 Invitar un miembro</h3>
+    <ol class="steps">
+      <li>Ve a <strong>Equipo</strong> y haz clic en <em>"Invitar miembro"</em>.</li>
+      <li>Ingresa el correo electrónico y selecciona el rol.</li>
+      <li>La persona recibirá un correo de invitación para crear su cuenta.</li>
+    </ol>
+
+    <h3>12.3 Límites por plan</h3>
+    <table>
+      <tr><th>Plan</th><th>Máximo de miembros</th></tr>
+      <tr><td>Starter</td><td>3 miembros</td></tr>
+      <tr><td>Pro</td><td>10 miembros</td></tr>
+      <tr><td>Business</td><td>Ilimitados</td></tr>
+    </table>
+
+    <h3>12.4 Turnos del personal</h3>
+    <p>Ve a <strong>Turnos</strong> para gestionar los horarios de tu equipo. El bot de admin puede consultarlos escribiendo <kbd>"turnos de hoy"</kbd>.</p>
+  </div>
+</div>
+
+<!-- SECCIÓN 13 -->
+<div class="section" id="s13">
+  <div class="section-header">
+    <div class="section-num">Sección 13</div>
+    <h2>📷 Integraciones — Instagram DMs</h2>
+  </div>
+  <div class="section-body">
+    <p>Conecta tu cuenta de Instagram Business para que el bot responda automáticamente los mensajes directos (DMs) de tus seguidores — exactamente igual que WhatsApp.</p>
+
+    <h3>13.1 Requisitos previos</h3>
+    <ul>
+      <li>Cuenta de <strong>Instagram Business</strong> (no cuenta personal)</li>
+      <li>La cuenta de Instagram debe estar <strong>vinculada a una Página de Facebook</strong></li>
+    </ul>
+
+    <div class="callout callout-info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-text">Si tienes una cuenta personal de Instagram, puedes convertirla a Business gratis desde la configuración de Instagram: Configuración → Cuenta → Cambiar a cuenta profesional.</div>
+    </div>
+
+    <h3>13.2 Conectar Instagram</h3>
+    <ol class="steps">
+      <li>Ve a <strong>Configuración</strong> en el menú lateral.</li>
+      <li>Busca la sección <em>"Instagram DMs"</em>.</li>
+      <li>Haz clic en el botón <em>"Conectar Instagram →"</em>.</li>
+      <li>Se abrirá una ventana de Meta — inicia sesión con tu cuenta de Facebook.</li>
+      <li>Selecciona los permisos y haz clic en <em>"Continuar"</em>.</li>
+      <li>Regresarás al panel con la confirmación <em>"✅ Instagram conectado exitosamente"</em>.</li>
+    </ol>
+
+    <h3>13.3 ¿Qué pasa después?</h3>
+    <p>Una vez conectado, el bot responderá <strong>todos los DMs nuevos</strong> que lleguen a tu Instagram con las mismas capacidades que el bot de WhatsApp. Las conversaciones también quedan registradas en el panel.</p>
+
+    <h3>13.4 Desconectar Instagram</h3>
+    <p>En cualquier momento puedes desconectar tu Instagram desde la misma sección de Configuración. Haz clic en <em>"Desconectar Instagram"</em>.</p>
+  </div>
+</div>
+
+<!-- SECCIÓN 14 -->
+<div class="section" id="s14">
+  <div class="section-header">
+    <div class="section-num">Sección 14</div>
+    <h2>⚙️ Configuración del negocio</h2>
+  </div>
+  <div class="section-body">
+    <h3>14.1 Información básica</h3>
+    <p>Ve a <strong>Configuración</strong> para actualizar:</p>
+    <ul>
+      <li>Nombre del negocio y descripción</li>
+      <li>Horarios de atención</li>
+      <li>Dirección y ciudad</li>
+      <li>Logo (foto de perfil)</li>
+    </ul>
+
+    <h3>14.2 Personalizar el bot</h3>
+    <table>
+      <tr><th>Opción</th><th>Descripción</th></tr>
+      <tr><td>Nombre del bot</td><td>Cómo se presenta el asistente (ej: "Soy Sofía, tu asistente...")</td></tr>
+      <tr><td>Tono Formal</td><td>Profesional y respetuoso, ideal para clínicas y servicios</td></tr>
+      <tr><td>Tono Amigable</td><td>Cercano y cálido, recomendado para la mayoría</td></tr>
+      <tr><td>Tono Costeño</td><td>Descomplicado y alegre, ideal para negocios del Caribe</td></tr>
+    </table>
+
+    <h3>14.3 Sucursales</h3>
+    <p>Si tienes varias ubicaciones, ve a <strong>Sucursales</strong> para registrarlas. Cada sucursal puede tener su propio horario y dirección.</p>
+
+    <h3>14.4 Recuperar contraseña</h3>
+    <p>Si olvidaste tu contraseña, haz clic en <em>"¿Olvidaste tu contraseña?"</em> en la pantalla de inicio de sesión. Recibirás un correo con un enlace válido por 1 hora.</p>
+  </div>
+</div>
+
+<!-- SECCIÓN 15 -->
+<div class="section" id="s15">
+  <div class="section-header">
+    <div class="section-num">Sección 15</div>
+    <h2>💳 Planes y facturación</h2>
+  </div>
+  <div class="section-body">
+    <h3>15.1 Planes disponibles</h3>
+    <table>
+      <tr><th>Plan</th><th>Precio mensual</th><th>Conversaciones</th><th>Equipo</th><th>Campañas</th></tr>
+      <tr><td><strong>Starter</strong></td><td>$79.000 COP</td><td>500/mes</td><td>3 personas</td><td>❌</td></tr>
+      <tr><td><strong>Pro</strong></td><td>$242.000 COP</td><td>2.000/mes</td><td>10 personas</td><td>✅</td></tr>
+      <tr><td><strong>Business</strong></td><td>$529.000 COP</td><td>Ilimitadas</td><td>Ilimitado</td><td>✅</td></tr>
+    </table>
+
+    <h3>15.2 Actualizar tu plan</h3>
+    <ol class="steps">
+      <li>Ve a <strong>Mi Plan</strong> en el menú lateral.</li>
+      <li>Selecciona el plan al que deseas pasar.</li>
+      <li>Completa el pago con tu tarjeta (procesado por Wompi — 100% seguro).</li>
+      <li>Tu plan se activa inmediatamente y recibes el recibo por correo.</li>
+    </ol>
+
+    <h3>15.3 Período de prueba</h3>
+    <p>Todos los negocios nuevos tienen <strong>14 días de prueba gratuita</strong> con acceso completo al plan Pro. No se requiere tarjeta de crédito. Al terminar el período de prueba, el plan pasa a Starter automáticamente o puedes actualizar antes de que expire.</p>
+
+    <h3>15.4 Reembolsos</h3>
+    <p>Si tienes problemas con un pago, contacta a soporte en <strong>soporteautomatiza360@rgytgroup.com</strong> dentro de los primeros 7 días del cobro.</p>
+  </div>
+</div>
+
+<!-- SECCIÓN 16 -->
+<div class="section" id="s16">
+  <div class="section-header">
+    <div class="section-num">Sección 16</div>
+    <h2>❓ Preguntas frecuentes</h2>
+  </div>
+  <div class="section-body">
+    <h4>¿Necesito un número de WhatsApp nuevo?</h4>
+    <p>El equipo de Automatiza360 te asigna un número de WhatsApp Business. Si ya tienes uno aprobado por Meta, también se puede usar.</p>
+
+    <h4>¿El bot funciona las 24 horas?</h4>
+    <p>Sí. El bot nunca descansa. Atiende a tus clientes en cualquier horario, incluso domingos y festivos.</p>
+
+    <h4>¿Los clientes saben que están hablando con un bot?</h4>
+    <p>Los mensajes incluyen <em>"Powered by Automatiza360 🤖"</em> al final. Puedes ajustar el nombre del bot para que se sienta más personal.</p>
+
+    <h4>¿Puedo seguir respondiendo manualmente?</h4>
+    <p>Sí. En la sección <strong>Conversaciones</strong> puedes ver todos los chats y responder directamente si lo prefieres. Si un cliente pide hablar con un humano, recibirás una alerta.</p>
+
+    <h4>¿Qué pasa si se me acaba la cuota de conversaciones?</h4>
+    <p>El bot le informa al cliente que el negocio ha alcanzado su límite del mes y lo invita a contactar en el próximo mes. Puedes actualizar tu plan en cualquier momento para evitarlo.</p>
+
+    <h4>¿Mis datos están seguros?</h4>
+    <p>Sí. Cada negocio tiene sus datos completamente aislados. Usamos cifrado, contraseñas hasheadas y conexiones seguras (HTTPS). Cumplimos con la Ley 1581 de Protección de Datos de Colombia.</p>
+
+    <h4>¿Cómo contacto a soporte?</h4>
+    <p>Escríbenos a <strong>soporteautomatiza360@rgytgroup.com</strong> o abre un ticket desde el panel en la sección <strong>Soporte</strong>. Tiempo de respuesta: máximo 24 horas hábiles.</p>
+  </div>
+</div>
+
+</div><!-- end container -->
+
+<div class="footer">
+  <p><strong>Automatiza360</strong> · Manual de Usuario v1.0 · Mayo 2026</p>
+  <p style="margin-top: 8px;">¿Tienes dudas? Escríbenos a <strong>soporteautomatiza360@rgytgroup.com</strong></p>
+  <p style="margin-top: 8px; color: #94a3b8;">© 2026 Automatiza360. Todos los derechos reservados.</p>
+</div>
+
+</body>
+</html>
