@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { toCsv } from '../common/utils/csv';
 import { CrearGastoDto } from './dto/crear-gasto.dto';
 
 @Injectable()
@@ -61,5 +62,22 @@ export class GastosService {
       ganancia: totalIngresos - totalGastos,
       porCategoria,
     };
+  }
+
+  async exportarCsv(tenantId: string): Promise<string> {
+    const gastos = await this.prisma.gasto.findMany({
+      where: { tenantId },
+      orderBy: { fecha: 'asc' },
+    });
+    return toCsv(
+      ['Fecha', 'Descripcion', 'Categoria', 'Monto', 'Notas'],
+      gastos.map((g) => [
+        g.fecha.toISOString().slice(0, 10),
+        g.descripcion,
+        g.categoria,
+        g.monto,
+        g.notas,
+      ]),
+    );
   }
 }

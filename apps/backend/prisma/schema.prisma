@@ -130,6 +130,7 @@ model Order {
   total     Float
   notes     String?
   phone     String?
+  isDemo    Boolean     @default(false)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
@@ -182,6 +183,7 @@ model Ticket {
   status      TicketStatus @default(RECEIVED)
   price       Float?
   fotoUrl     String?
+  isDemo      Boolean      @default(false)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -336,6 +338,7 @@ model Appointment {
   date            DateTime
   status          AppointmentStatus @default(SCHEDULED)
   notes           String?
+  isDemo          Boolean           @default(false)
   reminderSent    Boolean           @default(false)
   reminderSentAt  DateTime?
   createdAt       DateTime          @default(now())
@@ -359,6 +362,7 @@ model Conversation {
   lastMessageAt   DateTime?
   unreadCount     Int       @default(0)
   needsAttention  Boolean   @default(false)
+  isDemo          Boolean   @default(false)
   escalatedAt     DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -393,6 +397,7 @@ model Contact {
   puntosUsados    Int       @default(0)
   fechaNacimiento DateTime?
   unsubscribed    Boolean   @default(false)
+  isDemo          Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   tenantId        String
@@ -451,6 +456,7 @@ model PaymentIntent {
   id                 String   @id @default(cuid())
   tenantId           String
   plan               String
+  periodo            String   @default("MENSUAL") // MENSUAL | ANUAL
   referencia         String   @unique
   monto              Int
   status             String   @default("PENDING")

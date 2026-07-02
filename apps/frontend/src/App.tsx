@@ -43,6 +43,9 @@ const FlujoPage = lazy(() => import('./pages/flujos/FlujoPage').then((m) => ({ d
 const NpsPage = lazy(() => import('./pages/nps/NpsPage').then((m) => ({ default: m.NpsPage })));
 const SucursalesPage = lazy(() => import('./pages/sucursales/SucursalesPage').then((m) => ({ default: m.SucursalesPage })));
 const TallasPage = lazy(() => import('./pages/tallas/TallasPage').then((m) => ({ default: m.TallasPage })));
+const TerminosPage = lazy(() => import('./pages/legal/TerminosPage').then((m) => ({ default: m.TerminosPage })));
+const PrivacidadPage = lazy(() => import('./pages/legal/PrivacidadPage').then((m) => ({ default: m.PrivacidadPage })));
+const DemoBotPage = lazy(() => import('./pages/demo/DemoBotPage').then((m) => ({ default: m.DemoBotPage })));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })));
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })));
 const AutoLoginPage = lazy(() => import('./pages/auth/AutoLoginPage').then((m) => ({ default: m.AutoLoginPage })));
@@ -81,6 +84,9 @@ export function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/demo" element={<DemoBotPage />} />
+            <Route path="/terminos" element={<TerminosPage />} />
+            <Route path="/privacidad" element={<PrivacidadPage />} />
             <Route path="/menu/:slug" element={<MenuPublicoPage />} />
             <Route path="/negocio/:slug" element={<PerfilPublicoPage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

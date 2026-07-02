@@ -350,9 +350,13 @@ export function OnboardingPage() {
                   />
                   <span className="text-sm text-slate-600">
                     Acepto los{' '}
-                    <span className="text-indigo-600 underline cursor-pointer">términos y condiciones</span>{' '}
+                    <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">
+                      términos y condiciones
+                    </a>{' '}
                     y la{' '}
-                    <span className="text-indigo-600 underline cursor-pointer">política de privacidad</span>
+                    <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline">
+                      política de privacidad
+                    </a>
                   </span>
                 </label>
               </div>

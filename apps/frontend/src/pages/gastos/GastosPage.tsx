@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { downloadCsv } from '../../lib/downloadCsv';
 import {
   getGastos,
   createGasto,
@@ -125,12 +126,20 @@ export function GastosPage() {
 
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-white">Gastos y Finanzas</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
-        >
-          + Nuevo Gasto
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => downloadCsv('/gastos/exportar', 'gastos.csv')}
+            className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+          >
+            ⬇ Exportar CSV
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+          >
+            + Nuevo Gasto
+          </button>
+        </div>
       </div>
 
       {/* Summary cards */}

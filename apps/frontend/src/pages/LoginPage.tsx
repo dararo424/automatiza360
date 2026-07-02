@@ -173,6 +173,12 @@ export function LoginPage() {
               Regístrate gratis →
             </a>
           </p>
+          <p className="text-center text-sm text-slate-500 mt-2">
+            ¿Curiosidad?{' '}
+            <Link to="/demo" className="text-selva-600 font-semibold hover:underline underline-offset-2">
+              Chatea con un bot de ejemplo 🤖
+            </Link>
+          </p>
         </div>
       </div>
     </div>

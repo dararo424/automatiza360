@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, UseGuards, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, UseGuards, Post } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PerfilService } from './perfil.service';
@@ -41,5 +41,17 @@ export class PerfilController {
     @Body('step') step: number,
   ) {
     return this.perfilService.actualizarOnboarding(user.tenantId, step);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('perfil/datos-ejemplo')
+  contarDatosEjemplo(@CurrentUser() user: any) {
+    return this.perfilService.contarDatosEjemplo(user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('perfil/datos-ejemplo')
+  eliminarDatosEjemplo(@CurrentUser() user: any) {
+    return this.perfilService.eliminarDatosEjemplo(user.tenantId);
   }
 }

@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Post, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { GastosService } from './gastos.service';
@@ -12,6 +13,14 @@ export class GastosController {
   @Get()
   findAll(@CurrentUser() user: any) {
     return this.svc.findAll(user.tenantId);
+  }
+
+  @Get('exportar')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="gastos.csv"')
+  async exportar(@CurrentUser() user: any, @Res({ passthrough: false }) res: Response) {
+    const csv = await this.svc.exportarCsv(user.tenantId);
+    res.send(csv);
   }
 
   @Get('resumen')

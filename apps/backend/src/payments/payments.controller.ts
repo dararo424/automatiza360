@@ -23,7 +23,7 @@ export class PaymentsController {
     @CurrentUser() user: { tenantId: string },
     @Body() dto: CrearTransaccionDto,
   ) {
-    return this.payments.crearTransaccion(user.tenantId, dto.plan);
+    return this.payments.crearTransaccion(user.tenantId, dto.plan, dto.periodo ?? 'MENSUAL');
   }
 
   @SkipThrottle()

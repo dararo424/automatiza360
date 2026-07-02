@@ -96,8 +96,22 @@ describe('AuthService', () => {
         const tx = {
           tenant: { create: jest.fn().mockResolvedValue(fakeTenant) },
           user: { create: jest.fn().mockResolvedValue(fakeOwner) },
-          service: { createMany: jest.fn().mockResolvedValue({}) },
+          service: {
+            createMany: jest.fn().mockResolvedValue({}),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
           product: { createMany: jest.fn().mockResolvedValue({}) },
+          professional: {
+            create: jest.fn().mockResolvedValue({ id: 'prof-1' }),
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+          schedule: { createMany: jest.fn().mockResolvedValue({}) },
+          // Actividad de ejemplo (isDemo) sembrada en el registro
+          contact: { create: jest.fn().mockResolvedValue({}) },
+          conversation: { create: jest.fn().mockResolvedValue({}) },
+          order: { create: jest.fn().mockResolvedValue({}) },
+          appointment: { create: jest.fn().mockResolvedValue({}) },
+          ticket: { createMany: jest.fn().mockResolvedValue({}) },
         };
         return cb(tx);
       });

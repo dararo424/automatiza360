@@ -12,3 +12,11 @@ export function getOnboardingStatus(): Promise<OnboardingStatus> {
 export function updateOnboardingStep(step: number): Promise<OnboardingStatus> {
   return api.patch('/perfil/onboarding-step', { step }).then((r) => r.data);
 }
+
+export function getDatosEjemplo(): Promise<{ total: number }> {
+  return api.get('/perfil/datos-ejemplo').then((r) => r.data);
+}
+
+export function eliminarDatosEjemplo(): Promise<{ eliminado: boolean }> {
+  return api.delete('/perfil/datos-ejemplo').then((r) => r.data);
+}

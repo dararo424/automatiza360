@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { OnboardingChecklist } from '../components/onboarding/OnboardingChecklist';
+import { getDatosEjemplo, eliminarDatosEjemplo } from '../api/onboarding';
 import {
   LineChart,
   Line,
@@ -511,10 +512,46 @@ function DashboardContent() {
   return <RestaurantDashboard />;
 }
 
+function DemoDataBanner() {
+  const queryClient = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ['datos-ejemplo'],
+    queryFn: getDatosEjemplo,
+    staleTime: 5 * 60_000,
+  });
+
+  const eliminar = useMutation({
+    mutationFn: eliminarDatosEjemplo,
+    onSuccess: () => queryClient.invalidateQueries(),
+  });
+
+  if (!data || data.total === 0) return null;
+
+  return (
+    <div className="card border-lima-dim bg-lima-ghost/60 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex-1">
+        <p className="font-display font-bold text-ink text-sm">Estás viendo datos de ejemplo</p>
+        <p className="text-slate-600 text-xs mt-0.5">
+          Sembramos órdenes, contactos y conversaciones de muestra para que veas la plataforma en acción.
+          Cuando quieras empezar de cero, elimínalos con un clic.
+        </p>
+      </div>
+      <button
+        onClick={() => eliminar.mutate()}
+        disabled={eliminar.isPending}
+        className="btn-ghost !border-ink text-sm shrink-0 disabled:opacity-50"
+      >
+        {eliminar.isPending ? 'Eliminando…' : 'Eliminar ejemplos'}
+      </button>
+    </div>
+  );
+}
+
 export function DashboardPage() {
   return (
     <div className="space-y-6">
       <OnboardingChecklist />
+      <DemoDataBanner />
       <DashboardContent />
       <RoiWidget />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -7,12 +7,26 @@ import { EmailService } from '../email/email.service';
 import { AuditService } from '../audit/audit.service';
 
 type PlanKey = 'STARTER' | 'PRO' | 'BUSINESS';
+type Periodo = 'MENSUAL' | 'ANUAL';
 
 const PRECIOS: Record<PlanKey, number> = {
   STARTER: 7900000,    // $79.000 COP en centavos
   PRO: 24200000,       // $242.000 COP en centavos
   BUSINESS: 52900000,  // $529.000 COP en centavos
 };
+
+// Anual = 10 meses (2 meses gratis)
+const MESES_GRATIS_ANUAL = 2;
+
+export function precioPara(plan: PlanKey, periodo: Periodo): number {
+  return periodo === 'ANUAL' ? PRECIOS[plan] * (12 - MESES_GRATIS_ANUAL) : PRECIOS[plan];
+}
+
+function proximoVencimiento(periodo: string): Date {
+  const fecha = new Date();
+  fecha.setMonth(fecha.getMonth() + (periodo === 'ANUAL' ? 12 : 1));
+  return fecha;
+}
 
 @Injectable()
 export class PaymentsService {
@@ -25,17 +39,17 @@ export class PaymentsService {
     private readonly audit: AuditService,
   ) {}
 
-  async crearTransaccion(tenantId: string, plan: PlanKey) {
+  async crearTransaccion(tenantId: string, plan: PlanKey, periodo: Periodo = 'MENSUAL') {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       include: { users: { where: { role: Role.OWNER }, take: 1 } },
     });
 
-    const monto = PRECIOS[plan];
+    const monto = precioPara(plan, periodo);
     const referencia = `A360-${tenantId.substring(0, 8)}-${Date.now()}`;
 
     await this.prisma.paymentIntent.create({
-      data: { tenantId, plan, referencia, monto, status: 'PENDING' },
+      data: { tenantId, plan, periodo, referencia, monto, status: 'PENDING' },
     });
 
     const firma = this.generarFirma(referencia, monto, 'COP');
@@ -54,7 +68,7 @@ export class PaymentsService {
     this.audit.log({
       event: 'payment.initiated',
       tenantId,
-      metadata: { plan, referencia, monto },
+      metadata: { plan, periodo, referencia, monto },
     });
 
     return {
@@ -89,8 +103,7 @@ export class PaymentsService {
       if (!intent) return { ok: true };
 
       if (transaccion.status === 'APPROVED') {
-        const proximoMes = new Date();
-        proximoMes.setMonth(proximoMes.getMonth() + 1);
+        const proximoMes = proximoVencimiento(intent.periodo);
 
         await this.prisma.$transaction([
           this.prisma.paymentIntent.update({
@@ -280,8 +293,7 @@ export class PaymentsService {
       throw new BadRequestException('El pago aún no está aprobado en Wompi');
     }
 
-    const proximoMes = new Date();
-    proximoMes.setMonth(proximoMes.getMonth() + 1);
+    const proximoMes = proximoVencimiento(intent.periodo);
 
     await this.prisma.$transaction([
       this.prisma.paymentIntent.update({
