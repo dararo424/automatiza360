@@ -1,25 +1,19 @@
 export function LoadingSpinner() {
   return (
-    <div className="flex items-center justify-center h-full w-full">
-      <svg
-        className="animate-spin h-10 w-10 text-indigo-600"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
+    <div className="flex items-center justify-center h-full w-full" role="status" aria-label="Cargando">
+      <svg className="h-12 w-12" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="19" stroke="#dcd9cd" strokeWidth="4" />
         <circle
-          className="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
+          cx="24"
+          cy="24"
+          r="19"
+          stroke="#2c7229"
           strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray="90 120"
+          className="origin-center animate-spin"
         />
-        <path
-          className="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
+        <circle cx="24" cy="24" r="5" fill="#c9f24b" className="animate-pulse" />
       </svg>
     </div>
   );

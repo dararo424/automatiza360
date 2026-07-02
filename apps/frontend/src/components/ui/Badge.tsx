@@ -1,30 +1,38 @@
-type BadgeType = 'order' | 'ticket' | 'cotizacion';
+type BadgeType = 'order' | 'ticket' | 'cotizacion' | 'appointment';
 
 const ORDER_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  CONFIRMED: 'bg-blue-100 text-blue-800',
-  PREPARING: 'bg-orange-100 text-orange-800',
-  READY: 'bg-green-100 text-green-800',
-  DELIVERED: 'bg-slate-100 text-slate-800',
-  CANCELLED: 'bg-red-100 text-red-800',
+  PENDING: 'bg-amber-50 text-amber-700 ring-amber-300',
+  CONFIRMED: 'bg-sky-50 text-sky-700 ring-sky-300',
+  PREPARING: 'bg-orange-50 text-orange-700 ring-orange-300',
+  READY: 'bg-lima-ghost text-selva-800 ring-selva-300',
+  DELIVERED: 'bg-bone-deep text-slate-600 ring-slate-300',
+  CANCELLED: 'bg-red-50 text-red-700 ring-red-300',
 };
 
 const TICKET_COLORS: Record<string, string> = {
-  RECEIVED: 'bg-blue-100 text-blue-800',
-  DIAGNOSING: 'bg-purple-100 text-purple-800',
-  WAITING_PARTS: 'bg-orange-100 text-orange-800',
-  REPAIRING: 'bg-yellow-100 text-yellow-800',
-  READY: 'bg-green-100 text-green-800',
-  DELIVERED: 'bg-slate-100 text-slate-800',
-  CANCELLED: 'bg-red-100 text-red-800',
+  RECEIVED: 'bg-sky-50 text-sky-700 ring-sky-300',
+  DIAGNOSING: 'bg-rio-50 text-rio-700 ring-rio-300',
+  WAITING_PARTS: 'bg-orange-50 text-orange-700 ring-orange-300',
+  REPAIRING: 'bg-amber-50 text-amber-700 ring-amber-300',
+  READY: 'bg-lima-ghost text-selva-800 ring-selva-300',
+  DELIVERED: 'bg-bone-deep text-slate-600 ring-slate-300',
+  CANCELLED: 'bg-red-50 text-red-700 ring-red-300',
 };
 
 const COTIZACION_COLORS: Record<string, string> = {
-  DRAFT: 'bg-slate-100 text-slate-800',
-  SENT: 'bg-blue-100 text-blue-800',
-  ACCEPTED: 'bg-green-100 text-green-800',
-  REJECTED: 'bg-red-100 text-red-800',
-  EXPIRED: 'bg-orange-100 text-orange-800',
+  DRAFT: 'bg-bone-deep text-slate-600 ring-slate-300',
+  SENT: 'bg-sky-50 text-sky-700 ring-sky-300',
+  ACCEPTED: 'bg-lima-ghost text-selva-800 ring-selva-300',
+  REJECTED: 'bg-red-50 text-red-700 ring-red-300',
+  EXPIRED: 'bg-orange-50 text-orange-700 ring-orange-300',
+};
+
+const APPOINTMENT_COLORS: Record<string, string> = {
+  SCHEDULED: 'bg-sky-50 text-sky-700 ring-sky-300',
+  CONFIRMED: 'bg-lima-ghost text-selva-800 ring-selva-300',
+  COMPLETED: 'bg-lima-ghost text-selva-800 ring-selva-300',
+  NO_SHOW: 'bg-red-50 text-red-700 ring-red-300',
+  CANCELLED: 'bg-bone-deep text-slate-600 ring-slate-300',
 };
 
 const LABELS: Record<string, string> = {
@@ -43,6 +51,16 @@ const LABELS: Record<string, string> = {
   ACCEPTED: 'Aceptado',
   REJECTED: 'Rechazado',
   EXPIRED: 'Expirado',
+  SCHEDULED: 'Agendada',
+  COMPLETED: 'Completada',
+  NO_SHOW: 'No asistió',
+};
+
+const COLOR_MAPS: Record<BadgeType, Record<string, string>> = {
+  order: ORDER_COLORS,
+  ticket: TICKET_COLORS,
+  cotizacion: COTIZACION_COLORS,
+  appointment: APPOINTMENT_COLORS,
 };
 
 interface BadgeProps {
@@ -51,18 +69,11 @@ interface BadgeProps {
 }
 
 export function Badge({ status, type }: BadgeProps) {
-  const colorMap =
-    type === 'order'
-      ? ORDER_COLORS
-      : type === 'ticket'
-        ? TICKET_COLORS
-        : COTIZACION_COLORS;
-
-  const colorClass = colorMap[status] ?? 'bg-gray-100 text-gray-800';
+  const colorClass = COLOR_MAPS[type][status] ?? 'bg-bone-deep text-slate-600 ring-slate-300';
   const label = LABELS[status] ?? status;
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colorClass}`}>
+    <span className={`chip ${colorClass}`}>
       {label}
     </span>
   );
