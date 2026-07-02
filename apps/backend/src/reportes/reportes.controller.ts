@@ -1,10 +1,10 @@
 import { Body, Controller, Headers, Post, UnauthorizedException } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { internalKeyMatches } from '../common/utils/internal-key';
 import { ReportesService } from './reportes.service';
 
 function verifyInternalKey(key: string | undefined) {
-  const expected = process.env.INTERNAL_API_KEY;
-  if (!expected || key !== expected) {
+  if (!internalKeyMatches(key)) {
     throw new UnauthorizedException('X-Internal-Key inválida o ausente');
   }
 }

@@ -94,6 +94,8 @@ model User {
   turnos              Turno[]
   passwordResetTokens PasswordResetToken[]
   refreshTokens       RefreshToken[]
+
+  @@index([tenantId])
 }
 
 model PasswordResetToken {
@@ -104,6 +106,8 @@ model PasswordResetToken {
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model RefreshToken {
@@ -114,6 +118,8 @@ model RefreshToken {
   revoked   Boolean  @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 // Pedidos (restaurante)
@@ -130,6 +136,8 @@ model Order {
   tenantId  String
   tenant    Tenant      @relation(fields: [tenantId], references: [id])
   items     OrderItem[]
+
+  @@index([tenantId, createdAt])
 }
 
 model OrderItem {
@@ -140,6 +148,8 @@ model OrderItem {
 
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
 }
 
 // Productos / inventario (tienda tech + menú restaurante)
@@ -156,6 +166,8 @@ model Product {
 
   tenantId    String
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 // Tickets de reparación (tienda tech)
@@ -175,6 +187,8 @@ model Ticket {
 
   tenantId    String
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
 }
 
 model Cotizacion {
@@ -191,6 +205,8 @@ model Cotizacion {
   tenantId    String
   tenant      Tenant           @relation(fields: [tenantId], references: [id])
   items       CotizacionItem[]
+
+  @@index([tenantId])
 }
 
 model CotizacionItem {
@@ -201,6 +217,8 @@ model CotizacionItem {
   subtotal     Float
   cotizacionId String
   cotizacion   Cotizacion @relation(fields: [cotizacionId], references: [id])
+
+  @@index([cotizacionId])
 }
 
 model Notificacion {
@@ -212,6 +230,8 @@ model Notificacion {
   createdAt DateTime @default(now())
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
 }
 
 model Supplier {
@@ -238,6 +258,8 @@ model SupplierProduct {
   createdAt   DateTime @default(now())
   supplierId  String
   supplier    Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId])
 }
 
 model MenuDia {
@@ -249,6 +271,8 @@ model MenuDia {
   tenantId  String
   tenant    Tenant         @relation(fields: [tenantId], references: [id])
   platos    PlatoMenuDia[]
+
+  @@index([tenantId, fecha])
 }
 
 model PlatoMenuDia {
@@ -259,6 +283,8 @@ model PlatoMenuDia {
   disponible  Boolean  @default(true)
   menuDiaId   String
   menuDia     MenuDia  @relation(fields: [menuDiaId], references: [id], onDelete: Cascade)
+
+  @@index([menuDiaId])
 }
 
 // Citas / agenda (clínicas y salones de belleza)
@@ -272,6 +298,8 @@ model Professional {
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
   schedules    Schedule[]
   appointments Appointment[]
+
+  @@index([tenantId])
 }
 
 // Horario semanal del profesional (por día de semana)
@@ -282,6 +310,8 @@ model Schedule {
   endTime        String       // "17:00"
   professionalId String
   professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([professionalId])
 }
 
 model Service {
@@ -295,6 +325,8 @@ model Service {
   tenantId     String
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
   appointments Appointment[]
+
+  @@index([tenantId])
 }
 
 model Appointment {
@@ -314,6 +346,8 @@ model Appointment {
   service         Service           @relation(fields: [serviceId], references: [id])
   professionalId  String?
   professional    Professional?     @relation(fields: [professionalId], references: [id])
+
+  @@index([tenantId, date])
 }
 
 // Conversaciones WhatsApp (bandeja de mensajes)
@@ -333,6 +367,7 @@ model Conversation {
   messages        Message[]
 
   @@unique([tenantId, clientPhone])
+  @@index([tenantId, lastMessageAt])
 }
 
 model Message {
@@ -342,6 +377,8 @@ model Message {
   createdAt      DateTime         @default(now())
   conversationId String
   conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }
 
 // CRM de contactos
@@ -391,6 +428,8 @@ model HazloRequest {
   status      String   @default("PENDING")
   createdAt   DateTime @default(now())
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 // API pública (plan BUSINESS)
@@ -404,6 +443,8 @@ model ApiKey {
   createdAt DateTime @default(now())
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 model PaymentIntent {
@@ -418,6 +459,8 @@ model PaymentIntent {
   updatedAt          DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 // Enums
@@ -507,6 +550,8 @@ model Gasto {
   notas       String?
   createdAt   DateTime @default(now())
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, fecha])
 }
 
 // Campañas masivas de WhatsApp
@@ -528,6 +573,8 @@ model Campaña {
   enviadaAt    DateTime?
   createdAt    DateTime      @default(now())
   tenant       Tenant        @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 // Flujos de automatización WhatsApp
@@ -547,6 +594,8 @@ model Automacion {
   ejecuciones AutomacionEjecucion[]
   createdAt   DateTime              @default(now())
   tenant      Tenant                @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 model AutomacionPaso {
@@ -556,6 +605,8 @@ model AutomacionPaso {
   tipo         String     // "WAIT" | "SEND_WHATSAPP"
   config       Json       // { days: 2 } or { mensaje: "Hola {nombre}, ..." }
   automacion   Automacion @relation(fields: [automacionId], references: [id], onDelete: Cascade)
+
+  @@index([automacionId])
 }
 
 model AutomacionEjecucion {
@@ -572,6 +623,9 @@ model AutomacionEjecucion {
   automacion    Automacion @relation(fields: [automacionId], references: [id])
   tenant        Tenant     @relation(fields: [tenantId], references: [id])
   createdAt     DateTime   @default(now())
+
+  @@index([tenantId])
+  @@index([status, scheduledAt])
 }
 
 // Garantías de productos (tienda tech)
@@ -589,6 +643,8 @@ model Garantia {
   ticketId         String?
   createdAt        DateTime @default(now())
   tenant           Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 // Reseñas y valoraciones
@@ -603,6 +659,8 @@ model Resena {
   referenciaId String?
   createdAt    DateTime @default(now())
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
 }
 
 // Proveedores y órdenes de compra
@@ -623,6 +681,8 @@ model Proveedor {
   createdAt   DateTime      @default(now())
   ordenes     OrdenCompra[]
   tenant      Tenant        @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 model OrdenCompra {
@@ -638,6 +698,8 @@ model OrdenCompra {
   items       OrdenCompraItem[]
   proveedor   Proveedor         @relation(fields: [proveedorId], references: [id])
   tenant      Tenant            @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 model OrdenCompraItem {
@@ -647,6 +709,8 @@ model OrdenCompraItem {
   cantidad       Int
   precioUnitario Float
   orden          OrdenCompra @relation(fields: [ordenCompraId], references: [id], onDelete: Cascade)
+
+  @@index([ordenCompraId])
 }
 
 // Cupones de descuento
@@ -682,6 +746,8 @@ model PushSubscription {
   auth       String
   createdAt  DateTime @default(now())
   tenant     Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 // Turnos del equipo
@@ -696,6 +762,8 @@ model Turno {
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id])
   tenant     Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, fecha])
 }
 
 // NPS responses
@@ -709,6 +777,8 @@ model NpsRespuesta {
   referenciaId String?
   createdAt    DateTime @default(now())
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 // Sucursales / branches
@@ -723,6 +793,8 @@ model Sucursal {
   activa       Boolean  @default(true)
   createdAt    DateTime @default(now())
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 // Tallas (tienda de ropa)
@@ -738,6 +810,8 @@ model TallaConfig {
   cinturaMax Float
   createdAt  DateTime @default(now())
   tenant     Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 model TallaConsulta {
@@ -751,6 +825,8 @@ model TallaConsulta {
   confianza        String
   createdAt        DateTime @default(now())
   tenant           Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
 }
 
 // Historial de pagos / facturación
@@ -765,4 +841,6 @@ model PagoRegistro {
   descripcion String?
   createdAt   DateTime @default(now())
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
 }

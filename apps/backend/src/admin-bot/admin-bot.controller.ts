@@ -11,11 +11,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AppointmentStatus, OrderStatus, TicketStatus } from '@prisma/client';
+import { internalKeyMatches } from '../common/utils/internal-key';
 import { AdminBotService } from './admin-bot.service';
 
 function verifyInternalKey(key: string | undefined) {
-  const expected = process.env.INTERNAL_API_KEY;
-  if (!expected || key !== expected) {
+  if (!internalKeyMatches(key)) {
     throw new UnauthorizedException('X-Internal-Key inválida o ausente');
   }
 }

@@ -42,6 +42,8 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new LoggingInterceptor());
+  // Cierre limpio en SIGTERM/SIGINT: drena conexiones y dispara OnModuleDestroy (Prisma)
+  app.enableShutdownHooks();
 
   const config = new DocumentBuilder()
     .setTitle('Automatiza360 API')

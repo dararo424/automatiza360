@@ -193,27 +193,56 @@ export class PaymentsService {
     return { ok: true };
   }
 
+  /**
+   * Verifica el checksum de eventos de Wompi según su especificación:
+   * SHA256( valores de signature.properties concatenados + timestamp + events_secret ).
+   * https://docs.wompi.co/docs/colombia/eventos/
+   */
   verificarFirmaWebhook(payload: any, firmaRecibida: string): boolean {
     const secret = process.env.WOMPI_EVENTS_SECRET;
     if (!secret) {
       // Sin secret configurado no podemos validar — rechazar siempre
       return false;
     }
-    const cadena = JSON.stringify(payload) + secret;
+    const firma: string = firmaRecibida || payload?.signature?.checksum || '';
+    const properties: string[] = payload?.signature?.properties ?? [];
+    const timestamp = payload?.timestamp;
+    if (!firma || !properties.length || timestamp === undefined) return false;
+
+    // Cada propiedad (ej. "transaction.id") es relativa a payload.data
+    const valores = properties
+      .map((prop) =>
+        prop.split('.').reduce((acc: any, key: string) => acc?.[key], payload?.data),
+      )
+      .map((v) => (v === undefined || v === null ? '' : String(v)))
+      .join('');
+
     const firmaCalculada = crypto
       .createHash('sha256')
-      .update(cadena)
+      .update(`${valores}${timestamp}${secret}`)
       .digest('hex');
-    return firmaCalculada === firmaRecibida;
+
+    const a = Buffer.from(firmaCalculada, 'hex');
+    const b = Buffer.from(firma.toLowerCase(), 'hex');
+    if (a.length !== b.length || b.length === 0) return false;
+    return crypto.timingSafeEqual(a, b);
   }
 
-  async verificarTransaccion(transactionId: string) {
+  async verificarTransaccion(tenantId: string, transactionId: string) {
     const wompiUrl = process.env.WOMPI_BASE_URL ?? 'https://sandbox.wompi.co/v1';
     const response = await fetch(`${wompiUrl}/transactions/${transactionId}`, {
       headers: { Authorization: `Bearer ${process.env.WOMPI_PRIVATE_KEY}` },
     });
     const data = await response.json();
     const tx = data.data;
+
+    // Solo se pueden consultar transacciones cuya referencia pertenezca al tenant
+    const intent = await this.prisma.paymentIntent.findFirst({
+      where: { referencia: tx?.reference ?? '', tenantId },
+      select: { id: true },
+    });
+    if (!intent) throw new NotFoundException('Transacción no encontrada para este negocio');
+
     return {
       status: tx.status as string,
       reference: tx.reference as string,
@@ -222,11 +251,34 @@ export class PaymentsService {
     };
   }
 
-  async activarPorReferencia(referencia: string) {
+  async activarPorReferencia(tenantId: string, referencia: string) {
+    // Scoped al tenant del usuario: nadie puede activar referencias ajenas
     const intent = await this.prisma.paymentIntent.findFirst({
-      where: { referencia },
+      where: { referencia, tenantId },
     });
     if (!intent) throw new NotFoundException('Referencia no encontrada');
+
+    // Idempotente: el webhook pudo haberla activado ya
+    if (intent.status === 'APPROVED') return { ok: true, plan: intent.plan };
+
+    // Nunca confiar en el cliente: verificar contra Wompi que el pago
+    // realmente fue aprobado, por el monto y moneda correctos.
+    const wompiUrl = process.env.WOMPI_BASE_URL ?? 'https://sandbox.wompi.co/v1';
+    const res = await fetch(
+      `${wompiUrl}/transactions?reference=${encodeURIComponent(referencia)}`,
+      { headers: { Authorization: `Bearer ${process.env.WOMPI_PRIVATE_KEY}` } },
+    );
+    const data = (await res.json()) as any;
+    const transacciones: any[] = Array.isArray(data?.data) ? data.data : [data?.data].filter(Boolean);
+    const aprobada = transacciones.find(
+      (t) =>
+        t?.status === 'APPROVED' &&
+        t?.amount_in_cents === intent.monto &&
+        t?.currency === 'COP',
+    );
+    if (!aprobada) {
+      throw new BadRequestException('El pago aún no está aprobado en Wompi');
+    }
 
     const proximoMes = new Date();
     proximoMes.setMonth(proximoMes.getMonth() + 1);
@@ -234,7 +286,7 @@ export class PaymentsService {
     await this.prisma.$transaction([
       this.prisma.paymentIntent.update({
         where: { id: intent.id },
-        data: { status: 'APPROVED' },
+        data: { status: 'APPROVED', wompiTransactionId: aprobada.id ?? null },
       }),
       this.prisma.tenant.update({
         where: { id: intent.tenantId },
@@ -246,6 +298,12 @@ export class PaymentsService {
         },
       }),
     ]);
+
+    this.audit.log({
+      event: 'subscription.activated',
+      tenantId: intent.tenantId,
+      metadata: { plan: intent.plan, referencia, via: 'activar-por-referencia' },
+    });
 
     return { ok: true, plan: intent.plan };
   }

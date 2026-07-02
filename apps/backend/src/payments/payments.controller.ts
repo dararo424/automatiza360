@@ -37,14 +37,20 @@ export class PaymentsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('verificar/:transactionId')
-  verificarTransaccion(@Param('transactionId') transactionId: string) {
-    return this.payments.verificarTransaccion(transactionId);
+  verificarTransaccion(
+    @CurrentUser() user: { tenantId: string },
+    @Param('transactionId') transactionId: string,
+  ) {
+    return this.payments.verificarTransaccion(user.tenantId, transactionId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('activar-por-referencia')
-  activarPorReferencia(@Body('referencia') referencia: string) {
-    return this.payments.activarPorReferencia(referencia);
+  activarPorReferencia(
+    @CurrentUser() user: { tenantId: string },
+    @Body('referencia') referencia: string,
+  ) {
+    return this.payments.activarPorReferencia(user.tenantId, referencia);
   }
 
   @UseGuards(JwtAuthGuard)

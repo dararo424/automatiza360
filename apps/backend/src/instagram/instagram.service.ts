@@ -1,5 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { encryptSecret, decryptSecret } from '../common/utils/secret-crypto';
 
 @Injectable()
 export class InstagramService {
@@ -102,7 +103,7 @@ export class InstagramService {
       data: {
         instagramPageId,
         instagramPageName,
-        metaPageAccessToken: pageAccessToken,
+        metaPageAccessToken: encryptSecret(pageAccessToken),
         instagramConnectedAt: new Date(),
       },
     });
@@ -149,18 +150,12 @@ export class InstagramService {
       select: {
         id: true,
         metaPageAccessToken: true,
-        users: {
-          where: { role: 'BOT', active: true },
-          select: { email: true },
-          take: 1,
-        },
       },
     });
     if (!tenant || !tenant.metaPageAccessToken) return null;
     return {
       tenantId: tenant.id,
-      pageAccessToken: tenant.metaPageAccessToken,
-      botEmail: tenant.users[0]?.email ?? null,
+      pageAccessToken: decryptSecret(tenant.metaPageAccessToken),
     };
   }
 }
