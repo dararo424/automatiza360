@@ -20,21 +20,28 @@ export class NpsService {
   }
 
   async getStats(tenantId: string) {
-    const [aggregate, promotores, neutrales, detractores, ultimas] = await Promise.all([
-      this.prisma.npsRespuesta.aggregate({
-        where: { tenantId },
-        _count: { _all: true },
-        _avg: { score: true },
-      }),
-      this.prisma.npsRespuesta.count({ where: { tenantId, score: { gte: 9 } } }),
-      this.prisma.npsRespuesta.count({ where: { tenantId, score: { gte: 7, lte: 8 } } }),
-      this.prisma.npsRespuesta.count({ where: { tenantId, score: { lte: 6 } } }),
-      this.prisma.npsRespuesta.findMany({
-        where: { tenantId },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      }),
-    ]);
+    const [aggregate, promotores, neutrales, detractores, ultimas] =
+      await Promise.all([
+        this.prisma.npsRespuesta.aggregate({
+          where: { tenantId },
+          _count: { _all: true },
+          _avg: { score: true },
+        }),
+        this.prisma.npsRespuesta.count({
+          where: { tenantId, score: { gte: 9 } },
+        }),
+        this.prisma.npsRespuesta.count({
+          where: { tenantId, score: { gte: 7, lte: 8 } },
+        }),
+        this.prisma.npsRespuesta.count({
+          where: { tenantId, score: { lte: 6 } },
+        }),
+        this.prisma.npsRespuesta.findMany({
+          where: { tenantId },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        }),
+      ]);
 
     const total = aggregate._count._all;
 

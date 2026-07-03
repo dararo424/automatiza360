@@ -7,7 +7,9 @@ export class AdminBotResumenesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async resumenDia(tenantId: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant no encontrado');
 
     const hoy = new Date();
@@ -60,7 +62,10 @@ export class AdminBotResumenesService {
           updatedAt: { gte: hoy, lt: manana },
         },
       });
-      const ingresos = ticketsCerradosHoy.reduce((sum, t) => sum + (t.price ?? 0), 0);
+      const ingresos = ticketsCerradosHoy.reduce(
+        (sum, t) => sum + (t.price ?? 0),
+        0,
+      );
 
       return {
         industria: industry,
@@ -94,7 +99,10 @@ export class AdminBotResumenesService {
       const ingresosVenta = ordenes
         .filter((o) => o.status !== OrderStatus.CANCELLED)
         .reduce((sum, o) => sum + o.total, 0);
-      const ingresosServicio = ticketsCerradosHoy.reduce((sum, t) => sum + (t.price ?? 0), 0);
+      const ingresosServicio = ticketsCerradosHoy.reduce(
+        (sum, t) => sum + (t.price ?? 0),
+        0,
+      );
 
       return {
         industria: industry,
@@ -107,14 +115,22 @@ export class AdminBotResumenesService {
       };
     }
 
-    if (industry === 'CLINIC' || industry === 'BEAUTY' || industry === 'VETERINARY') {
+    if (
+      industry === 'CLINIC' ||
+      industry === 'BEAUTY' ||
+      industry === 'VETERINARY'
+    ) {
       const citas = await this.prisma.appointment.findMany({
         where: { tenantId, date: { gte: hoy, lt: manana } },
         include: { service: true, professional: true },
       });
-      const completadas = citas.filter((c) => c.status === AppointmentStatus.COMPLETED);
+      const completadas = citas.filter(
+        (c) => c.status === AppointmentStatus.COMPLETED,
+      );
       const pendientes = citas.filter(
-        (c) => c.status === AppointmentStatus.SCHEDULED || c.status === AppointmentStatus.CONFIRMED,
+        (c) =>
+          c.status === AppointmentStatus.SCHEDULED ||
+          c.status === AppointmentStatus.CONFIRMED,
       );
 
       return {
@@ -154,50 +170,79 @@ export class AdminBotResumenesService {
       };
     }
 
-    return { industria: industry, mensaje: 'Industria sin resumen específico configurado' };
+    return {
+      industria: industry,
+      mensaje: 'Industria sin resumen específico configurado',
+    };
   }
 
   async resumenMes(tenantId: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant no encontrado');
 
     const ahora = new Date();
     const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-    const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+    const inicioMesAnterior = new Date(
+      ahora.getFullYear(),
+      ahora.getMonth() - 1,
+      1,
+    );
     const finMesAnterior = new Date(inicioMes.getTime() - 1);
 
-    const [ordenesEste, ordenesPrevio, citasEste, citasPrevio, contactosEste, gastosEste] =
-      await Promise.all([
-        this.prisma.order.aggregate({
-          where: { tenantId, createdAt: { gte: inicioMes }, status: { not: OrderStatus.CANCELLED } },
-          _count: { id: true },
-          _sum: { total: true },
-        }),
-        this.prisma.order.aggregate({
-          where: {
-            tenantId,
-            createdAt: { gte: inicioMesAnterior, lte: finMesAnterior },
-            status: { not: OrderStatus.CANCELLED },
-          },
-          _count: { id: true },
-          _sum: { total: true },
-        }),
-        this.prisma.appointment.count({ where: { tenantId, createdAt: { gte: inicioMes } } }),
-        this.prisma.appointment.count({
-          where: { tenantId, createdAt: { gte: inicioMesAnterior, lte: finMesAnterior } },
-        }),
-        this.prisma.contact.count({ where: { tenantId, createdAt: { gte: inicioMes } } }),
-        this.prisma.gasto.aggregate({
-          where: { tenantId, fecha: { gte: inicioMes } },
-          _sum: { monto: true },
-        }),
-      ]);
+    const [
+      ordenesEste,
+      ordenesPrevio,
+      citasEste,
+      citasPrevio,
+      contactosEste,
+      gastosEste,
+    ] = await Promise.all([
+      this.prisma.order.aggregate({
+        where: {
+          tenantId,
+          createdAt: { gte: inicioMes },
+          status: { not: OrderStatus.CANCELLED },
+        },
+        _count: { id: true },
+        _sum: { total: true },
+      }),
+      this.prisma.order.aggregate({
+        where: {
+          tenantId,
+          createdAt: { gte: inicioMesAnterior, lte: finMesAnterior },
+          status: { not: OrderStatus.CANCELLED },
+        },
+        _count: { id: true },
+        _sum: { total: true },
+      }),
+      this.prisma.appointment.count({
+        where: { tenantId, createdAt: { gte: inicioMes } },
+      }),
+      this.prisma.appointment.count({
+        where: {
+          tenantId,
+          createdAt: { gte: inicioMesAnterior, lte: finMesAnterior },
+        },
+      }),
+      this.prisma.contact.count({
+        where: { tenantId, createdAt: { gte: inicioMes } },
+      }),
+      this.prisma.gasto.aggregate({
+        where: { tenantId, fecha: { gte: inicioMes } },
+        _sum: { monto: true },
+      }),
+    ]);
 
     const pct = (cur: number, prev: number) =>
       prev === 0 ? null : Math.round(((cur - prev) / prev) * 100);
 
     return {
-      mes: ahora.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }),
+      mes: ahora.toLocaleDateString('es-CO', {
+        month: 'long',
+        year: 'numeric',
+      }),
       ordenes: {
         cantidad: ordenesEste._count.id,
         ingresos: ordenesEste._sum.total ?? 0,
@@ -234,13 +279,17 @@ export class AdminBotResumenesService {
         cliente: r.clientName ?? 'Anónimo',
         rating: r.rating,
         comentario: r.comentario ?? '',
-        fecha: r.createdAt.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }),
+        fecha: r.createdAt.toLocaleDateString('es-CO', {
+          timeZone: 'America/Bogota',
+        }),
       })),
       nps: nps.map((n) => ({
         cliente: n.clientPhone,
         score: n.score,
         comentario: n.comentario ?? '',
-        fecha: n.createdAt.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }),
+        fecha: n.createdAt.toLocaleDateString('es-CO', {
+          timeZone: 'America/Bogota',
+        }),
       })),
     };
   }

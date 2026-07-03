@@ -16,19 +16,32 @@ interface FilaTabla {
 export class TallasService {
   constructor(private prisma: PrismaService) {}
 
-  async cargarDesdeBuffer(tenantId: string, buffer: Buffer): Promise<{ importadas: number }> {
+  async cargarDesdeBuffer(
+    tenantId: string,
+    buffer: Buffer,
+  ): Promise<{ importadas: number }> {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const filas = XLSX.utils.sheet_to_json<FilaTabla>(sheet);
 
-    const columnas = ['Talla', 'Altura_min', 'Altura_max', 'Peso_min', 'Peso_max', 'Cintura_min', 'Cintura_max'];
-    if (filas.length === 0 || !columnas.every(c => c in filas[0])) {
-      throw new BadRequestException(`El archivo debe tener las columnas: ${columnas.join(', ')}`);
+    const columnas = [
+      'Talla',
+      'Altura_min',
+      'Altura_max',
+      'Peso_min',
+      'Peso_max',
+      'Cintura_min',
+      'Cintura_max',
+    ];
+    if (filas.length === 0 || !columnas.every((c) => c in filas[0])) {
+      throw new BadRequestException(
+        `El archivo debe tener las columnas: ${columnas.join(', ')}`,
+      );
     }
 
     await this.prisma.tallaConfig.deleteMany({ where: { tenantId } });
     await this.prisma.tallaConfig.createMany({
-      data: filas.map(f => ({
+      data: filas.map((f) => ({
         tenantId,
         talla: String(f.Talla),
         alturaMin: Number(f.Altura_min),
@@ -43,7 +56,10 @@ export class TallasService {
     return { importadas: filas.length };
   }
 
-  async sincronizarGoogleSheets(tenantId: string, sheetUrl: string): Promise<{ importadas: number }> {
+  async sincronizarGoogleSheets(
+    tenantId: string,
+    sheetUrl: string,
+  ): Promise<{ importadas: number }> {
     const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
     if (!match) throw new BadRequestException('URL de Google Sheets inválida');
 
@@ -51,7 +67,10 @@ export class TallasService {
     const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
 
     const response = await fetch(csvUrl);
-    if (!response.ok) throw new BadRequestException('No se pudo acceder al Google Sheet. Verifica que sea público.');
+    if (!response.ok)
+      throw new BadRequestException(
+        'No se pudo acceder al Google Sheet. Verifica que sea público.',
+      );
 
     const csvText = await response.text();
     const buffer = Buffer.from(csvText, 'utf-8');
@@ -60,14 +79,24 @@ export class TallasService {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const filas = XLSX.utils.sheet_to_json<FilaTabla>(sheet);
 
-    const columnas = ['Talla', 'Altura_min', 'Altura_max', 'Peso_min', 'Peso_max', 'Cintura_min', 'Cintura_max'];
-    if (filas.length === 0 || !columnas.every(c => c in filas[0])) {
-      throw new BadRequestException(`El Sheet debe tener las columnas: ${columnas.join(', ')}`);
+    const columnas = [
+      'Talla',
+      'Altura_min',
+      'Altura_max',
+      'Peso_min',
+      'Peso_max',
+      'Cintura_min',
+      'Cintura_max',
+    ];
+    if (filas.length === 0 || !columnas.every((c) => c in filas[0])) {
+      throw new BadRequestException(
+        `El Sheet debe tener las columnas: ${columnas.join(', ')}`,
+      );
     }
 
     await this.prisma.tallaConfig.deleteMany({ where: { tenantId } });
     await this.prisma.tallaConfig.createMany({
-      data: filas.map(f => ({
+      data: filas.map((f) => ({
         tenantId,
         talla: String(f.Talla),
         alturaMin: Number(f.Altura_min),
@@ -114,11 +143,18 @@ export class TallasService {
     altura: number,
     peso: number,
     cintura?: number,
-  ): { talla: string; confianza: 'ALTA' | 'MEDIA' | 'BAJA'; advertencia?: string } {
-    const candidatos = configs.filter(c => {
+  ): {
+    talla: string;
+    confianza: 'ALTA' | 'MEDIA' | 'BAJA';
+    advertencia?: string;
+  } {
+    const candidatos = configs.filter((c) => {
       const alturaOk = altura >= c.alturaMin && altura <= c.alturaMax;
       const pesoOk = peso >= c.pesoMin && peso <= c.pesoMax;
-      const cinturaOk = cintura != null ? cintura >= c.cinturaMin && cintura <= c.cinturaMax : true;
+      const cinturaOk =
+        cintura != null
+          ? cintura >= c.cinturaMin && cintura <= c.cinturaMax
+          : true;
       return alturaOk && pesoOk && cinturaOk;
     });
 
@@ -130,13 +166,13 @@ export class TallasService {
       return {
         talla: candidatos[0].talla,
         confianza: 'MEDIA',
-        advertencia: `Podrías quedar entre ${candidatos.map(c => c.talla).join(' y ')}. Considera medir tu cintura para mayor precisión.`,
+        advertencia: `Podrías quedar entre ${candidatos.map((c) => c.talla).join(' y ')}. Considera medir tu cintura para mayor precisión.`,
       };
     }
 
     // No hay coincidencia exacta — buscar el más cercano por altura
     const porAltura = [...configs]
-      .map(c => ({
+      .map((c) => ({
         ...c,
         distancia: Math.abs((c.alturaMin + c.alturaMax) / 2 - altura),
       }))
@@ -145,7 +181,8 @@ export class TallasService {
     return {
       talla: porAltura[0].talla,
       confianza: 'BAJA',
-      advertencia: 'Tu talla es aproximada. Te recomendamos probarte antes de comprar.',
+      advertencia:
+        'Tu talla es aproximada. Te recomendamos probarte antes de comprar.',
     };
   }
 

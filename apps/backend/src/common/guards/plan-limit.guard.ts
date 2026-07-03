@@ -1,14 +1,23 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Plan } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PLAN_FEATURE_KEY, PlanFeature } from '../decorators/plan-feature.decorator';
+import {
+  PLAN_FEATURE_KEY,
+  PlanFeature,
+} from '../decorators/plan-feature.decorator';
 
-const PLAN_LIMITS: Record<Plan, { teamSize: number | null; apiKeys: boolean }> = {
-  STARTER:  { teamSize: 3,    apiKeys: false },
-  PRO:      { teamSize: 10,   apiKeys: false },
-  BUSINESS: { teamSize: null, apiKeys: true  },
-};
+const PLAN_LIMITS: Record<Plan, { teamSize: number | null; apiKeys: boolean }> =
+  {
+    STARTER: { teamSize: 3, apiKeys: false },
+    PRO: { teamSize: 10, apiKeys: false },
+    BUSINESS: { teamSize: null, apiKeys: true },
+  };
 
 @Injectable()
 export class PlanLimitGuard implements CanActivate {
@@ -18,11 +27,16 @@ export class PlanLimitGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const feature = this.reflector.get<PlanFeature>(PLAN_FEATURE_KEY, context.getHandler());
+    const feature = this.reflector.get<PlanFeature>(
+      PLAN_FEATURE_KEY,
+      context.getHandler(),
+    );
     if (!feature) return true;
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user as { userId: string; tenantId: string } | undefined;
+    const user = request.user as
+      | { userId: string; tenantId: string }
+      | undefined;
     if (!user?.tenantId) return true;
 
     const tenant = await this.prisma.tenant.findUnique({
@@ -31,7 +45,7 @@ export class PlanLimitGuard implements CanActivate {
     });
     if (!tenant) return true;
 
-    const limits = PLAN_LIMITS[tenant.plan as Plan] ?? PLAN_LIMITS.STARTER;
+    const limits = PLAN_LIMITS[tenant.plan] ?? PLAN_LIMITS.STARTER;
 
     if (feature === 'API_KEYS' && !limits.apiKeys) {
       throw new ForbiddenException(

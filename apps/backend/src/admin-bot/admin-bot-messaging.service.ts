@@ -14,11 +14,18 @@ export class AdminBotMessagingService {
     return cleaned.startsWith('+') ? cleaned : `+57${cleaned}`;
   }
 
-  async sendWhatsAppToClient(tenantId: string, toPhone: string, body: string): Promise<void> {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+  async sendWhatsAppToClient(
+    tenantId: string,
+    toPhone: string,
+    body: string,
+  ): Promise<void> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const whatsappNumber = tenant?.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
+    const whatsappNumber =
+      tenant?.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
 
     if (!accountSid || !authToken || !whatsappNumber) return;
 
@@ -30,7 +37,9 @@ export class AdminBotMessagingService {
         body,
       });
     } catch (err) {
-      this.logger.error(`sendWhatsAppToClient error: ${(err as Error).message}`);
+      this.logger.error(
+        `sendWhatsAppToClient error: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -49,12 +58,15 @@ export class AdminBotMessagingService {
     errores: number;
     detalle: Array<{ nombre: string; ok: boolean; error?: string }>;
   }> {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant no encontrado');
 
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const whatsappNumber = tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
+    const whatsappNumber =
+      tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
 
     if (!accountSid || !authToken || !whatsappNumber) {
       throw new Error('Credenciales Twilio no configuradas');
@@ -68,7 +80,11 @@ export class AdminBotMessagingService {
     for (const paciente of pacientes) {
       try {
         const toNumber = this.normalizePhone(paciente.telefono);
-        const mensaje = this.buildCancelacionMessage(paciente, tenant.name, industry);
+        const mensaje = this.buildCancelacionMessage(
+          paciente,
+          tenant.name,
+          industry,
+        );
 
         await twilioClient.messages.create({
           from: `whatsapp:${whatsappNumber}`,
@@ -78,11 +94,19 @@ export class AdminBotMessagingService {
 
         enviados++;
         detalle.push({ nombre: paciente.nombre, ok: true });
-        this.logger.log(`Cancelación notificada a ${toNumber} (${paciente.nombre})`);
+        this.logger.log(
+          `Cancelación notificada a ${toNumber} (${paciente.nombre})`,
+        );
       } catch (error) {
         errores++;
-        detalle.push({ nombre: paciente.nombre, ok: false, error: (error as Error).message });
-        this.logger.error(`Error notificando a ${paciente.nombre}: ${(error as Error).message}`);
+        detalle.push({
+          nombre: paciente.nombre,
+          ok: false,
+          error: (error as Error).message,
+        });
+        this.logger.error(
+          `Error notificando a ${paciente.nombre}: ${(error as Error).message}`,
+        );
       }
     }
 
@@ -90,7 +114,12 @@ export class AdminBotMessagingService {
   }
 
   private buildCancelacionMessage(
-    paciente: { nombre: string; servicio: string; hora: string; profesional?: string | null },
+    paciente: {
+      nombre: string;
+      servicio: string;
+      hora: string;
+      profesional?: string | null;
+    },
     storeName: string,
     industry: string,
   ): string {
@@ -100,7 +129,9 @@ export class AdminBotMessagingService {
       hour12: true,
       timeZone: 'America/Bogota',
     });
-    const conProfesional = paciente.profesional ? ` con ${paciente.profesional}` : '';
+    const conProfesional = paciente.profesional
+      ? ` con ${paciente.profesional}`
+      : '';
 
     switch (industry.toUpperCase() as Industry) {
       case Industry.CLINIC:
@@ -137,7 +168,9 @@ export class AdminBotMessagingService {
   }
 
   async crearCampañaRapida(tenantId: string, mensaje: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
     if (!tenant) throw new NotFoundException('Tenant no encontrado');
 
     const contactos = await this.prisma.contact.findMany({
@@ -146,7 +179,11 @@ export class AdminBotMessagingService {
     });
 
     if (contactos.length === 0) {
-      return { enviados: 0, errores: 0, mensaje: 'No hay contactos registrados' };
+      return {
+        enviados: 0,
+        errores: 0,
+        mensaje: 'No hay contactos registrados',
+      };
     }
 
     const campaña = await this.prisma.campaña.create({
@@ -160,7 +197,8 @@ export class AdminBotMessagingService {
 
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const whatsappNumber = tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
+    const whatsappNumber =
+      tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
     const contentSid = process.env.TWILIO_CONTENT_SID;
 
     let enviados = 0;
@@ -195,7 +233,11 @@ export class AdminBotMessagingService {
 
     await this.prisma.campaña.update({
       where: { id: campaña.id },
-      data: { status: 'ENVIADA' as any, totalEnviado: enviados, enviadaAt: new Date() },
+      data: {
+        status: 'ENVIADA' as any,
+        totalEnviado: enviados,
+        enviadaAt: new Date(),
+      },
     });
 
     return { enviados, errores, total: contactos.length };

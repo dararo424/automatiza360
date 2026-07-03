@@ -44,18 +44,12 @@ export class NotificadosVentasController {
   }
 
   @Delete(':id')
-  eliminar(
-    @CurrentUser() user: { tenantId: string },
-    @Param('id') id: string,
-  ) {
+  eliminar(@CurrentUser() user: { tenantId: string }, @Param('id') id: string) {
     return this.svc.eliminar(user.tenantId, id);
   }
 
   @Post(':id/probar')
-  probar(
-    @CurrentUser() user: { tenantId: string },
-    @Param('id') id: string,
-  ) {
+  probar(@CurrentUser() user: { tenantId: string }, @Param('id') id: string) {
     return this.svc.probar(user.tenantId, id);
   }
 }

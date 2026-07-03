@@ -16,7 +16,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly prisma: PrismaService) {
     const secret = process.env.JWT_SECRET;
     if (!secret || secret.length < 32) {
-      throw new Error('JWT_SECRET env var is required and must be at least 32 characters');
+      throw new Error(
+        'JWT_SECRET env var is required and must be at least 32 characters',
+      );
     }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -37,7 +39,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Verificar tokenVersion: si el token no tiene tv (antiguo) o no coincide, rechazar.
     // Esto fuerza re-login tras cambio de contraseña o tokens pre-feature.
     if (payload.tv === undefined || payload.tv !== user.tokenVersion) {
-      throw new UnauthorizedException('Sesión expirada. Inicia sesión de nuevo.');
+      throw new UnauthorizedException(
+        'Sesión expirada. Inicia sesión de nuevo.',
+      );
     }
 
     return {

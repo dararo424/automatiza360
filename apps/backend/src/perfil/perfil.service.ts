@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ActualizarPagosConfigDto, ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
+import {
+  ActualizarPagosConfigDto,
+  ActualizarPerfilDto,
+} from './dto/actualizar-perfil.dto';
 
 @Injectable()
 export class PerfilService {
@@ -205,7 +208,9 @@ export class PerfilService {
       data: {
         ...(dto.paymentMode !== undefined && { paymentMode: dto.paymentMode }),
         ...(dto.paymentText !== undefined && { paymentText: dto.paymentText }),
-        ...(dto.wompiPublicKey !== undefined && { wompiPublicKey: dto.wompiPublicKey }),
+        ...(dto.wompiPublicKey !== undefined && {
+          wompiPublicKey: dto.wompiPublicKey,
+        }),
         ...(dto.wompiIntegritySecret !== undefined && {
           wompiIntegritySecret: dto.wompiIntegritySecret,
         }),

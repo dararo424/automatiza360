@@ -15,9 +15,16 @@ import { TwilioModule } from '../twilio/twilio.module';
       useFactory: () => {
         const secret = process.env.JWT_SECRET;
         if (!secret || secret.length < 32) {
-          throw new Error('JWT_SECRET env var is required and must be at least 32 characters');
+          throw new Error(
+            'JWT_SECRET env var is required and must be at least 32 characters',
+          );
         }
-        return { secret, signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as any } };
+        return {
+          secret,
+          signOptions: {
+            expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as any,
+          },
+        };
       },
     }),
     TwilioModule,

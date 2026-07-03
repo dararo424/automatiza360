@@ -22,11 +22,14 @@ export class MenuDiaService {
       });
 
       if (existente) {
-        await tx.platoMenuDia.deleteMany({ where: { menuDiaId: existente.id } });
+        await tx.platoMenuDia.deleteMany({
+          where: { menuDiaId: existente.id },
+        });
         return tx.menuDia.update({
           where: { id: existente.id },
           data: {
-            activo: 'activo' in dto && dto.activo !== undefined ? dto.activo : true,
+            activo:
+              'activo' in dto && dto.activo !== undefined ? dto.activo : true,
             platos: { create: dto.platos },
           },
           include: { platos: true },
@@ -68,7 +71,9 @@ export class MenuDiaService {
   }
 
   async toggleActivo(id: string, tenantId: string) {
-    const menu = await this.prisma.menuDia.findFirst({ where: { id, tenantId } });
+    const menu = await this.prisma.menuDia.findFirst({
+      where: { id, tenantId },
+    });
     if (!menu) return null;
     return this.prisma.menuDia.update({
       where: { id },
@@ -82,7 +87,9 @@ export class MenuDiaService {
   }
 
   async togglePlato(platoId: string) {
-    const plato = await this.prisma.platoMenuDia.findUnique({ where: { id: platoId } });
+    const plato = await this.prisma.platoMenuDia.findUnique({
+      where: { id: platoId },
+    });
     if (!plato) return null;
     return this.prisma.platoMenuDia.update({
       where: { id: platoId },
@@ -91,7 +98,9 @@ export class MenuDiaService {
   }
 
   async obtenerMenuPublico(tenantSlug: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { slug: tenantSlug } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug: tenantSlug },
+    });
     if (!tenant) return null;
 
     const start = new Date();
@@ -112,7 +121,9 @@ export class MenuDiaService {
   }
 
   async getQrConfigByTenantId(tenantId: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+    });
     const tenantSlug = tenant?.slug ?? '';
     const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173';
     return {

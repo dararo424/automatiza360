@@ -19,10 +19,7 @@ export class TurnosController {
   constructor(private readonly turnosService: TurnosService) {}
 
   @Get()
-  getTurnosSemana(
-    @Query('semana') semana: string,
-    @CurrentUser() user: any,
-  ) {
+  getTurnosSemana(@Query('semana') semana: string, @CurrentUser() user: any) {
     const s = semana ?? new Date().toISOString().slice(0, 10);
     return this.turnosService.getTurnosSemana(user.tenantId, s);
   }

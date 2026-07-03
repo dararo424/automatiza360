@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { SuperadminGuard } from './superadmin.guard';
 import { AdminService } from './admin.service';
 

@@ -72,7 +72,8 @@ export class TicketsService {
         : s;
     };
 
-    const header = 'Numero,Estado,Cliente,Telefono,Dispositivo,Problema,Diagnostico,Precio,Fecha';
+    const header =
+      'Numero,Estado,Cliente,Telefono,Dispositivo,Problema,Diagnostico,Precio,Fecha';
     const rows = tickets.map((t) =>
       [
         escape(t.number),

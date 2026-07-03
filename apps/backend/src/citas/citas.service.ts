@@ -255,7 +255,9 @@ export class CitasService {
       (s) => s.name.toLowerCase() === dto.serviceName.toLowerCase(),
     );
     if (!service) {
-      throw new NotFoundException(`Servicio "${dto.serviceName}" no encontrado`);
+      throw new NotFoundException(
+        `Servicio "${dto.serviceName}" no encontrado`,
+      );
     }
 
     let professionalId: string | undefined;
@@ -442,7 +444,8 @@ export class CitasService {
 
       const occupied = booked.some((a) => {
         // DB stores UTC; convert to Colombia (UTC-5) before comparing with local slot times
-        const aMin = ((a.date.getUTCHours() - 5 + 24) % 24) * 60 + a.date.getUTCMinutes();
+        const aMin =
+          ((a.date.getUTCHours() - 5 + 24) % 24) * 60 + a.date.getUTCMinutes();
         return min >= aMin && min < aMin + a.service.duration;
       });
 

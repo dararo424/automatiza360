@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ProveedoresService } from './proveedores.service';
@@ -21,8 +29,14 @@ export class ProveedoresController {
   }
 
   @Get('buscar')
-  buscarProductos(@Query() query: BuscarProductosDto, @CurrentUser() user: any) {
-    return this.proveedoresService.buscarProductos(query.q ?? '', user.tenantId);
+  buscarProductos(
+    @Query() query: BuscarProductosDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.proveedoresService.buscarProductos(
+      query.q ?? '',
+      user.tenantId,
+    );
   }
 
   @Get(':id/productos')

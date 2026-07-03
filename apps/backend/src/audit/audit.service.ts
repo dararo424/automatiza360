@@ -61,7 +61,9 @@ export class AuditService {
         },
       })
       .catch((err: unknown) => {
-        this.logger.error(`Failed to persist audit log: ${(err as Error).message}`);
+        this.logger.error(
+          `Failed to persist audit log: ${(err as Error).message}`,
+        );
       });
   }
 }

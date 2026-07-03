@@ -40,16 +40,16 @@ export class OrdenesController {
   @Get('exportar')
   @Header('Content-Type', 'text/csv; charset=utf-8')
   @Header('Content-Disposition', 'attachment; filename="ordenes.csv"')
-  async exportar(@CurrentUser() user: any, @Res({ passthrough: false }) res: Response) {
+  async exportar(
+    @CurrentUser() user: any,
+    @Res({ passthrough: false }) res: Response,
+  ) {
     const csv = await this.ordenesService.exportarCsv(user.tenantId);
     res.send(csv);
   }
 
   @Get()
-  listar(
-    @CurrentUser() user: any,
-    @Query('estado') estado?: OrderStatus,
-  ) {
+  listar(@CurrentUser() user: any, @Query('estado') estado?: OrderStatus) {
     return this.ordenesService.listar(user.tenantId, estado);
   }
 

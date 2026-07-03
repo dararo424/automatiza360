@@ -28,13 +28,17 @@ export class CuponesService {
         valor: dto.valor,
         minCompra: dto.minCompra ?? 0,
         maxUsos: dto.maxUsos ?? null,
-        fechaVencimiento: dto.fechaVencimiento ? new Date(dto.fechaVencimiento) : null,
+        fechaVencimiento: dto.fechaVencimiento
+          ? new Date(dto.fechaVencimiento)
+          : null,
       },
     });
   }
 
   async toggle(tenantId: string, id: string) {
-    const cupon = await this.prisma.cupon.findFirst({ where: { id, tenantId } });
+    const cupon = await this.prisma.cupon.findFirst({
+      where: { id, tenantId },
+    });
     if (!cupon) throw new NotFoundException('Cupón no encontrado');
     return this.prisma.cupon.update({
       where: { id },
@@ -51,7 +55,13 @@ export class CuponesService {
     tenantId: string,
     codigo: string,
     montoCompra: number,
-  ): Promise<{ valido: boolean; tipo?: CuponTipo; valor?: number; descuento?: number; mensaje?: string }> {
+  ): Promise<{
+    valido: boolean;
+    tipo?: CuponTipo;
+    valor?: number;
+    descuento?: number;
+    mensaje?: string;
+  }> {
     const cupon = await this.prisma.cupon.findUnique({
       where: { tenantId_codigo: { tenantId, codigo: codigo.toUpperCase() } },
     });

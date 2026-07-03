@@ -29,7 +29,9 @@ export class ApiKeysService {
       select: { plan: true },
     });
     if (tenant.plan !== 'BUSINESS') {
-      throw new ForbiddenException('Las API keys solo están disponibles en el plan BUSINESS');
+      throw new ForbiddenException(
+        'Las API keys solo están disponibles en el plan BUSINESS',
+      );
     }
 
     const rawKey = `a360_${crypto.randomBytes(24).toString('hex')}`;

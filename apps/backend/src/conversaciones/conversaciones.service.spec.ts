@@ -7,7 +7,11 @@ describe('ConversacionesService', () => {
   let service: ConversacionesService;
 
   const mockPrisma = {
-    tenant: { findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
+    tenant: {
+      findUnique: jest.fn(),
+      findUniqueOrThrow: jest.fn(),
+      update: jest.fn(),
+    },
     conversation: {
       findFirst: jest.fn(),
       findUnique: jest.fn(),
@@ -45,7 +49,10 @@ describe('ConversacionesService', () => {
     // Conversación nueva este mes (no contada aún)
     mockPrisma.conversation.findUnique.mockResolvedValue(null);
 
-    const result = await service.checkAndTrackConversation('tenant-id', '+57300');
+    const result = await service.checkAndTrackConversation(
+      'tenant-id',
+      '+57300',
+    );
     expect(result.allowed).toBe(false);
     expect(result.used).toBe(500);
     expect(result.limit).toBe(500);
@@ -74,11 +81,18 @@ describe('ConversacionesService', () => {
     mockPrisma.conversation.findFirst.mockResolvedValue({ id: 'conv-id' });
     mockPrisma.message.findMany.mockResolvedValue([
       { body: 'Hola', direction: 'INBOUND', createdAt: new Date() },
-      { body: 'Hola, ¿en qué te ayudo?', direction: 'OUTBOUND', createdAt: new Date() },
+      {
+        body: 'Hola, ¿en qué te ayudo?',
+        direction: 'OUTBOUND',
+        createdAt: new Date(),
+      },
     ]);
     const result = await service.getSesion('tenant-id', '+57300');
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({ role: 'user', content: 'Hola' });
-    expect(result[1]).toEqual({ role: 'assistant', content: 'Hola, ¿en qué te ayudo?' });
+    expect(result[1]).toEqual({
+      role: 'assistant',
+      content: 'Hola, ¿en qué te ayudo?',
+    });
   });
 });

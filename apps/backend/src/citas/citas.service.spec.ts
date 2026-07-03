@@ -20,9 +20,13 @@ const mockPrisma = {
 };
 
 const mockCalendar = { crearEvento: jest.fn() };
-const mockAutomaciones = { dispararTrigger: jest.fn().mockResolvedValue(undefined) };
+const mockAutomaciones = {
+  dispararTrigger: jest.fn().mockResolvedValue(undefined),
+};
 const mockPush = { sendToTenant: jest.fn().mockResolvedValue(undefined) };
-const mockFlujos = { assertFlujoActivo: jest.fn().mockResolvedValue(undefined) };
+const mockFlujos = {
+  assertFlujoActivo: jest.fn().mockResolvedValue(undefined),
+};
 
 const TENANT_ID = 'tenant-1';
 
@@ -54,13 +58,17 @@ describe('CitasService', () => {
 
   describe('listarServicios', () => {
     it('solo retorna servicios activos del tenant', async () => {
-      const fakeServices = [{ id: 's1', name: 'Corte', active: true, tenantId: TENANT_ID }];
+      const fakeServices = [
+        { id: 's1', name: 'Corte', active: true, tenantId: TENANT_ID },
+      ];
       mockPrisma.service.findMany.mockResolvedValue(fakeServices);
 
       const result = await service.listarServicios(TENANT_ID);
       expect(result).toEqual(fakeServices);
       expect(mockPrisma.service.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { tenantId: TENANT_ID, active: true } }),
+        expect.objectContaining({
+          where: { tenantId: TENANT_ID, active: true },
+        }),
       );
     });
   });
@@ -72,7 +80,11 @@ describe('CitasService', () => {
   describe('listarProfesionales', () => {
     it('incluye los horarios de cada profesional', async () => {
       mockPrisma.professional.findMany.mockResolvedValue([
-        { id: 'p1', name: 'Dr. García', schedules: [{ dayOfWeek: 1, startTime: '08:00', endTime: '17:00' }] },
+        {
+          id: 'p1',
+          name: 'Dr. García',
+          schedules: [{ dayOfWeek: 1, startTime: '08:00', endTime: '17:00' }],
+        },
       ]);
 
       const result = await service.listarProfesionales(TENANT_ID);
@@ -149,7 +161,12 @@ describe('CitasService', () => {
 
     it('actualiza el estado y crea notificación para CONFIRMED', async () => {
       mockPrisma.appointment.findFirst.mockResolvedValue(fakeCita);
-      mockPrisma.appointment.update.mockResolvedValue({ ...fakeCita, status: 'CONFIRMED', service: fakeCita.service, professional: fakeCita.professional });
+      mockPrisma.appointment.update.mockResolvedValue({
+        ...fakeCita,
+        status: 'CONFIRMED',
+        service: fakeCita.service,
+        professional: fakeCita.professional,
+      });
 
       await service.actualizarEstado('a1', 'CONFIRMED' as any, TENANT_ID);
 
@@ -157,18 +174,25 @@ describe('CitasService', () => {
         expect.objectContaining({ data: { status: 'CONFIRMED' } }),
       );
       expect(mockPrisma.notificacion.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ type: 'CITA_ESTADO' }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ type: 'CITA_ESTADO' }),
+        }),
       );
     });
 
     it('dispara automatización APPOINTMENT_COMPLETED al completar', async () => {
       mockPrisma.appointment.findFirst.mockResolvedValue(fakeCita);
-      mockPrisma.appointment.update.mockResolvedValue({ ...fakeCita, status: 'COMPLETED', service: fakeCita.service, professional: fakeCita.professional });
+      mockPrisma.appointment.update.mockResolvedValue({
+        ...fakeCita,
+        status: 'COMPLETED',
+        service: fakeCita.service,
+        professional: fakeCita.professional,
+      });
 
       await service.actualizarEstado('a1', 'COMPLETED' as any, TENANT_ID);
 
       // La automatización se dispara async (fire-and-forget), esperamos que se llame
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       expect(mockAutomaciones.dispararTrigger).toHaveBeenCalledWith(
         TENANT_ID,
         'APPOINTMENT_COMPLETED',
@@ -180,7 +204,12 @@ describe('CitasService', () => {
 
     it('no crea notificación para estados sin plantilla (SCHEDULED)', async () => {
       mockPrisma.appointment.findFirst.mockResolvedValue(fakeCita);
-      mockPrisma.appointment.update.mockResolvedValue({ ...fakeCita, status: 'SCHEDULED', service: fakeCita.service, professional: fakeCita.professional });
+      mockPrisma.appointment.update.mockResolvedValue({
+        ...fakeCita,
+        status: 'SCHEDULED',
+        service: fakeCita.service,
+        professional: fakeCita.professional,
+      });
 
       await service.actualizarEstado('a1', 'SCHEDULED' as any, TENANT_ID);
       expect(mockPrisma.notificacion.create).not.toHaveBeenCalled();
@@ -194,10 +223,19 @@ describe('CitasService', () => {
   describe('consultarDisponibilidad', () => {
     it('retorna available: false si el profesional no trabaja ese día', async () => {
       mockPrisma.professional.findMany.mockResolvedValue([
-        { id: 'p1', name: 'Dr. García', specialty: 'General', schedules: [], appointments: [] },
+        {
+          id: 'p1',
+          name: 'Dr. García',
+          specialty: 'General',
+          schedules: [],
+          appointments: [],
+        },
       ]);
 
-      const result = await service.consultarDisponibilidad(TENANT_ID, '2026-04-15');
+      const result = await service.consultarDisponibilidad(
+        TENANT_ID,
+        '2026-04-15',
+      );
       expect(result[0].available).toBe(false);
       expect(result[0].reason).toContain('No trabaja');
     });
@@ -205,14 +243,19 @@ describe('CitasService', () => {
     it('genera slots disponibles cuando hay horario configurado', async () => {
       mockPrisma.professional.findMany.mockResolvedValue([
         {
-          id: 'p1', name: 'Dr. García', specialty: 'General',
+          id: 'p1',
+          name: 'Dr. García',
+          specialty: 'General',
           schedules: [{ dayOfWeek: 2, startTime: '08:00', endTime: '09:00' }],
           appointments: [],
         },
       ]);
 
       // 2026-04-14 es martes (dayOfWeek=2)
-      const result = await service.consultarDisponibilidad(TENANT_ID, '2026-04-14');
+      const result = await service.consultarDisponibilidad(
+        TENANT_ID,
+        '2026-04-14',
+      );
       expect(result[0]).toHaveProperty('availableSlots');
       expect(Array.isArray(result[0].availableSlots)).toBe(true);
     });

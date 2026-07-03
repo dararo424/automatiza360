@@ -4,7 +4,10 @@ import { Plan, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 
-const PLAN_LIMITS: Record<Plan, { conversations: number | null; apiKeys: boolean; teamSize: number | null }> = {
+const PLAN_LIMITS: Record<
+  Plan,
+  { conversations: number | null; apiKeys: boolean; teamSize: number | null }
+> = {
   STARTER: { conversations: 500, apiKeys: false, teamSize: 3 },
   PRO: { conversations: 2000, apiKeys: false, teamSize: 10 },
   BUSINESS: { conversations: null, apiKeys: true, teamSize: null },
@@ -34,35 +37,70 @@ export class SubscriptionsService {
         trialEndsAt: { gte: now, lte: en3dias },
         active: true,
       },
-      include: { users: { where: { role: 'OWNER', active: true }, select: { email: true, name: true }, take: 1 } },
+      include: {
+        users: {
+          where: { role: 'OWNER', active: true },
+          select: { email: true, name: true },
+          take: 1,
+        },
+      },
     });
 
     for (const tenant of trialsProximos) {
       const owner = tenant.users[0];
       if (!owner) continue;
-      const diasRestantes = Math.ceil((tenant.trialEndsAt!.getTime() - now.getTime()) / 86400000);
+      const diasRestantes = Math.ceil(
+        (tenant.trialEndsAt!.getTime() - now.getTime()) / 86400000,
+      );
       try {
-        await this.emailService.enviarTrialTerminaPronto(owner.email, owner.name, diasRestantes, tenant.plan);
-        this.logger.log(`Trial ending email → ${owner.email} (${diasRestantes}d)`);
+        await this.emailService.enviarTrialTerminaPronto(
+          owner.email,
+          owner.name,
+          diasRestantes,
+          tenant.plan,
+        );
+        this.logger.log(
+          `Trial ending email → ${owner.email} (${diasRestantes}d)`,
+        );
       } catch (e) {
-        this.logger.error(`Trial email failed for ${owner.email}: ${(e as Error).message}`);
+        this.logger.error(
+          `Trial email failed for ${owner.email}: ${(e as Error).message}`,
+        );
       }
     }
 
     // 2. Trials vencidos → suspender
     const trialsVencidos = await this.prisma.tenant.findMany({
-      where: { subscriptionStatus: SubscriptionStatus.TRIAL, trialEndsAt: { lt: now }, active: true },
-      include: { users: { where: { role: 'OWNER', active: true }, select: { email: true, name: true }, take: 1 } },
+      where: {
+        subscriptionStatus: SubscriptionStatus.TRIAL,
+        trialEndsAt: { lt: now },
+        active: true,
+      },
+      include: {
+        users: {
+          where: { role: 'OWNER', active: true },
+          select: { email: true, name: true },
+          take: 1,
+        },
+      },
     });
 
     for (const tenant of trialsVencidos) {
-      await this.prisma.tenant.update({ where: { id: tenant.id }, data: { subscriptionStatus: SubscriptionStatus.SUSPENDED } });
+      await this.prisma.tenant.update({
+        where: { id: tenant.id },
+        data: { subscriptionStatus: SubscriptionStatus.SUSPENDED },
+      });
       const owner = tenant.users[0];
       if (owner) {
         try {
-          await this.emailService.enviarSuscripcionVencida(owner.email, owner.name);
+          await this.emailService.enviarSuscripcionVencida(
+            owner.email,
+            owner.name,
+          );
         } catch (e) {
-          this.logger.error(`Suspended email failed for ${owner.email}: ${(e as Error).message}`);
+          this.logger.error(
+            `Suspended email failed for ${owner.email}: ${(e as Error).message}`,
+          );
         }
       }
       this.logger.log(`Trial expired → suspended: ${tenant.id}`);
@@ -75,19 +113,40 @@ export class SubscriptionsService {
         subscriptionEndsAt: { gte: now, lte: en3dias },
         active: true,
       },
-      include: { users: { where: { role: 'OWNER', active: true }, select: { email: true, name: true }, take: 1 } },
+      include: {
+        users: {
+          where: { role: 'OWNER', active: true },
+          select: { email: true, name: true },
+          take: 1,
+        },
+      },
     });
 
     for (const tenant of suscProximas) {
       const owner = tenant.users[0];
       if (!owner || !tenant.subscriptionEndsAt) continue;
-      const diasRestantes = Math.ceil((tenant.subscriptionEndsAt.getTime() - now.getTime()) / 86400000);
-      const fechaFmt = tenant.subscriptionEndsAt.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+      const diasRestantes = Math.ceil(
+        (tenant.subscriptionEndsAt.getTime() - now.getTime()) / 86400000,
+      );
+      const fechaFmt = tenant.subscriptionEndsAt.toLocaleDateString('es-CO', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
       try {
-        await this.emailService.enviarSuscripcionExpiraPronto(owner.email, owner.name, diasRestantes, fechaFmt);
-        this.logger.log(`Subscription expiring email → ${owner.email} (${diasRestantes}d)`);
+        await this.emailService.enviarSuscripcionExpiraPronto(
+          owner.email,
+          owner.name,
+          diasRestantes,
+          fechaFmt,
+        );
+        this.logger.log(
+          `Subscription expiring email → ${owner.email} (${diasRestantes}d)`,
+        );
       } catch (e) {
-        this.logger.error(`Expiry email failed for ${owner.email}: ${(e as Error).message}`);
+        this.logger.error(
+          `Expiry email failed for ${owner.email}: ${(e as Error).message}`,
+        );
       }
     }
 
@@ -98,17 +157,31 @@ export class SubscriptionsService {
         subscriptionEndsAt: { lt: now },
         active: true,
       },
-      include: { users: { where: { role: 'OWNER', active: true }, select: { email: true, name: true }, take: 1 } },
+      include: {
+        users: {
+          where: { role: 'OWNER', active: true },
+          select: { email: true, name: true },
+          take: 1,
+        },
+      },
     });
 
     for (const tenant of suscVencidas) {
-      await this.prisma.tenant.update({ where: { id: tenant.id }, data: { subscriptionStatus: SubscriptionStatus.SUSPENDED } });
+      await this.prisma.tenant.update({
+        where: { id: tenant.id },
+        data: { subscriptionStatus: SubscriptionStatus.SUSPENDED },
+      });
       const owner = tenant.users[0];
       if (owner) {
         try {
-          await this.emailService.enviarSuscripcionVencida(owner.email, owner.name);
+          await this.emailService.enviarSuscripcionVencida(
+            owner.email,
+            owner.name,
+          );
         } catch (e) {
-          this.logger.error(`Expired email failed for ${owner.email}: ${(e as Error).message}`);
+          this.logger.error(
+            `Expired email failed for ${owner.email}: ${(e as Error).message}`,
+          );
         }
       }
       this.logger.log(`Subscription expired → suspended: ${tenant.id}`);
@@ -158,14 +231,22 @@ export class SubscriptionsService {
     for (const c of hoyContactos) {
       if (!c.email) continue;
       try {
-        await this.emailService.enviarFelicitacionCumpleanos(c.email, c.name ?? 'Cliente', c.tenant.name);
+        await this.emailService.enviarFelicitacionCumpleanos(
+          c.email,
+          c.name ?? 'Cliente',
+          c.tenant.name,
+        );
         this.logger.log(`Birthday email → ${c.email}`);
       } catch (e) {
-        this.logger.error(`Birthday email failed for ${c.email}: ${(e as Error).message}`);
+        this.logger.error(
+          `Birthday email failed for ${c.email}: ${(e as Error).message}`,
+        );
       }
     }
 
-    this.logger.log(`Birthday cron: ${hoyContactos.length} emails sent for ${mes}/${dia}`);
+    this.logger.log(
+      `Birthday cron: ${hoyContactos.length} emails sent for ${mes}/${dia}`,
+    );
   }
 
   // ── Cron: digest semanal los lunes a las 8am Colombia ─────────────────────
@@ -178,7 +259,13 @@ export class SubscriptionsService {
 
     const tenants = await this.prisma.tenant.findMany({
       where: { active: true, subscriptionStatus: { in: ['TRIAL', 'ACTIVE'] } },
-      include: { users: { where: { role: 'OWNER', active: true }, select: { email: true, name: true }, take: 1 } },
+      include: {
+        users: {
+          where: { role: 'OWNER', active: true },
+          select: { email: true, name: true },
+          take: 1,
+        },
+      },
     });
 
     for (const tenant of tenants) {
@@ -186,26 +273,52 @@ export class SubscriptionsService {
       if (!owner) continue;
 
       try {
-        const [ingresosSemanaData, ordenesSemana, citasSemana, contactosNuevos] = await Promise.all([
-          this.prisma.order.aggregate({
-            where: { tenantId: tenant.id, createdAt: { gte: semanaInicio }, status: { notIn: ['CANCELLED'] } },
-            _sum: { total: true },
-          }),
-          this.prisma.order.count({ where: { tenantId: tenant.id, createdAt: { gte: semanaInicio } } }),
-          this.prisma.appointment.count({ where: { tenantId: tenant.id, date: { gte: semanaInicio }, status: { notIn: ['CANCELLED'] } } }),
-          this.prisma.contact.count({ where: { tenantId: tenant.id, createdAt: { gte: semanaInicio } } }),
-        ]);
-
-        await this.emailService.enviarResemanalDigest(owner.email, owner.name, tenant.name, {
-          ingresosSemana: Math.round(ingresosSemanaData._sum.total ?? 0),
+        const [
+          ingresosSemanaData,
           ordenesSemana,
           citasSemana,
           contactosNuevos,
-          appUrl,
-        });
+        ] = await Promise.all([
+          this.prisma.order.aggregate({
+            where: {
+              tenantId: tenant.id,
+              createdAt: { gte: semanaInicio },
+              status: { notIn: ['CANCELLED'] },
+            },
+            _sum: { total: true },
+          }),
+          this.prisma.order.count({
+            where: { tenantId: tenant.id, createdAt: { gte: semanaInicio } },
+          }),
+          this.prisma.appointment.count({
+            where: {
+              tenantId: tenant.id,
+              date: { gte: semanaInicio },
+              status: { notIn: ['CANCELLED'] },
+            },
+          }),
+          this.prisma.contact.count({
+            where: { tenantId: tenant.id, createdAt: { gte: semanaInicio } },
+          }),
+        ]);
+
+        await this.emailService.enviarResemanalDigest(
+          owner.email,
+          owner.name,
+          tenant.name,
+          {
+            ingresosSemana: Math.round(ingresosSemanaData._sum.total ?? 0),
+            ordenesSemana,
+            citasSemana,
+            contactosNuevos,
+            appUrl,
+          },
+        );
         this.logger.log(`Weekly digest → ${owner.email}`);
       } catch (e) {
-        this.logger.error(`Weekly digest failed for ${owner.email}: ${(e as Error).message}`);
+        this.logger.error(
+          `Weekly digest failed for ${owner.email}: ${(e as Error).message}`,
+        );
       }
     }
   }
@@ -242,7 +355,13 @@ export class SubscriptionsService {
 
     const now = new Date();
     const daysRemaining = tenant.trialEndsAt
-      ? Math.max(0, Math.ceil((tenant.trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+      ? Math.max(
+          0,
+          Math.ceil(
+            (tenant.trialEndsAt.getTime() - now.getTime()) /
+              (1000 * 60 * 60 * 24),
+          ),
+        )
       : 0;
 
     return {
@@ -272,7 +391,13 @@ export class SubscriptionsService {
 
     const now = new Date();
     const daysRemaining = tenant.trialEndsAt
-      ? Math.max(0, Math.ceil((tenant.trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+      ? Math.max(
+          0,
+          Math.ceil(
+            (tenant.trialEndsAt.getTime() - now.getTime()) /
+              (1000 * 60 * 60 * 24),
+          ),
+        )
       : 0;
 
     return {
@@ -295,8 +420,8 @@ export class SubscriptionsService {
 
   async iniciarUpgrade(tenantId: string, nuevoPlan: string) {
     const PLAN_PRECIOS: Record<string, number> = {
-      STARTER: 7900000,   // $79,000 COP en centavos
-      PRO: 24200000,      // $242,000 COP en centavos
+      STARTER: 7900000, // $79,000 COP en centavos
+      PRO: 24200000, // $242,000 COP en centavos
       BUSINESS: 52900000, // $529,000 COP en centavos
     };
 
@@ -361,7 +486,10 @@ export class SubscriptionsService {
       });
     }
 
-    return { status: tenant.subscriptionStatus, message: 'Suscripción cancelada. Tendrás acceso hasta fin de mes.' };
+    return {
+      status: tenant.subscriptionStatus,
+      message: 'Suscripción cancelada. Tendrás acceso hasta fin de mes.',
+    };
   }
 
   async reactivarSuscripcion(tenantId: string) {
@@ -372,12 +500,16 @@ export class SubscriptionsService {
 
     if (!tenant) throw new BadRequestException('Tenant no encontrado');
     if (tenant.subscriptionStatus !== SubscriptionStatus.CANCELLED) {
-      throw new BadRequestException('Solo se puede reactivar una suscripción cancelada');
+      throw new BadRequestException(
+        'Solo se puede reactivar una suscripción cancelada',
+      );
     }
 
     const now = new Date();
     const isInTrial = tenant.trialEndsAt && tenant.trialEndsAt > now;
-    const newStatus = isInTrial ? SubscriptionStatus.TRIAL : SubscriptionStatus.ACTIVE;
+    const newStatus = isInTrial
+      ? SubscriptionStatus.TRIAL
+      : SubscriptionStatus.ACTIVE;
 
     const updated = await this.prisma.tenant.update({
       where: { id: tenantId },
@@ -385,6 +517,9 @@ export class SubscriptionsService {
       select: { subscriptionStatus: true },
     });
 
-    return { status: updated.subscriptionStatus, message: 'Suscripción reactivada exitosamente.' };
+    return {
+      status: updated.subscriptionStatus,
+      message: 'Suscripción reactivada exitosamente.',
+    };
   }
 }

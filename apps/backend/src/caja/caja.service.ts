@@ -9,7 +9,11 @@ export class CajaService {
   async getCorteDiario(tenantId: string, fecha?: string) {
     const fechaObj = fecha ? new Date(fecha) : new Date();
     const startOfDay = new Date(
-      Date.UTC(fechaObj.getUTCFullYear(), fechaObj.getUTCMonth(), fechaObj.getUTCDate()),
+      Date.UTC(
+        fechaObj.getUTCFullYear(),
+        fechaObj.getUTCMonth(),
+        fechaObj.getUTCDate(),
+      ),
     );
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
@@ -35,7 +39,10 @@ export class CajaService {
     const totalGastos = gastos.reduce((sum, g) => sum + g.monto, 0);
 
     // Group by status (proxy for payment method since no dedicated field)
-    const porEstado: Record<string, { metodo: string; total: number; count: number }> = {};
+    const porEstado: Record<
+      string,
+      { metodo: string; total: number; count: number }
+    > = {};
     for (const orden of ordenes) {
       const key = orden.status;
       if (!porEstado[key]) {

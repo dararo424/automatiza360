@@ -19,13 +19,17 @@ async function main() {
   const BOT_PASSWORD = 'bot-mi-vecina-2026';
   const BOT_NAME = 'Bot WhatsApp';
 
-  const tenant = await prisma.tenant.findUnique({ where: { slug: TENANT_SLUG } });
+  const tenant = await prisma.tenant.findUnique({
+    where: { slug: TENANT_SLUG },
+  });
   if (!tenant) {
     console.error(`❌  Tenant "${TENANT_SLUG}" no encontrado. Créalo primero.`);
     process.exit(1);
   }
 
-  const existente = await prisma.user.findUnique({ where: { email: BOT_EMAIL } });
+  const existente = await prisma.user.findUnique({
+    where: { email: BOT_EMAIL },
+  });
   if (existente) {
     console.log(`ℹ️   Usuario bot ya existe: ${BOT_EMAIL}`);
     await prisma.$disconnect();
@@ -43,7 +47,9 @@ async function main() {
     },
   });
 
-  console.log(`✅  Bot creado: ${bot.email} (id: ${bot.id}) en tenant "${tenant.name}"`);
+  console.log(
+    `✅  Bot creado: ${bot.email} (id: ${bot.id}) en tenant "${tenant.name}"`,
+  );
   console.log(`\n🔑  Variables de entorno para el ai-service:`);
   console.log(`   BOT_EMAIL=${BOT_EMAIL}`);
   console.log(`   BOT_PASSWORD=${BOT_PASSWORD}`);
