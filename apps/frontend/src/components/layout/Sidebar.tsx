@@ -5,7 +5,7 @@ import {
   ShieldCheck, CalendarDays, ShoppingCart, Ruler, Dumbbell, PawPrint,
   BedDouble, Croissant, MessageCircle, Users, Megaphone, Zap, CreditCard,
   Wallet, Truck, Tag, Star, CalendarClock, Bot, Settings, Bell, TrendingUp,
-  UserRound, Crown, KeyRound, Building2, type LucideIcon,
+  UserRound, Crown, KeyRound, Building2, Watch, type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getNotificaciones } from '../../api/notificaciones';
@@ -104,12 +104,12 @@ function getSections(industry: Industry): NavSection[] {
       { to: '/inventario', label: 'Inventario', icon: Boxes },
     ],
     JEWELRY: [
-      { to: '/productos', label: 'Catálogo', emoji: '⌚' },
-      { to: '/inventario', label: 'Inventario', emoji: '📦' },
-      { to: '/ordenes', label: 'Ventas', emoji: '🛒' },
-      { to: '/tickets', label: 'Reparaciones', emoji: '🔧' },
-      { to: '/garantias', label: 'Garantías', emoji: '🛡️' },
-      { to: '/agenda', label: 'Citas servicio', emoji: '📅' },
+      { to: '/productos', label: 'Catálogo', icon: Watch },
+      { to: '/inventario', label: 'Inventario', icon: Package },
+      { to: '/ordenes', label: 'Ventas', icon: ShoppingCart },
+      { to: '/tickets', label: 'Reparaciones', icon: Wrench },
+      { to: '/garantias', label: 'Garantías', icon: ShieldCheck },
+      { to: '/agenda', label: 'Citas servicio', icon: CalendarDays },
     ],
   };
 
