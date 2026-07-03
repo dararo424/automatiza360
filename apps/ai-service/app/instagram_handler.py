@@ -101,10 +101,14 @@ async def _get_tenant_config_for_page(page_id: str) -> dict | None:
             )
             if r.status_code == 200 and r.json():
                 data = r.json()
+                # El backend aporta el token OAuth fresco; las credenciales
+                # del bot para autenticarse contra el backend viven en la
+                # config local (TENANT_CONFIG).
+                local_cfg = get_tenant_by_instagram_page(page_id)
                 return {
                     "pageAccessToken": data.get("pageAccessToken"),
-                    "botEmail": data.get("botEmail"),
-                    "botPassword": None,  # resolved via botEmail below
+                    "botEmail": local_cfg.bot_email if local_cfg else "",
+                    "botPassword": local_cfg.bot_password if local_cfg else "",
                     "tenantId": data.get("tenantId"),
                     "source": "backend",
                 }
@@ -147,7 +151,7 @@ async def _process_instagram_message(
             psid,
             "Has sido eliminado de nuestra lista de mensajes. "
             "Si cambias de opinión, escríbenos y con gusto te atendemos. 👋",
-            config.meta_page_access_token,
+            page_access_token,
         )
         return
 

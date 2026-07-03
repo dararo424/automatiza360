@@ -10,6 +10,7 @@ import {
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { internalKeyMatches } from '../common/utils/internal-key';
 import { InstagramService } from './instagram.service';
 
 @ApiTags('instagram')
@@ -63,8 +64,7 @@ export class InstagramController {
    */
   @Get('tenant-by-page')
   async getTenantByPage(@Query('pageId') pageId: string, @Req() req: any) {
-    const expected = process.env.INTERNAL_API_KEY;
-    if (!expected || req.headers['x-internal-key'] !== expected) {
+    if (!internalKeyMatches(req.headers['x-internal-key'])) {
       return null;
     }
     return this.svc.getTenantByPageId(pageId);

@@ -11,6 +11,28 @@ const PAGE_TITLES: Record<string, string> = {
   '/inventario': 'Inventario',
   '/notificaciones': 'Notificaciones',
   '/agenda': 'Agenda',
+  '/menu-dia': 'Menú del día',
+  '/conversaciones': 'Conversaciones',
+  '/contactos': 'Contactos',
+  '/campañas': 'Campañas',
+  '/flujos': 'Flujos WhatsApp',
+  '/gastos': 'Gastos',
+  '/caja': 'Caja',
+  '/compras': 'Proveedores',
+  '/cupones': 'Cupones',
+  '/resenas': 'Reseñas',
+  '/turnos': 'Turnos',
+  '/automaciones': 'Automatizaciones',
+  '/configuracion': 'Configuración',
+  '/nps': 'NPS',
+  '/equipo': 'Equipo',
+  '/mi-plan': 'Mi plan',
+  '/planes': 'Planes',
+  '/api-keys': 'API Keys',
+  '/sucursales': 'Sucursales',
+  '/garantias': 'Garantías',
+  '/tallas': 'Tallas',
+  '/pago-resultado': 'Resultado del pago',
 };
 
 const ROL_LABELS: Record<string, string> = {
@@ -39,23 +61,25 @@ export function TopBar({ onMenuToggle, isMobileOpen }: TopBarProps) {
     : '?';
 
   return (
-    <header className="bg-white border-b border-slate-200 shadow-sm h-16 flex items-center justify-between px-4 md:px-6 flex-shrink-0">
+    <header className="bg-bone border-b border-bone-deep h-16 flex items-center justify-between px-4 md:px-6 flex-shrink-0">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuToggle}
-          className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-ink hover:bg-bone-deep transition-colors"
           aria-label="Menú"
         >
           {isMobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
-        <h1 className="text-xl font-semibold text-slate-800">{title}</h1>
+        <h1 className="font-display text-xl font-bold text-ink">{title}</h1>
       </div>
       <div className="flex items-center gap-3">
         <div className="text-right hidden sm:block">
-          <p className="text-sm font-medium text-slate-700">{user?.name}</p>
-          <p className="text-xs text-slate-500">{ROL_LABELS[user?.role ?? ''] ?? user?.role}</p>
+          <p className="text-sm font-medium text-ink">{user?.name}</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-500">
+            {ROL_LABELS[user?.role ?? ''] ?? user?.role}
+          </p>
         </div>
-        <div className="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">
+        <div className="h-9 w-9 rounded-full bg-lima border-2 border-ink flex items-center justify-center text-ink text-sm font-display font-bold">
           {initials}
         </div>
       </div>

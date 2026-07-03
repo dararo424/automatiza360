@@ -1,3 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-bone text-ink font-sans;
+  }
+
+  h1, h2, h3 {
+    @apply font-display tracking-tight;
+  }
+
+  ::selection {
+    background: #c9f24b;
+    color: #101b10;
+  }
+
+  /* Foco visible siempre: nunca outline-none sin reemplazo */
+  :focus-visible {
+    outline: 2px solid #2c7229;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Scrollbar con carácter */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #bcb9ab;
+    border-radius: 5px;
+    border: 2px solid #f4f2ea;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94927f;
+  }
+}
+
+@layer components {
+  /* Tarjeta estándar: borde tinta fino sobre hueso */
+  .card {
+    @apply bg-white border border-bone-deep rounded-2xl shadow-card;
+  }
+
+  /* Tarjeta protagonista: borde tinta + sombra dura desplazada */
+  .card-pop {
+    @apply bg-white border-2 border-ink rounded-2xl shadow-pop;
+  }
+
+  /* Botón primario de la marca */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-ink text-lima font-display font-semibold
+      px-5 py-2.5 rounded-xl border-2 border-ink transition-all
+      hover:bg-selva-900 hover:shadow-pop-sm hover:-translate-x-px hover:-translate-y-px
+      active:translate-x-0 active:translate-y-0 active:shadow-none
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  /* Botón lima: máxima atención */
+  .btn-lima {
+    @apply inline-flex items-center justify-center gap-2 bg-lima text-ink font-display font-semibold
+      px-5 py-2.5 rounded-xl border-2 border-ink transition-all
+      hover:bg-lima-bright hover:shadow-pop hover:-translate-x-0.5 hover:-translate-y-0.5
+      active:translate-x-0 active:translate-y-0 active:shadow-none
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  /* Botón secundario */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 bg-transparent text-ink font-medium
+      px-4 py-2 rounded-xl border border-bone-deep transition-colors
+      hover:border-ink hover:bg-bone-soft
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  /* Microetiqueta monoespaciada: sello de la identidad */
+  .label-mono {
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500;
+  }
+
+  /* Chip de estado con borde */
+  .chip {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md font-mono text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset;
+  }
+
+  .input-brand {
+    @apply w-full bg-white border border-bone-deep rounded-xl px-4 py-2.5 text-ink placeholder:text-slate-400
+      focus:outline-none focus:border-ink focus:ring-2 focus:ring-lima transition-colors;
+  }
+}

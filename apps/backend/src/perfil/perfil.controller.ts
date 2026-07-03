@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -49,6 +50,18 @@ export class PerfilController {
     @Body('step') step: number,
   ) {
     return this.perfilService.actualizarOnboarding(user.tenantId, step);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('perfil/datos-ejemplo')
+  contarDatosEjemplo(@CurrentUser() user: any) {
+    return this.perfilService.contarDatosEjemplo(user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('perfil/datos-ejemplo')
+  eliminarDatosEjemplo(@CurrentUser() user: any) {
+    return this.perfilService.eliminarDatosEjemplo(user.tenantId);
   }
 
   @UseGuards(JwtAuthGuard)
