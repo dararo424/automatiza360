@@ -60,11 +60,14 @@ export class TwilioProvisioningService {
     const aiServiceUrl = process.env.AI_SERVICE_URL ?? '';
 
     if (!sid || !token) {
-      this.logger.warn('TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN no configurados');
+      this.logger.warn(
+        'TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN no configurados',
+      );
       return {
         twilioNumber: null,
         sandboxMode: false,
-        setupInstructions: 'Twilio no está configurado. Contacta al administrador.',
+        setupInstructions:
+          'Twilio no está configurado. Contacta al administrador.',
       };
     }
 
@@ -95,7 +98,8 @@ export class TwilioProvisioningService {
         return {
           twilioNumber: null,
           sandboxMode: false,
-          setupInstructions: 'Error al provisionar número. Contacta al administrador.',
+          setupInstructions:
+            'Error al provisionar número. Contacta al administrador.',
         };
       }
 
@@ -107,7 +111,12 @@ export class TwilioProvisioningService {
         data: { twilioNumber: phoneNumber },
       });
 
-      await this.updateRailwayConfig(tenantId, botEmail, botPassword, phoneNumber).catch((e) =>
+      await this.updateRailwayConfig(
+        tenantId,
+        botEmail,
+        botPassword,
+        phoneNumber,
+      ).catch((e) =>
         this.logger.warn('No se pudo actualizar Railway TENANT_CONFIG:', e),
       );
 
@@ -121,7 +130,8 @@ export class TwilioProvisioningService {
       return {
         twilioNumber: null,
         sandboxMode: false,
-        setupInstructions: 'Error al provisionar número. Contacta al administrador.',
+        setupInstructions:
+          'Error al provisionar número. Contacta al administrador.',
       };
     }
   }
@@ -136,6 +146,8 @@ export class TwilioProvisioningService {
     if (!railwayToken) return;
     // Railway API integration for automatic TENANT_CONFIG update
     // Requires RAILWAY_TOKEN and RAILWAY_SERVICE_ID env vars
-    this.logger.log('Railway TENANT_CONFIG update: implement with Railway API if needed');
+    this.logger.log(
+      'Railway TENANT_CONFIG update: implement with Railway API if needed',
+    );
   }
 }

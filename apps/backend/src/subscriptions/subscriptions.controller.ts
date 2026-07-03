@@ -1,4 +1,11 @@
-import { Body, Controller, ForbiddenException, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { SubscriptionsService } from './subscriptions.service';
@@ -28,13 +35,21 @@ export class SubscriptionsController {
 
   @Post('cancelar')
   cancelarSuscripcion(@CurrentUser() user: { tenantId: string; role: string }) {
-    if (user.role !== 'OWNER') throw new ForbiddenException('Solo el propietario puede cancelar la suscripción');
+    if (user.role !== 'OWNER')
+      throw new ForbiddenException(
+        'Solo el propietario puede cancelar la suscripción',
+      );
     return this.subscriptionsService.cancelarSuscripcion(user.tenantId);
   }
 
   @Post('reactivar')
-  reactivarSuscripcion(@CurrentUser() user: { tenantId: string; role: string }) {
-    if (user.role !== 'OWNER') throw new ForbiddenException('Solo el propietario puede reactivar la suscripción');
+  reactivarSuscripcion(
+    @CurrentUser() user: { tenantId: string; role: string },
+  ) {
+    if (user.role !== 'OWNER')
+      throw new ForbiddenException(
+        'Solo el propietario puede reactivar la suscripción',
+      );
     return this.subscriptionsService.reactivarSuscripcion(user.tenantId);
   }
 }

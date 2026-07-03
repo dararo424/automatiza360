@@ -4,7 +4,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DashboardService } from '../dashboard/dashboard.service';
 import { EmailService } from '../email/email.service';
 
-type Tendencia = { date: string; ordenes: number; citas: number; ingresos: number };
+type Tendencia = {
+  date: string;
+  ordenes: number;
+  citas: number;
+  ingresos: number;
+};
 
 @Injectable()
 export class ReportesService {
@@ -31,10 +36,17 @@ export class ReportesService {
     const res = await fetch('https://quickchart.io/chart/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chart: config, width: 700, height: 350, backgroundColor: 'white', devicePixelRatio: 2 }),
+      body: JSON.stringify({
+        chart: config,
+        width: 700,
+        height: 350,
+        backgroundColor: 'white',
+        devicePixelRatio: 2,
+      }),
     });
-    const data = await res.json() as { success: boolean; url: string };
-    if (!data.success) throw new Error('Quickchart: no se pudo crear la gráfica');
+    const data = (await res.json()) as { success: boolean; url: string };
+    if (!data.success)
+      throw new Error('Quickchart: no se pudo crear la gráfica');
     return data.url;
   }
 
@@ -42,20 +54,24 @@ export class ReportesService {
     return {
       type: 'line',
       data: {
-        labels: tendencias.map(t => t.date),
-        datasets: [{
-          label: 'Ingresos COP',
-          data: tendencias.map(t => t.ingresos),
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99,102,241,0.15)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 4,
-        }],
+        labels: tendencias.map((t) => t.date),
+        datasets: [
+          {
+            label: 'Ingresos COP',
+            data: tendencias.map((t) => t.ingresos),
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99,102,241,0.15)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+          },
+        ],
       },
       options: {
         plugins: { title: { display: true, text: titulo, font: { size: 16 } } },
-        scales: { y: { ticks: { callback: 'value => "$" + value.toLocaleString()' } } },
+        scales: {
+          y: { ticks: { callback: 'value => "$" + value.toLocaleString()' } },
+        },
       },
     };
   }
@@ -64,10 +80,18 @@ export class ReportesService {
     return {
       type: 'bar',
       data: {
-        labels: tendencias.map(t => t.date),
+        labels: tendencias.map((t) => t.date),
         datasets: [
-          { label: 'Órdenes', data: tendencias.map(t => t.ordenes), backgroundColor: 'rgba(99,102,241,0.8)' },
-          { label: 'Citas', data: tendencias.map(t => t.citas), backgroundColor: 'rgba(34,197,94,0.8)' },
+          {
+            label: 'Órdenes',
+            data: tendencias.map((t) => t.ordenes),
+            backgroundColor: 'rgba(99,102,241,0.8)',
+          },
+          {
+            label: 'Citas',
+            data: tendencias.map((t) => t.citas),
+            backgroundColor: 'rgba(34,197,94,0.8)',
+          },
         ],
       },
       options: {
@@ -88,7 +112,10 @@ export class ReportesService {
     const dias = periodo === 'mes' ? 30 : 7;
     const [tendencias, tenant] = await Promise.all([
       this.dashboard.getTendencias(tenantId, dias),
-      this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { twilioNumber: true, name: true } }),
+      this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { twilioNumber: true, name: true },
+      }),
     ]);
 
     if (!this.twilio || !tenant?.twilioNumber) {
@@ -96,9 +123,10 @@ export class ReportesService {
     }
 
     const label = periodo === 'mes' ? 'Últimos 30 días' : 'Últimos 7 días';
-    const config = tipo === 'ventas' || tipo === 'ingresos'
-      ? this.buildIngresosChart(tendencias, `Ingresos — ${label}`)
-      : this.buildOrdenesChart(tendencias, `Órdenes y Citas — ${label}`);
+    const config =
+      tipo === 'ventas' || tipo === 'ingresos'
+        ? this.buildIngresosChart(tendencias, `Ingresos — ${label}`)
+        : this.buildOrdenesChart(tendencias, `Órdenes y Citas — ${label}`);
 
     const chartUrl = await this.createChartUrl(config);
 
@@ -116,7 +144,9 @@ export class ReportesService {
       mediaUrl: [chartUrl],
     });
 
-    this.logger.log(`Gráfica WhatsApp enviada a ${phone} (tenant=${tenantId} tipo=${tipo})`);
+    this.logger.log(
+      `Gráfica WhatsApp enviada a ${phone} (tenant=${tenantId} tipo=${tipo})`,
+    );
     return { ok: true, chartUrl };
   }
 
@@ -134,7 +164,10 @@ export class ReportesService {
     const [tendencias, metricas, tenant] = await Promise.all([
       this.dashboard.getTendencias(tenantId, dias),
       this.dashboard.getMetricas(tenantId),
-      this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } }),
+      this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { name: true },
+      }),
     ]);
 
     const storeName = tenant?.name ?? 'Tu negocio';
@@ -168,7 +201,9 @@ export class ReportesService {
       html,
     });
 
-    this.logger.log(`Reporte email enviado a ${ownerEmail} (tenant=${tenantId})`);
+    this.logger.log(
+      `Reporte email enviado a ${ownerEmail} (tenant=${tenantId})`,
+    );
     return { ok: true };
   }
 

@@ -27,7 +27,10 @@ export class CampañasService {
     });
   }
 
-  async previewContactos(tenantId: string, filtros?: FiltrosCampañaDto): Promise<{ total: number }> {
+  async previewContactos(
+    tenantId: string,
+    filtros?: FiltrosCampañaDto,
+  ): Promise<{ total: number }> {
     const contactos = await this.aplicarFiltros(tenantId, filtros);
     return { total: contactos.length };
   }
@@ -35,7 +38,10 @@ export class CampañasService {
   async enviar(tenantId: string, campañaId: string) {
     const [campaña, tenant] = await Promise.all([
       this.prisma.campaña.findFirst({ where: { id: campañaId, tenantId } }),
-      this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } }),
+      this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { name: true },
+      }),
     ]);
     if (!campaña) throw new NotFoundException('Campaña no encontrada');
 
@@ -57,13 +63,17 @@ export class CampañasService {
     let hasError = false;
 
     if (!accountSid || !authToken || !whatsappNumber) {
-      this.logger.warn('Credenciales de Twilio no configuradas. Campaña marcada como enviada sin enviar mensajes.');
+      this.logger.warn(
+        'Credenciales de Twilio no configuradas. Campaña marcada como enviada sin enviar mensajes.',
+      );
     } else {
       const client = twilio.default(accountSid, authToken);
       for (const contacto of contactos) {
         if (!contacto.phone) continue;
         try {
-          const to = contacto.phone.startsWith('+') ? contacto.phone : `+57${contacto.phone}`;
+          const to = contacto.phone.startsWith('+')
+            ? contacto.phone
+            : `+57${contacto.phone}`;
           const nombre = contacto.name?.split(' ')[0] ?? 'cliente';
 
           const params: Record<string, unknown> = {
@@ -83,7 +93,8 @@ export class CampañasService {
             });
           } else {
             // Free-form (only within 24h session window) — append opt-out notice
-            params.body = campaña.mensaje.replace(/\{nombre\}/gi, nombre) + UNSUB;
+            params.body =
+              campaña.mensaje.replace(/\{nombre\}/gi, nombre) + UNSUB;
           }
 
           await client.messages.create(params as any);
@@ -92,7 +103,9 @@ export class CampañasService {
           await new Promise((r) => setTimeout(r, 1000));
         } catch (err) {
           hasError = true;
-          this.logger.error(`Error enviando campaña a ${contacto.phone}: ${(err as Error).message}`);
+          this.logger.error(
+            `Error enviando campaña a ${contacto.phone}: ${(err as Error).message}`,
+          );
         }
       }
     }
@@ -120,7 +133,9 @@ export class CampañasService {
       const tagsLower = filtros.tags.map((t) => t.toLowerCase().trim());
       contactos = contactos.filter((c) => {
         if (!c.tags) return false;
-        const contactTags = c.tags.split(',').map((t) => t.toLowerCase().trim());
+        const contactTags = c.tags
+          .split(',')
+          .map((t) => t.toLowerCase().trim());
         return tagsLower.some((t) => contactTags.includes(t));
       });
     }
@@ -135,7 +150,7 @@ export class CampañasService {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - filtros.diasSinComprar);
 
-      const phones = contactos.map((c) => c.phone).filter(Boolean) as string[];
+      const phones = contactos.map((c) => c.phone).filter(Boolean);
       const recentOrders = await this.prisma.order.findMany({
         where: {
           tenantId,
@@ -150,11 +165,14 @@ export class CampañasService {
     }
 
     // Filter by "purchased in last N days" (loyal customers)
-    if (filtros.diasDesdeUltimaCompra !== undefined && filtros.diasDesdeUltimaCompra > 0) {
+    if (
+      filtros.diasDesdeUltimaCompra !== undefined &&
+      filtros.diasDesdeUltimaCompra > 0
+    ) {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - filtros.diasDesdeUltimaCompra);
 
-      const phones = contactos.map((c) => c.phone).filter(Boolean) as string[];
+      const phones = contactos.map((c) => c.phone).filter(Boolean);
       const recentOrders = await this.prisma.order.findMany({
         where: {
           tenantId,

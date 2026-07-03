@@ -1,5 +1,11 @@
 import * as crypto from 'crypto';
-import { BadRequestException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Plan, Role, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
@@ -10,16 +16,18 @@ type PlanKey = 'STARTER' | 'PRO' | 'BUSINESS';
 type Periodo = 'MENSUAL' | 'ANUAL';
 
 const PRECIOS: Record<PlanKey, number> = {
-  STARTER: 7900000,    // $79.000 COP en centavos
-  PRO: 24200000,       // $242.000 COP en centavos
-  BUSINESS: 52900000,  // $529.000 COP en centavos
+  STARTER: 7900000, // $79.000 COP en centavos
+  PRO: 24200000, // $242.000 COP en centavos
+  BUSINESS: 52900000, // $529.000 COP en centavos
 };
 
 // Anual = 10 meses (2 meses gratis)
 const MESES_GRATIS_ANUAL = 2;
 
 export function precioPara(plan: PlanKey, periodo: Periodo): number {
-  return periodo === 'ANUAL' ? PRECIOS[plan] * (12 - MESES_GRATIS_ANUAL) : PRECIOS[plan];
+  return periodo === 'ANUAL'
+    ? PRECIOS[plan] * (12 - MESES_GRATIS_ANUAL)
+    : PRECIOS[plan];
 }
 
 function proximoVencimiento(periodo: string): Date {
@@ -39,7 +47,11 @@ export class PaymentsService {
     private readonly audit: AuditService,
   ) {}
 
-  async crearTransaccion(tenantId: string, plan: PlanKey, periodo: Periodo = 'MENSUAL') {
+  async crearTransaccion(
+    tenantId: string,
+    plan: PlanKey,
+    periodo: Periodo = 'MENSUAL',
+  ) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       include: { users: { where: { role: Role.OWNER }, take: 1 } },
@@ -142,7 +154,11 @@ export class PaymentsService {
           const ownerEmail = tenant.users[0].email;
           const ownerName = tenant.users[0].name;
           const montoFinal = intent.monto / 100;
-          const fechaPago = new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+          const fechaPago = new Date().toLocaleDateString('es-CO', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          });
           Promise.all([
             this.emailService.sendConfirmacionPago(ownerEmail, {
               ownerName,
@@ -163,12 +179,20 @@ export class PaymentsService {
         this.audit.log({
           event: 'payment.completed',
           tenantId: intent.tenantId,
-          metadata: { plan: intent.plan, referencia, wompiTransactionId: transaccion.id, monto: intent.monto },
+          metadata: {
+            plan: intent.plan,
+            referencia,
+            wompiTransactionId: transaccion.id,
+            monto: intent.monto,
+          },
         });
         this.audit.log({
           event: 'subscription.activated',
           tenantId: intent.tenantId,
-          metadata: { plan: intent.plan, subscriptionEndsAt: proximoMes.toISOString() },
+          metadata: {
+            plan: intent.plan,
+            subscriptionEndsAt: proximoMes.toISOString(),
+          },
         });
 
         // Recompensar referidor si aplica
@@ -187,7 +211,12 @@ export class PaymentsService {
         this.audit.log({
           event: 'payment.failed',
           tenantId: intent.tenantId,
-          metadata: { plan: intent.plan, referencia, status: transaccion.status, monto: intent.monto },
+          metadata: {
+            plan: intent.plan,
+            referencia,
+            status: transaccion.status,
+            monto: intent.monto,
+          },
         });
 
         // Registrar pago fallido
@@ -225,7 +254,9 @@ export class PaymentsService {
     // Cada propiedad (ej. "transaction.id") es relativa a payload.data
     const valores = properties
       .map((prop) =>
-        prop.split('.').reduce((acc: any, key: string) => acc?.[key], payload?.data),
+        prop
+          .split('.')
+          .reduce((acc: any, key: string) => acc?.[key], payload?.data),
       )
       .map((v) => (v === undefined || v === null ? '' : String(v)))
       .join('');
@@ -242,7 +273,8 @@ export class PaymentsService {
   }
 
   async verificarTransaccion(tenantId: string, transactionId: string) {
-    const wompiUrl = process.env.WOMPI_BASE_URL ?? 'https://sandbox.wompi.co/v1';
+    const wompiUrl =
+      process.env.WOMPI_BASE_URL ?? 'https://sandbox.wompi.co/v1';
     const response = await fetch(`${wompiUrl}/transactions/${transactionId}`, {
       headers: { Authorization: `Bearer ${process.env.WOMPI_PRIVATE_KEY}` },
     });
@@ -254,7 +286,10 @@ export class PaymentsService {
       where: { referencia: tx?.reference ?? '', tenantId },
       select: { id: true },
     });
-    if (!intent) throw new NotFoundException('Transacción no encontrada para este negocio');
+    if (!intent)
+      throw new NotFoundException(
+        'Transacción no encontrada para este negocio',
+      );
 
     return {
       status: tx.status as string,
@@ -276,13 +311,16 @@ export class PaymentsService {
 
     // Nunca confiar en el cliente: verificar contra Wompi que el pago
     // realmente fue aprobado, por el monto y moneda correctos.
-    const wompiUrl = process.env.WOMPI_BASE_URL ?? 'https://sandbox.wompi.co/v1';
+    const wompiUrl =
+      process.env.WOMPI_BASE_URL ?? 'https://sandbox.wompi.co/v1';
     const res = await fetch(
       `${wompiUrl}/transactions?reference=${encodeURIComponent(referencia)}`,
       { headers: { Authorization: `Bearer ${process.env.WOMPI_PRIVATE_KEY}` } },
     );
-    const data = (await res.json()) as any;
-    const transacciones: any[] = Array.isArray(data?.data) ? data.data : [data?.data].filter(Boolean);
+    const data = await res.json();
+    const transacciones: any[] = Array.isArray(data?.data)
+      ? data.data
+      : [data?.data].filter(Boolean);
     const aprobada = transacciones.find(
       (t) =>
         t?.status === 'APPROVED' &&
@@ -314,7 +352,11 @@ export class PaymentsService {
     this.audit.log({
       event: 'subscription.activated',
       tenantId: intent.tenantId,
-      metadata: { plan: intent.plan, referencia, via: 'activar-por-referencia' },
+      metadata: {
+        plan: intent.plan,
+        referencia,
+        via: 'activar-por-referencia',
+      },
     });
 
     return { ok: true, plan: intent.plan };
@@ -338,12 +380,17 @@ export class PaymentsService {
       include: { referralCode: true },
     });
 
-    if (!referral || referral.rewardGiven || referral.status === 'REWARDED') return;
+    if (!referral || referral.rewardGiven || referral.status === 'REWARDED')
+      return;
 
     const referrerTenantId = referral.referralCode.tenantId;
     const referrer = await this.prisma.tenant.findUnique({
       where: { id: referrerTenantId },
-      select: { subscriptionEndsAt: true, trialEndsAt: true, subscriptionStatus: true },
+      select: {
+        subscriptionEndsAt: true,
+        trialEndsAt: true,
+        subscriptionStatus: true,
+      },
     });
     if (!referrer) return;
 
@@ -355,7 +402,9 @@ export class PaymentsService {
     const base = isActive
       ? (referrer.subscriptionEndsAt ?? now)
       : (referrer.trialEndsAt ?? now);
-    const newDate = new Date(Math.max(base.getTime(), now.getTime()) + REWARD_DAYS * 86400_000);
+    const newDate = new Date(
+      Math.max(base.getTime(), now.getTime()) + REWARD_DAYS * 86400_000,
+    );
 
     await this.prisma.$transaction([
       this.prisma.referral.update({
@@ -370,39 +419,58 @@ export class PaymentsService {
       }),
     ]);
 
-    this.logger.log(`Referrer ${referrerTenantId} rewarded 30 days for referring ${newPayingTenantId}`);
+    this.logger.log(
+      `Referrer ${referrerTenantId} rewarded 30 days for referring ${newPayingTenantId}`,
+    );
   }
 
-  async solicitarReembolso(tenantId: string, referencia: string, razon?: string) {
+  async solicitarReembolso(
+    tenantId: string,
+    referencia: string,
+    razon?: string,
+  ) {
     const intent = await this.prisma.paymentIntent.findFirst({
       where: { referencia, tenantId, status: 'APPROVED' },
     });
     if (!intent) {
-      throw new NotFoundException('Transacción aprobada no encontrada para esa referencia');
+      throw new NotFoundException(
+        'Transacción aprobada no encontrada para esa referencia',
+      );
     }
     if (!intent.wompiTransactionId) {
-      throw new BadRequestException('Esta transacción no tiene ID de Wompi registrado');
+      throw new BadRequestException(
+        'Esta transacción no tiene ID de Wompi registrado',
+      );
     }
 
-    const wompiUrl = process.env.WOMPI_BASE_URL ?? 'https://sandbox.wompi.co/v1';
+    const wompiUrl =
+      process.env.WOMPI_BASE_URL ?? 'https://sandbox.wompi.co/v1';
     const privKey = process.env.WOMPI_PRIVATE_KEY;
-    if (!privKey) throw new BadRequestException('WOMPI_PRIVATE_KEY no configurado');
+    if (!privKey)
+      throw new BadRequestException('WOMPI_PRIVATE_KEY no configurado');
 
-    const res = await fetch(`${wompiUrl}/transactions/${intent.wompiTransactionId}/void`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${privKey}`,
-        'Content-Type': 'application/json',
+    const res = await fetch(
+      `${wompiUrl}/transactions/${intent.wompiTransactionId}/void`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${privKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reason: razon ?? 'Solicitud de reembolso del cliente',
+        }),
       },
-      body: JSON.stringify({ reason: razon ?? 'Solicitud de reembolso del cliente' }),
-    });
+    );
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({})) as any;
-      throw new BadRequestException(`Wompi rechazó el reembolso: ${err?.error?.messages?.join(', ') ?? res.statusText}`);
+      const err = await res.json().catch(() => ({}));
+      throw new BadRequestException(
+        `Wompi rechazó el reembolso: ${err?.error?.messages?.join(', ') ?? res.statusText}`,
+      );
     }
 
-    const data = await res.json() as any;
+    const data = await res.json();
 
     await this.prisma.paymentIntent.update({
       where: { id: intent.id },
@@ -412,10 +480,17 @@ export class PaymentsService {
     this.audit.log({
       event: 'payment.failed',
       tenantId,
-      metadata: { referencia, wompiTransactionId: intent.wompiTransactionId, action: 'void', razon },
+      metadata: {
+        referencia,
+        wompiTransactionId: intent.wompiTransactionId,
+        action: 'void',
+        razon,
+      },
     });
 
-    this.logger.log(`Reembolso solicitado: ${intent.wompiTransactionId} → ${data?.data?.status}`);
+    this.logger.log(
+      `Reembolso solicitado: ${intent.wompiTransactionId} → ${data?.data?.status}`,
+    );
     return { ok: true, status: data?.data?.status, referencia };
   }
 }

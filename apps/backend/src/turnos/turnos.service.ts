@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrearTurnoDto } from './dto/crear-turno.dto';
@@ -31,11 +35,19 @@ export class TurnosService {
       orderBy: [{ fecha: 'asc' }, { horaInicio: 'asc' }],
     });
 
-    return { semanaInicio: monday.toISOString(), semanaFin: sunday.toISOString(), turnos };
+    return {
+      semanaInicio: monday.toISOString(),
+      semanaFin: sunday.toISOString(),
+      turnos,
+    };
   }
 
   async crearTurno(tenantId: string, dto: CrearTurnoDto, userRole: Role) {
-    if (userRole !== Role.OWNER && userRole !== Role.ADMIN && userRole !== Role.SUPERADMIN) {
+    if (
+      userRole !== Role.OWNER &&
+      userRole !== Role.ADMIN &&
+      userRole !== Role.SUPERADMIN
+    ) {
       throw new ForbiddenException('Solo OWNER o ADMIN pueden asignar turnos');
     }
 
@@ -43,7 +55,8 @@ export class TurnosService {
     const userInTenant = await this.prisma.user.findFirst({
       where: { id: dto.userId, tenantId },
     });
-    if (!userInTenant) throw new NotFoundException('Usuario no encontrado en este tenant');
+    if (!userInTenant)
+      throw new NotFoundException('Usuario no encontrado en este tenant');
 
     return this.prisma.turno.create({
       data: {
@@ -59,11 +72,17 @@ export class TurnosService {
   }
 
   async eliminarTurno(id: string, tenantId: string, userRole: Role) {
-    if (userRole !== Role.OWNER && userRole !== Role.ADMIN && userRole !== Role.SUPERADMIN) {
+    if (
+      userRole !== Role.OWNER &&
+      userRole !== Role.ADMIN &&
+      userRole !== Role.SUPERADMIN
+    ) {
       throw new ForbiddenException('Solo OWNER o ADMIN pueden eliminar turnos');
     }
 
-    const turno = await this.prisma.turno.findFirst({ where: { id, tenantId } });
+    const turno = await this.prisma.turno.findFirst({
+      where: { id, tenantId },
+    });
     if (!turno) throw new NotFoundException('Turno no encontrado');
 
     return this.prisma.turno.delete({ where: { id } });

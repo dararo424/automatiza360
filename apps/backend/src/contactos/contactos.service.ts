@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { AutomacionTrigger } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AutomacionesService } from '../automaciones/automaciones.service';
@@ -78,7 +83,9 @@ export class ContactosService {
   }
 
   async update(tenantId: string, id: string, dto: UpsertContactDto) {
-    const existing = await this.prisma.contact.findFirst({ where: { id, tenantId } });
+    const existing = await this.prisma.contact.findFirst({
+      where: { id, tenantId },
+    });
     if (!existing) throw new NotFoundException('Contacto no encontrado');
     return this.prisma.contact.update({
       where: { id },
@@ -108,7 +115,9 @@ export class ContactosService {
   }
 
   async getHistorial(tenantId: string, id: string) {
-    const contacto = await this.prisma.contact.findFirst({ where: { id, tenantId } });
+    const contacto = await this.prisma.contact.findFirst({
+      where: { id, tenantId },
+    });
     if (!contacto) throw new NotFoundException('Contacto no encontrado');
 
     const phone = contacto.phone;
@@ -142,7 +151,9 @@ export class ContactosService {
     });
     if (!contacto) throw new NotFoundException('Contacto no encontrado');
     if (contacto.puntos < puntos) {
-      throw new BadRequestException(`Puntos insuficientes. Disponibles: ${contacto.puntos}`);
+      throw new BadRequestException(
+        `Puntos insuficientes. Disponibles: ${contacto.puntos}`,
+      );
     }
     return this.prisma.contact.update({
       where: { id },
@@ -166,7 +177,16 @@ export class ContactosService {
       orderBy: { createdAt: 'asc' },
     });
     return toCsv(
-      ['Nombre', 'Telefono', 'Email', 'Puntos', 'Etiquetas', 'Cumpleanos', 'Desuscrito', 'Creado'],
+      [
+        'Nombre',
+        'Telefono',
+        'Email',
+        'Puntos',
+        'Etiquetas',
+        'Cumpleanos',
+        'Desuscrito',
+        'Creado',
+      ],
       contactos.map((c) => [
         c.name,
         c.phone,

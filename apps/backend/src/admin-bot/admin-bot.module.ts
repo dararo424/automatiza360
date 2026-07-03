@@ -6,6 +6,10 @@ import { AdminBotMessagingService } from './admin-bot-messaging.service';
 
 @Module({
   controllers: [AdminBotController],
-  providers: [AdminBotService, AdminBotResumenesService, AdminBotMessagingService],
+  providers: [
+    AdminBotService,
+    AdminBotResumenesService,
+    AdminBotMessagingService,
+  ],
 })
 export class AdminBotModule {}

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AppointmentStatus, OrderStatus, TicketStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminBotResumenesService } from './admin-bot-resumenes.service';
@@ -134,7 +130,10 @@ export class AdminBotService {
 
   // ── Menú del día ───────────────────────────────────────────────────────────
 
-  async cargarMenuDia(tenantId: string, items: Array<{ nombre: string; precio: number; descripcion?: string }>) {
+  async cargarMenuDia(
+    tenantId: string,
+    items: Array<{ nombre: string; precio: number; descripcion?: string }>,
+  ) {
     // Desactivar menús anteriores del día
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
@@ -207,7 +206,8 @@ export class AdminBotService {
     const product = await this.prisma.product.findFirst({
       where: { tenantId, name: { equals: nombre, mode: 'insensitive' } },
     });
-    if (!product) throw new NotFoundException(`Producto "${nombre}" no encontrado`);
+    if (!product)
+      throw new NotFoundException(`Producto "${nombre}" no encontrado`);
 
     return this.prisma.product.update({
       where: { id: product.id },
@@ -219,7 +219,8 @@ export class AdminBotService {
     const product = await this.prisma.product.findFirst({
       where: { tenantId, name: { equals: nombre, mode: 'insensitive' } },
     });
-    if (!product) throw new NotFoundException(`Producto "${nombre}" no encontrado`);
+    if (!product)
+      throw new NotFoundException(`Producto "${nombre}" no encontrado`);
 
     return this.prisma.product.update({
       where: { id: product.id },
@@ -231,7 +232,8 @@ export class AdminBotService {
     const product = await this.prisma.product.findFirst({
       where: { tenantId, name: { equals: nombre, mode: 'insensitive' } },
     });
-    if (!product) throw new NotFoundException(`Producto "${nombre}" no encontrado`);
+    if (!product)
+      throw new NotFoundException(`Producto "${nombre}" no encontrado`);
 
     return this.prisma.product.update({
       where: { id: product.id },
@@ -300,7 +302,9 @@ export class AdminBotService {
         gte: horaDesdeDate ?? fechaDate,
         lt: fechaFin,
       },
-      status: { notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.COMPLETED] },
+      status: {
+        notIn: [AppointmentStatus.CANCELLED, AppointmentStatus.COMPLETED],
+      },
     };
 
     if (profesionalId) {
@@ -345,7 +349,11 @@ export class AdminBotService {
       profesional?: string | null;
     }>,
   ) {
-    return this.messaging.notificarPacientesCancelacion(tenantId, industry, pacientes);
+    return this.messaging.notificarPacientesCancelacion(
+      tenantId,
+      industry,
+      pacientes,
+    );
   }
 
   private normalizePhone(phone: string): string {
@@ -363,7 +371,13 @@ export class AdminBotService {
     return this.prisma.order.findMany({
       where: {
         tenantId,
-        status: { in: [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PREPARING] },
+        status: {
+          in: [
+            OrderStatus.PENDING,
+            OrderStatus.CONFIRMED,
+            OrderStatus.PREPARING,
+          ],
+        },
         createdAt: { gte: hoy, lt: manana },
       },
       include: { items: true },
@@ -384,8 +398,15 @@ export class AdminBotService {
 
   // ── Cambiar estado de orden + notificar cliente si READY ──────────────────
 
-  async cambiarEstadoOrden(tenantId: string, numero: number, estado: OrderStatus) {
-    const orden = await this.prisma.order.findFirst({ where: { tenantId, number: numero }, include: { items: true } });
+  async cambiarEstadoOrden(
+    tenantId: string,
+    numero: number,
+    estado: OrderStatus,
+  ) {
+    const orden = await this.prisma.order.findFirst({
+      where: { tenantId, number: numero },
+      include: { items: true },
+    });
     if (!orden) throw new NotFoundException(`Orden #${numero} no encontrada`);
 
     const updated = await this.prisma.order.update({
@@ -395,14 +416,23 @@ export class AdminBotService {
     });
 
     if (estado === OrderStatus.READY && orden.phone) {
-      await this.sendWhatsAppToClient(tenantId, orden.phone, this.buildOrdenListaMessage(orden));
+      await this.sendWhatsAppToClient(
+        tenantId,
+        orden.phone,
+        this.buildOrdenListaMessage(orden),
+      );
     }
 
     return updated;
   }
 
-  private buildOrdenListaMessage(orden: { number: number; items: Array<{ name: string; quantity: number }> }): string {
-    const items = orden.items.map((i) => `• ${i.quantity}x ${i.name}`).join('\n');
+  private buildOrdenListaMessage(orden: {
+    number: number;
+    items: Array<{ name: string; quantity: number }>;
+  }): string {
+    const items = orden.items
+      .map((i) => `• ${i.quantity}x ${i.name}`)
+      .join('\n');
     return (
       `✅ ¡Tu pedido #${orden.number} está listo!\n\n` +
       `${items}\n\n` +
@@ -427,7 +457,11 @@ export class AdminBotService {
       total: citas.length,
       citas: citas.map((c) => ({
         id: c.id,
-        hora: c.date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' }),
+        hora: c.date.toLocaleTimeString('es-CO', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'America/Bogota',
+        }),
         cliente: c.clientName,
         telefono: c.clientPhone,
         servicio: c.service.name,
@@ -449,14 +483,23 @@ export class AdminBotService {
     profesionalNombre?: string,
   ) {
     const service = await this.prisma.service.findFirst({
-      where: { tenantId, name: { contains: serviceName, mode: 'insensitive' }, active: true },
+      where: {
+        tenantId,
+        name: { contains: serviceName, mode: 'insensitive' },
+        active: true,
+      },
     });
-    if (!service) throw new NotFoundException(`Servicio "${serviceName}" no encontrado`);
+    if (!service)
+      throw new NotFoundException(`Servicio "${serviceName}" no encontrado`);
 
     let professionalId: string | undefined;
     if (profesionalNombre) {
       const prof = await this.prisma.professional.findFirst({
-        where: { tenantId, name: { contains: profesionalNombre, mode: 'insensitive' }, active: true },
+        where: {
+          tenantId,
+          name: { contains: profesionalNombre, mode: 'insensitive' },
+          active: true,
+        },
       });
       if (prof) professionalId = prof.id;
     }
@@ -479,8 +522,14 @@ export class AdminBotService {
 
   // ── Cambiar estado de cita individual ─────────────────────────────────────
 
-  async cambiarEstadoCita(tenantId: string, appointmentId: string, estado: AppointmentStatus) {
-    const cita = await this.prisma.appointment.findFirst({ where: { id: appointmentId, tenantId } });
+  async cambiarEstadoCita(
+    tenantId: string,
+    appointmentId: string,
+    estado: AppointmentStatus,
+  ) {
+    const cita = await this.prisma.appointment.findFirst({
+      where: { id: appointmentId, tenantId },
+    });
     if (!cita) throw new NotFoundException('Cita no encontrada');
 
     return this.prisma.appointment.update({
@@ -492,7 +541,12 @@ export class AdminBotService {
 
   // ── Reagendar cita ─────────────────────────────────────────────────────────
 
-  async reagendarCita(tenantId: string, appointmentId: string, nuevaFecha: string, nuevaHora: string) {
+  async reagendarCita(
+    tenantId: string,
+    appointmentId: string,
+    nuevaFecha: string,
+    nuevaHora: string,
+  ) {
     const cita = await this.prisma.appointment.findFirst({
       where: { id: appointmentId, tenantId },
       include: { service: true },
@@ -503,14 +557,28 @@ export class AdminBotService {
 
     const updated = await this.prisma.appointment.update({
       where: { id: appointmentId },
-      data: { date: nuevaDate, status: AppointmentStatus.SCHEDULED, reminderSent: false },
+      data: {
+        date: nuevaDate,
+        status: AppointmentStatus.SCHEDULED,
+        reminderSent: false,
+      },
       include: { service: true, professional: true },
     });
 
     // Notificar al cliente del reagendamiento
     if (cita.clientPhone) {
-      const fechaStr = nuevaDate.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Bogota' });
-      const horaStr = nuevaDate.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
+      const fechaStr = nuevaDate.toLocaleDateString('es-CO', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        timeZone: 'America/Bogota',
+      });
+      const horaStr = nuevaDate.toLocaleTimeString('es-CO', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'America/Bogota',
+      });
       const msg = `📅 Hola ${cita.clientName}, tu cita de ${cita.service.name} ha sido reagendada para el ${fechaStr} a las ${horaStr}.\n\nEscríbenos si necesitas ajustar la fecha. ¡Hasta pronto! 😊`;
       await this.sendWhatsAppToClient(tenantId, cita.clientPhone, msg);
     }
@@ -537,7 +605,12 @@ export class AdminBotService {
 
   // ── Registrar gasto ────────────────────────────────────────────────────────
 
-  async registrarGasto(tenantId: string, descripcion: string, monto: number, categoria: string) {
+  async registrarGasto(
+    tenantId: string,
+    descripcion: string,
+    monto: number,
+    categoria: string,
+  ) {
     return this.prisma.gasto.create({
       data: { tenantId, descripcion, monto, categoria, fecha: new Date() },
     });
@@ -553,7 +626,10 @@ export class AdminBotService {
     issue: string,
     fotoUrl?: string,
   ) {
-    const last = await this.prisma.ticket.findFirst({ where: { tenantId }, orderBy: { number: 'desc' } });
+    const last = await this.prisma.ticket.findFirst({
+      where: { tenantId },
+      orderBy: { number: 'desc' },
+    });
     const number = (last?.number ?? 0) + 1;
 
     return this.prisma.ticket.create({
@@ -584,7 +660,15 @@ export class AdminBotService {
   // ── Ver stock bajo ─────────────────────────────────────────────────────────
 
   async verStockBajo(tenantId: string) {
-    return this.prisma.$queryRaw<Array<{ id: string; name: string; stock: number; minStock: number; price: number }>>`
+    return this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        name: string;
+        stock: number;
+        minStock: number;
+        price: number;
+      }>
+    >`
       SELECT id, name, stock, "minStock", price
       FROM "Product"
       WHERE "tenantId" = ${tenantId}
@@ -641,7 +725,9 @@ export class AdminBotService {
         valor,
         minCompra: minCompra ?? 0,
         ...(maxUsos !== undefined && { maxUsos }),
-        ...(fechaVencimiento && { fechaVencimiento: new Date(fechaVencimiento) }),
+        ...(fechaVencimiento && {
+          fechaVencimiento: new Date(fechaVencimiento),
+        }),
         activo: true,
       },
     });
@@ -654,7 +740,15 @@ export class AdminBotService {
       where: { tenantId },
       orderBy: { updatedAt: 'desc' },
       take: 10,
-      select: { id: true, name: true, phone: true, email: true, tags: true, puntos: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        tags: true,
+        puntos: true,
+        createdAt: true,
+      },
     });
   }
 
@@ -698,7 +792,12 @@ export class AdminBotService {
     });
 
     return {
-      fecha: dia.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }),
+      fecha: dia.toLocaleDateString('es-CO', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        timeZone: 'UTC',
+      }),
       totalTurnos: turnos.length,
       turnos: turnos.map((t) => ({
         empleado: t.user.name,
@@ -725,8 +824,12 @@ export class AdminBotService {
       cliente: g.clienteNombre,
       telefono: g.clientePhone,
       producto: g.producto,
-      vence: g.fechaVencimiento.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }),
-      diasRestantes: Math.ceil((g.fechaVencimiento.getTime() - hoy.getTime()) / 86400000),
+      vence: g.fechaVencimiento.toLocaleDateString('es-CO', {
+        timeZone: 'America/Bogota',
+      }),
+      diasRestantes: Math.ceil(
+        (g.fechaVencimiento.getTime() - hoy.getTime()) / 86400000,
+      ),
     }));
   }
 
@@ -738,7 +841,11 @@ export class AdminBotService {
 
   // ── Helper: enviar WhatsApp a un cliente (delegado) ───────────────────────
 
-  sendWhatsAppToClient(tenantId: string, toPhone: string, body: string): Promise<void> {
+  sendWhatsAppToClient(
+    tenantId: string,
+    toPhone: string,
+    body: string,
+  ): Promise<void> {
     return this.messaging.sendWhatsAppToClient(tenantId, toPhone, body);
   }
 }

@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { AppointmentStatus, Industry, SubscriptionStatus } from '@prisma/client';
+import {
+  AppointmentStatus,
+  Industry,
+  SubscriptionStatus,
+} from '@prisma/client';
 import * as twilio from 'twilio';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
@@ -25,15 +29,24 @@ export class RemindersService {
   async sendResumenMatinal(): Promise<void> {
     this.logger.log('Iniciando resumen matinal de ventas (8am Colombia)...');
     const tenants = await this.prisma.tenant.findMany({
-      where: { active: true, subscriptionStatus: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] } },
+      where: {
+        active: true,
+        subscriptionStatus: {
+          in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL],
+        },
+      },
       select: { id: true, name: true },
     });
-    this.logger.log(`Procesando resumen matinal para ${tenants.length} tenants`);
+    this.logger.log(
+      `Procesando resumen matinal para ${tenants.length} tenants`,
+    );
     for (const tenant of tenants) {
       try {
         await this.notificados.enviarResumenMatinal(tenant.id);
       } catch (err) {
-        this.logger.error(`Error en resumen matinal de ${tenant.name}: ${(err as Error).message}`);
+        this.logger.error(
+          `Error en resumen matinal de ${tenant.name}: ${(err as Error).message}`,
+        );
       }
     }
   }
@@ -46,14 +59,21 @@ export class RemindersService {
   async sendResumenCierre(): Promise<void> {
     this.logger.log('Iniciando resumen de cierre de día (8pm Colombia)...');
     const tenants = await this.prisma.tenant.findMany({
-      where: { active: true, subscriptionStatus: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] } },
+      where: {
+        active: true,
+        subscriptionStatus: {
+          in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL],
+        },
+      },
       select: { id: true, name: true },
     });
     for (const tenant of tenants) {
       try {
         await this.notificados.enviarResumenCierre(tenant.id);
       } catch (err) {
-        this.logger.error(`Error en resumen cierre de ${tenant.name}: ${(err as Error).message}`);
+        this.logger.error(
+          `Error en resumen cierre de ${tenant.name}: ${(err as Error).message}`,
+        );
       }
     }
   }
@@ -75,7 +95,9 @@ export class RemindersService {
 
     const tenants = await this.prisma.tenant.findMany({
       where: {
-        subscriptionStatus: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
+        subscriptionStatus: {
+          in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL],
+        },
       },
       include: {
         users: { where: { role: 'OWNER' }, select: { email: true }, take: 1 },
@@ -89,31 +111,55 @@ export class RemindersService {
       if (!ownerEmail) continue;
 
       try {
-        const [ordenesCur, ordenesPrev, citasCur, citasPrev, contactosCur, contactosPrev] =
-          await Promise.all([
-            this.prisma.order.aggregate({
-              where: { tenantId: tenant.id, createdAt: { gte: weekStart, lt: weekEnd } },
-              _count: { id: true },
-              _sum: { total: true },
-            }),
-            this.prisma.order.aggregate({
-              where: { tenantId: tenant.id, createdAt: { gte: prevWeekStart, lt: prevWeekEnd } },
-              _count: { id: true },
-              _sum: { total: true },
-            }),
-            this.prisma.appointment.count({
-              where: { tenantId: tenant.id, createdAt: { gte: weekStart, lt: weekEnd } },
-            }),
-            this.prisma.appointment.count({
-              where: { tenantId: tenant.id, createdAt: { gte: prevWeekStart, lt: prevWeekEnd } },
-            }),
-            this.prisma.contact.count({
-              where: { tenantId: tenant.id, createdAt: { gte: weekStart, lt: weekEnd } },
-            }),
-            this.prisma.contact.count({
-              where: { tenantId: tenant.id, createdAt: { gte: prevWeekStart, lt: prevWeekEnd } },
-            }),
-          ]);
+        const [
+          ordenesCur,
+          ordenesPrev,
+          citasCur,
+          citasPrev,
+          contactosCur,
+          contactosPrev,
+        ] = await Promise.all([
+          this.prisma.order.aggregate({
+            where: {
+              tenantId: tenant.id,
+              createdAt: { gte: weekStart, lt: weekEnd },
+            },
+            _count: { id: true },
+            _sum: { total: true },
+          }),
+          this.prisma.order.aggregate({
+            where: {
+              tenantId: tenant.id,
+              createdAt: { gte: prevWeekStart, lt: prevWeekEnd },
+            },
+            _count: { id: true },
+            _sum: { total: true },
+          }),
+          this.prisma.appointment.count({
+            where: {
+              tenantId: tenant.id,
+              createdAt: { gte: weekStart, lt: weekEnd },
+            },
+          }),
+          this.prisma.appointment.count({
+            where: {
+              tenantId: tenant.id,
+              createdAt: { gte: prevWeekStart, lt: prevWeekEnd },
+            },
+          }),
+          this.prisma.contact.count({
+            where: {
+              tenantId: tenant.id,
+              createdAt: { gte: weekStart, lt: weekEnd },
+            },
+          }),
+          this.prisma.contact.count({
+            where: {
+              tenantId: tenant.id,
+              createdAt: { gte: prevWeekStart, lt: prevWeekEnd },
+            },
+          }),
+        ]);
 
         const calcChange = (cur: number, prev: number) =>
           prev === 0 ? 0 : ((cur - prev) / prev) * 100;
@@ -127,13 +173,21 @@ export class RemindersService {
           ingresos: ordenesCur._sum.total ?? 0,
           citas: citasCur,
           contactos: contactosCur,
-          ordenesChange: calcChange(ordenesCur._count.id, ordenesPrev._count.id),
-          ingresosChange: calcChange(ordenesCur._sum.total ?? 0, ordenesPrev._sum.total ?? 0),
+          ordenesChange: calcChange(
+            ordenesCur._count.id,
+            ordenesPrev._count.id,
+          ),
+          ingresosChange: calcChange(
+            ordenesCur._sum.total ?? 0,
+            ordenesPrev._sum.total ?? 0,
+          ),
           citasChange: calcChange(citasCur, citasPrev),
           contactosChange: calcChange(contactosCur, contactosPrev),
         });
 
-        this.logger.log(`Reporte semanal enviado a ${ownerEmail} (${tenant.name})`);
+        this.logger.log(
+          `Reporte semanal enviado a ${ownerEmail} (${tenant.name})`,
+        );
       } catch (error) {
         this.logger.error(
           `Error enviando reporte a ${ownerEmail}: ${(error as Error).message}`,
@@ -156,7 +210,9 @@ export class RemindersService {
       where: {
         date: { gte: from, lte: to },
         reminderSent: false,
-        status: { in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED] },
+        status: {
+          in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED],
+        },
       },
       include: {
         tenant: true,
@@ -164,14 +220,18 @@ export class RemindersService {
       },
     });
 
-    this.logger.log(`Citas encontradas para recordatorio: ${appointments.length}`);
+    this.logger.log(
+      `Citas encontradas para recordatorio: ${appointments.length}`,
+    );
 
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER;
 
     if (!accountSid || !authToken || !whatsappNumber) {
-      this.logger.warn('Credenciales de Twilio no configuradas. Se omiten recordatorios.');
+      this.logger.warn(
+        'Credenciales de Twilio no configuradas. Se omiten recordatorios.',
+      );
       return;
     }
 
@@ -179,7 +239,9 @@ export class RemindersService {
 
     for (const appointment of appointments) {
       if (!appointment.clientPhone) {
-        this.logger.warn(`Cita ${appointment.id}: clientPhone vacío, se omite.`);
+        this.logger.warn(
+          `Cita ${appointment.id}: clientPhone vacío, se omite.`,
+        );
         continue;
       }
 
@@ -226,7 +288,8 @@ export class RemindersService {
     this.logger.log('Enviando emails de activación día 1...');
 
     const now = new Date();
-    const frontendUrl = process.env.FRONTEND_URL ?? 'https://automatiza360-frontend.vercel.app';
+    const frontendUrl =
+      process.env.FRONTEND_URL ?? 'https://automatiza360-frontend.vercel.app';
     const hace24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const hace48h = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
@@ -255,9 +318,13 @@ export class RemindersService {
           storeName: tenant.name,
           dashboardUrl: `${frontendUrl}/dashboard`,
         });
-        this.logger.log(`Email día 1 enviado a ${owner.email} (${tenant.name})`);
+        this.logger.log(
+          `Email día 1 enviado a ${owner.email} (${tenant.name})`,
+        );
       } catch (err) {
-        this.logger.error(`Error email día 1 a ${owner.email}: ${(err as Error).message}`);
+        this.logger.error(
+          `Error email día 1 a ${owner.email}: ${(err as Error).message}`,
+        );
       }
     }
   }
@@ -267,7 +334,8 @@ export class RemindersService {
     this.logger.log('Revisando tenants con trial próximo a vencer...');
 
     const now = new Date();
-    const frontendUrl = process.env.FRONTEND_URL ?? 'https://automatiza360-frontend.vercel.app';
+    const frontendUrl =
+      process.env.FRONTEND_URL ?? 'https://automatiza360-frontend.vercel.app';
     // Captura: 7 días restantes (mid-trial), 3 días y 1 día
     const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -285,7 +353,9 @@ export class RemindersService {
       },
     });
 
-    this.logger.log(`Tenants con trial por vencer (≤7 días): ${tenants.length}`);
+    this.logger.log(
+      `Tenants con trial por vencer (≤7 días): ${tenants.length}`,
+    );
 
     for (const tenant of tenants) {
       const ownerEmail = tenant.users[0]?.email;
@@ -300,7 +370,9 @@ export class RemindersService {
             storeName: tenant.name,
             loginUrl: `${frontendUrl}/dashboard`,
           });
-          this.logger.log(`Email mid-trial enviado a ${ownerEmail} (${tenant.name})`);
+          this.logger.log(
+            `Email mid-trial enviado a ${ownerEmail} (${tenant.name})`,
+          );
         } else if (daysRemaining === 3 || daysRemaining === 1) {
           await this.emailService.sendTrialExpirando(ownerEmail, {
             storeName: tenant.name,
@@ -344,14 +416,18 @@ export class RemindersService {
       },
     });
 
-    this.logger.log(`Citas completadas ayer para follow-up: ${appointments.length}`);
+    this.logger.log(
+      `Citas completadas ayer para follow-up: ${appointments.length}`,
+    );
 
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER;
 
     if (!accountSid || !authToken || !whatsappNumber) {
-      this.logger.warn('Credenciales de Twilio no configuradas. Se omite follow-up post-consulta.');
+      this.logger.warn(
+        'Credenciales de Twilio no configuradas. Se omite follow-up post-consulta.',
+      );
       return;
     }
 
@@ -371,7 +447,9 @@ export class RemindersService {
           body: message,
         });
 
-        this.logger.log(`Follow-up post-consulta enviado a ${toNumber} (cita ${appointment.id})`);
+        this.logger.log(
+          `Follow-up post-consulta enviado a ${toNumber} (cita ${appointment.id})`,
+        );
       } catch (error) {
         this.logger.error(
           `Error enviando follow-up para cita ${appointment.id}: ${(error as Error).message}`,
@@ -464,7 +542,9 @@ export class RemindersService {
 
     const tenants = await this.prisma.tenant.findMany({
       where: {
-        subscriptionStatus: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
+        subscriptionStatus: {
+          in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL],
+        },
         ownerPhone: { not: null },
       },
     });
@@ -476,32 +556,51 @@ export class RemindersService {
 
     for (const tenant of tenants) {
       if (!tenant.ownerPhone) continue;
-      const whatsappNumber = tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
+      const whatsappNumber =
+        tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
       if (!whatsappNumber) continue;
 
       try {
         const [citas, ordenes] = await Promise.all([
           this.prisma.appointment.findMany({
-            where: { tenantId: tenant.id, date: { gte: hoy, lt: manana }, status: { in: ['SCHEDULED', 'CONFIRMED'] as any } },
+            where: {
+              tenantId: tenant.id,
+              date: { gte: hoy, lt: manana },
+              status: { in: ['SCHEDULED', 'CONFIRMED'] as any },
+            },
             include: { service: true, professional: true },
             orderBy: { date: 'asc' },
           }),
           this.prisma.order.findMany({
-            where: { tenantId: tenant.id, status: { in: ['PENDING', 'CONFIRMED', 'PREPARING'] as any }, createdAt: { gte: hoy, lt: manana } },
+            where: {
+              tenantId: tenant.id,
+              status: { in: ['PENDING', 'CONFIRMED', 'PREPARING'] as any },
+              createdAt: { gte: hoy, lt: manana },
+            },
             take: 5,
           }),
         ]);
 
-        const fecha = hoy.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+        const fecha = hoy.toLocaleDateString('es-CO', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        });
         let msg = `☀️ *Buenos días* — Resumen de hoy ${fecha} en ${tenant.name}\n\n`;
 
         if (citas.length > 0) {
           msg += `📅 *${citas.length} cita(s) hoy:*\n`;
-          msg += citas.map((c) => {
-            const hora = c.date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' });
-            const prof = c.professional ? ` — ${c.professional.name}` : '';
-            return `• ${hora} ${c.clientName} (${c.service.name}${prof})`;
-          }).join('\n');
+          msg += citas
+            .map((c) => {
+              const hora = c.date.toLocaleTimeString('es-CO', {
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'America/Bogota',
+              });
+              const prof = c.professional ? ` — ${c.professional.name}` : '';
+              return `• ${hora} ${c.clientName} (${c.service.name}${prof})`;
+            })
+            .join('\n');
           msg += '\n\n';
         } else {
           msg += `📅 Sin citas agendadas hoy.\n\n`;
@@ -519,9 +618,13 @@ export class RemindersService {
           body: msg,
         });
 
-        this.logger.log(`Reporte matutino enviado a ${tenant.name} (${tenant.ownerPhone})`);
+        this.logger.log(
+          `Reporte matutino enviado a ${tenant.name} (${tenant.ownerPhone})`,
+        );
       } catch (err) {
-        this.logger.error(`Error reporte matutino ${tenant.name}: ${(err as Error).message}`);
+        this.logger.error(
+          `Error reporte matutino ${tenant.name}: ${(err as Error).message}`,
+        );
       }
     }
   }
@@ -540,19 +643,33 @@ export class RemindersService {
 
     const tenants = await this.prisma.tenant.findMany({
       where: {
-        subscriptionStatus: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
+        subscriptionStatus: {
+          in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL],
+        },
         ownerPhone: { not: null },
-        industry: { in: ['TECH_STORE', 'CLOTHING_STORE', 'PHARMACY', 'RESTAURANT', 'BAKERY', 'WORKSHOP'] as any },
+        industry: {
+          in: [
+            'TECH_STORE',
+            'CLOTHING_STORE',
+            'PHARMACY',
+            'RESTAURANT',
+            'BAKERY',
+            'WORKSHOP',
+          ] as any,
+        },
       },
     });
 
     for (const tenant of tenants) {
       if (!tenant.ownerPhone) continue;
-      const whatsappNumber = tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
+      const whatsappNumber =
+        tenant.twilioNumber ?? process.env.TWILIO_WHATSAPP_NUMBER;
       if (!whatsappNumber) continue;
 
       try {
-        const bajoStock = await this.prisma.$queryRaw<Array<{ name: string; stock: number; minStock: number }>>`
+        const bajoStock = await this.prisma.$queryRaw<
+          Array<{ name: string; stock: number; minStock: number }>
+        >`
           SELECT name, stock, "minStock"
           FROM "Product"
           WHERE "tenantId" = ${tenant.id}
@@ -564,7 +681,9 @@ export class RemindersService {
 
         if (bajoStock.length === 0) continue;
 
-        const lista = bajoStock.map((p) => `• ${p.name}: ${p.stock} unidades (mín. ${p.minStock})`).join('\n');
+        const lista = bajoStock
+          .map((p) => `• ${p.name}: ${p.stock} unidades (mín. ${p.minStock})`)
+          .join('\n');
         const msg = `⚠️ *Alerta de stock bajo* — ${tenant.name}\n\n${lista}\n\n_Escríbeme para actualizar el stock._`;
 
         await twilioClient.messages.create({
@@ -573,9 +692,13 @@ export class RemindersService {
           body: msg,
         });
 
-        this.logger.log(`Alerta de stock enviada a ${tenant.name} (${bajoStock.length} productos)`);
+        this.logger.log(
+          `Alerta de stock enviada a ${tenant.name} (${bajoStock.length} productos)`,
+        );
       } catch (err) {
-        this.logger.error(`Error alerta stock ${tenant.name}: ${(err as Error).message}`);
+        this.logger.error(
+          `Error alerta stock ${tenant.name}: ${(err as Error).message}`,
+        );
       }
     }
   }
@@ -621,7 +744,9 @@ export class RemindersService {
           `,
         });
       }
-      this.logger.log(`Tenant ${tenant.name} (${tenant.id}) suspendido por vencimiento`);
+      this.logger.log(
+        `Tenant ${tenant.name} (${tenant.id}) suspendido por vencimiento`,
+      );
     }
 
     this.logger.log(`Cron: ${vencidos.length} tenants suspendidos`);

@@ -34,7 +34,12 @@ export class PushService implements OnModuleInit {
   ) {
     return this.prisma.pushSubscription.upsert({
       where: { endpoint: sub.endpoint },
-      update: { tenantId, userId, p256dh: sub.keys.p256dh, auth: sub.keys.auth },
+      update: {
+        tenantId,
+        userId,
+        p256dh: sub.keys.p256dh,
+        auth: sub.keys.auth,
+      },
       create: {
         tenantId,
         userId,
@@ -49,7 +54,12 @@ export class PushService implements OnModuleInit {
     await this.prisma.pushSubscription.deleteMany({ where: { endpoint } });
   }
 
-  async sendToTenant(tenantId: string, title: string, body: string, url?: string) {
+  async sendToTenant(
+    tenantId: string,
+    title: string,
+    body: string,
+    url?: string,
+  ) {
     if (!this.vapidConfigured) return;
 
     const subscriptions = await this.prisma.pushSubscription.findMany({

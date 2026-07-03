@@ -6,7 +6,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Industry, Role, SubscriptionStatus, User, Tenant } from '@prisma/client';
+import {
+  Industry,
+  Role,
+  SubscriptionStatus,
+  User,
+  Tenant,
+} from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -228,30 +234,52 @@ export class AuthService {
     });
 
     if (!user) {
-      this.audit.log({ event: 'auth.login.failed', metadata: { email: dto.email, reason: 'user_not_found' } });
+      this.audit.log({
+        event: 'auth.login.failed',
+        metadata: { email: dto.email, reason: 'user_not_found' },
+      });
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
     const passwordValida = await bcrypt.compare(dto.password, user.password);
     if (!passwordValida) {
-      this.audit.log({ event: 'auth.login.failed', tenantId: user.tenantId, metadata: { email: dto.email, reason: 'wrong_password' } });
+      this.audit.log({
+        event: 'auth.login.failed',
+        tenantId: user.tenantId,
+        metadata: { email: dto.email, reason: 'wrong_password' },
+      });
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
     if (!user.active) {
-      this.audit.log({ event: 'auth.login.failed', userId: user.id, tenantId: user.tenantId, metadata: { reason: 'user_inactive' } });
+      this.audit.log({
+        event: 'auth.login.failed',
+        userId: user.id,
+        tenantId: user.tenantId,
+        metadata: { reason: 'user_inactive' },
+      });
       throw new ForbiddenException('El usuario está inactivo');
     }
 
     if (!user.tenant.active) {
-      this.audit.log({ event: 'auth.login.failed', userId: user.id, tenantId: user.tenantId, metadata: { reason: 'tenant_inactive' } });
+      this.audit.log({
+        event: 'auth.login.failed',
+        userId: user.id,
+        tenantId: user.tenantId,
+        metadata: { reason: 'tenant_inactive' },
+      });
       throw new ForbiddenException('El negocio está inactivo');
     }
 
     const token = this.generarToken(user);
     const refreshToken = await this.generarRefreshToken(user.id);
 
-    this.audit.log({ event: 'auth.login.success', userId: user.id, tenantId: user.tenantId, metadata: { role: user.role } });
+    this.audit.log({
+      event: 'auth.login.success',
+      userId: user.id,
+      tenantId: user.tenantId,
+      metadata: { role: user.role },
+    });
 
     return {
       mensaje: 'Inicio de sesión exitoso',
@@ -268,7 +296,9 @@ export class AuthService {
   }
 
   async refreshAccessToken(refreshToken: string) {
-    const stored = await this.prisma.refreshToken.findUnique({ where: { token: refreshToken } });
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { token: refreshToken },
+    });
     if (!stored || stored.revoked || stored.expiresAt < new Date()) {
       throw new UnauthorizedException('Refresh token inválido o expirado');
     }
@@ -285,7 +315,10 @@ export class AuthService {
     const newRefreshToken = await this.generarRefreshToken(user.id);
 
     // Revoke old refresh token (rotation)
-    await this.prisma.refreshToken.update({ where: { id: stored.id }, data: { revoked: true } });
+    await this.prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { revoked: true },
+    });
 
     return { token: newToken, refreshToken: newRefreshToken };
   }
@@ -301,7 +334,9 @@ export class AuthService {
   private async generarRefreshToken(userId: string): Promise<string> {
     const token = crypto.randomBytes(48).toString('hex');
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 días
-    await this.prisma.refreshToken.create({ data: { token, userId, expiresAt } });
+    await this.prisma.refreshToken.create({
+      data: { token, userId, expiresAt },
+    });
     return token;
   }
 
@@ -340,9 +375,9 @@ export class AuthService {
       tenant: {
         ...usuario.tenant,
         // subscriptionPlan toma precedencia sobre plan si existe
-        plan: usuario.tenant!.subscriptionPlan ?? usuario.tenant!.plan,
-        subscriptionStatus: usuario.tenant!.subscriptionStatus,
-        subscriptionPlan: usuario.tenant!.subscriptionPlan,
+        plan: usuario.tenant.subscriptionPlan ?? usuario.tenant.plan,
+        subscriptionStatus: usuario.tenant.subscriptionStatus,
+        subscriptionPlan: usuario.tenant.subscriptionPlan,
       },
     };
   }
@@ -370,9 +405,17 @@ export class AuthService {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
-    await this.emailService.enviarRecuperacionContrasena(user.email, user.name, resetUrl);
+    await this.emailService.enviarRecuperacionContrasena(
+      user.email,
+      user.name,
+      resetUrl,
+    );
 
-    this.audit.log({ event: 'auth.password_reset.requested', userId: user.id, metadata: { email } });
+    this.audit.log({
+      event: 'auth.password_reset.requested',
+      userId: user.id,
+      metadata: { email },
+    });
 
     return { message: 'Si el correo existe, recibirás un enlace en breve.' };
   }
@@ -401,7 +444,10 @@ export class AuthService {
       data: { used: true },
     });
 
-    this.audit.log({ event: 'auth.password_reset.completed', userId: resetToken.userId });
+    this.audit.log({
+      event: 'auth.password_reset.completed',
+      userId: resetToken.userId,
+    });
 
     return { message: 'Contraseña actualizada correctamente.' };
   }
@@ -422,7 +468,9 @@ export class AuthService {
 
   private async generateUniqueSlug(businessName: string): Promise<string> {
     const base = this.buildSlugBase(businessName);
-    const existing = await this.prisma.tenant.findUnique({ where: { slug: base } });
+    const existing = await this.prisma.tenant.findUnique({
+      where: { slug: base },
+    });
     if (!existing) return base;
 
     const suffix = crypto.randomBytes(3).toString('hex');
@@ -449,19 +497,50 @@ export class AuthService {
     if (industry === Industry.CLINIC) {
       await tx.service.createMany({
         data: [
-          { name: 'Consulta General', description: 'Medicina general', duration: 45, price: 50000, tenantId },
-          { name: 'Consulta Pediatría', description: 'Pediatría', duration: 45, price: 60000, tenantId },
-          { name: 'Toma de Muestras', description: 'Laboratorio clínico', duration: 20, price: 30000, tenantId },
-          { name: 'Electrocardiograma', description: 'ECG de 12 derivaciones', duration: 30, price: 80000, tenantId },
+          {
+            name: 'Consulta General',
+            description: 'Medicina general',
+            duration: 45,
+            price: 50000,
+            tenantId,
+          },
+          {
+            name: 'Consulta Pediatría',
+            description: 'Pediatría',
+            duration: 45,
+            price: 60000,
+            tenantId,
+          },
+          {
+            name: 'Toma de Muestras',
+            description: 'Laboratorio clínico',
+            duration: 20,
+            price: 30000,
+            tenantId,
+          },
+          {
+            name: 'Electrocardiograma',
+            description: 'ECG de 12 derivaciones',
+            duration: 30,
+            price: 80000,
+            tenantId,
+          },
         ],
       });
       const medico = await tx.professional.create({
-        data: { name: 'Médico General', specialty: 'Medicina General', tenantId },
+        data: {
+          name: 'Médico General',
+          specialty: 'Medicina General',
+          tenantId,
+        },
       });
       // Horario L-V 8:00-17:00
       await tx.schedule.createMany({
         data: [1, 2, 3, 4, 5].map((dayOfWeek) => ({
-          dayOfWeek, startTime: '08:00', endTime: '17:00', professionalId: medico.id,
+          dayOfWeek,
+          startTime: '08:00',
+          endTime: '17:00',
+          professionalId: medico.id,
         })),
       });
     }
@@ -469,12 +548,48 @@ export class AuthService {
     if (industry === Industry.BEAUTY) {
       await tx.service.createMany({
         data: [
-          { name: 'Corte de cabello', description: 'Corte + lavado + secado', duration: 45, price: 45000, tenantId },
-          { name: 'Tinte completo', description: 'Coloración + tratamiento', duration: 120, price: 120000, tenantId },
-          { name: 'Manicure', description: 'Esmaltado tradicional o semipermanente', duration: 45, price: 30000, tenantId },
-          { name: 'Pedicure', description: 'Pedicure completo con esmaltado', duration: 60, price: 35000, tenantId },
-          { name: 'Facial básico', description: 'Limpieza facial e hidratación', duration: 60, price: 80000, tenantId },
-          { name: 'Depilación de cejas', description: 'Diseño y depilación', duration: 20, price: 15000, tenantId },
+          {
+            name: 'Corte de cabello',
+            description: 'Corte + lavado + secado',
+            duration: 45,
+            price: 45000,
+            tenantId,
+          },
+          {
+            name: 'Tinte completo',
+            description: 'Coloración + tratamiento',
+            duration: 120,
+            price: 120000,
+            tenantId,
+          },
+          {
+            name: 'Manicure',
+            description: 'Esmaltado tradicional o semipermanente',
+            duration: 45,
+            price: 30000,
+            tenantId,
+          },
+          {
+            name: 'Pedicure',
+            description: 'Pedicure completo con esmaltado',
+            duration: 60,
+            price: 35000,
+            tenantId,
+          },
+          {
+            name: 'Facial básico',
+            description: 'Limpieza facial e hidratación',
+            duration: 60,
+            price: 80000,
+            tenantId,
+          },
+          {
+            name: 'Depilación de cejas',
+            description: 'Diseño y depilación',
+            duration: 20,
+            price: 15000,
+            tenantId,
+          },
         ],
       });
       const estilista = await tx.professional.create({
@@ -483,7 +598,10 @@ export class AuthService {
       // Horario L-S 9:00-18:00
       await tx.schedule.createMany({
         data: [1, 2, 3, 4, 5, 6].map((dayOfWeek) => ({
-          dayOfWeek, startTime: '09:00', endTime: '18:00', professionalId: estilista.id,
+          dayOfWeek,
+          startTime: '09:00',
+          endTime: '18:00',
+          professionalId: estilista.id,
         })),
       });
     }
@@ -491,8 +609,22 @@ export class AuthService {
     if (industry === Industry.RESTAURANT) {
       await tx.product.createMany({
         data: [
-          { name: 'Plato del día', description: 'Consultar disponibilidad', price: 15000, stock: 50, minStock: 5, tenantId },
-          { name: 'Bebida', description: 'Gaseosa, jugo o agua', price: 3000, stock: 100, minStock: 10, tenantId },
+          {
+            name: 'Plato del día',
+            description: 'Consultar disponibilidad',
+            price: 15000,
+            stock: 50,
+            minStock: 5,
+            tenantId,
+          },
+          {
+            name: 'Bebida',
+            description: 'Gaseosa, jugo o agua',
+            price: 3000,
+            stock: 100,
+            minStock: 10,
+            tenantId,
+          },
         ],
       });
     }
@@ -500,7 +632,14 @@ export class AuthService {
     if (industry === Industry.TECH_STORE) {
       await tx.product.createMany({
         data: [
-          { name: 'Servicio técnico general', description: 'Diagnóstico y reparación', price: 50000, stock: 999, minStock: 0, tenantId },
+          {
+            name: 'Servicio técnico general',
+            description: 'Diagnóstico y reparación',
+            price: 50000,
+            stock: 999,
+            minStock: 0,
+            tenantId,
+          },
         ],
       });
     }
@@ -545,9 +684,21 @@ export class AuthService {
         isDemo: true,
         messages: {
           create: [
-            { body: 'Hola, ¿tienen disponibilidad para hoy?', direction: 'INBOUND', createdAt: ayer },
-            { body: '¡Hola María! 👋 Claro que sí. ¿En qué te puedo ayudar?', direction: 'OUTBOUND', createdAt: ayer },
-            { body: '¡Gracias! Quedó perfecto 😊', direction: 'INBOUND', createdAt: ayer },
+            {
+              body: 'Hola, ¿tienen disponibilidad para hoy?',
+              direction: 'INBOUND',
+              createdAt: ayer,
+            },
+            {
+              body: '¡Hola María! 👋 Claro que sí. ¿En qué te puedo ayudar?',
+              direction: 'OUTBOUND',
+              createdAt: ayer,
+            },
+            {
+              body: '¡Gracias! Quedó perfecto 😊',
+              direction: 'INBOUND',
+              createdAt: ayer,
+            },
           ],
         },
       },
@@ -596,14 +747,24 @@ export class AuthService {
           total: 15000,
           phone: '+573001112233',
           isDemo: true,
-          items: { create: [{ name: 'Producto de ejemplo', quantity: 1, price: 15000 }] },
+          items: {
+            create: [
+              { name: 'Producto de ejemplo', quantity: 1, price: 15000 },
+            ],
+          },
         },
       });
     }
 
     if (usaCitas.includes(industry)) {
-      const servicio = await tx.service.findFirst({ where: { tenantId }, select: { id: true } });
-      const profesional = await tx.professional.findFirst({ where: { tenantId }, select: { id: true } });
+      const servicio = await tx.service.findFirst({
+        where: { tenantId },
+        select: { id: true },
+      });
+      const profesional = await tx.professional.findFirst({
+        where: { tenantId },
+        select: { id: true },
+      });
       if (servicio) {
         await tx.appointment.create({
           data: {

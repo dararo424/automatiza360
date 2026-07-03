@@ -29,7 +29,9 @@ export class GastosService {
   }
 
   async remove(tenantId: string, id: string) {
-    const gasto = await this.prisma.gasto.findFirst({ where: { id, tenantId } });
+    const gasto = await this.prisma.gasto.findFirst({
+      where: { id, tenantId },
+    });
     if (!gasto) throw new NotFoundException('Gasto no encontrado');
     return this.prisma.gasto.delete({ where: { id } });
   }
@@ -49,12 +51,17 @@ export class GastosService {
 
     const porCategoriaMap = new Map<string, number>();
     for (const g of gastos) {
-      porCategoriaMap.set(g.categoria, (porCategoriaMap.get(g.categoria) ?? 0) + g.monto);
+      porCategoriaMap.set(
+        g.categoria,
+        (porCategoriaMap.get(g.categoria) ?? 0) + g.monto,
+      );
     }
-    const porCategoria = Array.from(porCategoriaMap.entries()).map(([categoria, total]) => ({
-      categoria,
-      total,
-    }));
+    const porCategoria = Array.from(porCategoriaMap.entries()).map(
+      ([categoria, total]) => ({
+        categoria,
+        total,
+      }),
+    );
 
     return {
       totalGastos,

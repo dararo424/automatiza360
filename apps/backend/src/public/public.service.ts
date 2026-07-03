@@ -30,7 +30,9 @@ export interface AutoOnboardDto {
 @Injectable()
 export class PublicService {
   private readonly logger = new Logger(PublicService.name);
-  private readonly ai = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  private readonly ai = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+  });
 
   constructor(
     private readonly prisma: PrismaService,
@@ -99,7 +101,10 @@ Responde SOLO con el JSON.`;
 
       const raw = response.content.find((b) => b.type === 'text')?.text ?? '{}';
       // Strip markdown code fences if Claude wraps the JSON
-      const text = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+      const text = raw
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```\s*$/i, '')
+        .trim();
       return JSON.parse(text) as BusinessAnalysis;
     } catch (err) {
       this.logger.error('Business analysis failed', err);

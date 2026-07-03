@@ -12,9 +12,15 @@ export interface ImportResult {
 export class ImportacionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async importarContactos(tenantId: string, fileBuffer: Buffer): Promise<ImportResult> {
+  async importarContactos(
+    tenantId: string,
+    fileBuffer: Buffer,
+  ): Promise<ImportResult> {
     const text = fileBuffer.toString('utf-8');
-    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    const lines = text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
 
     if (lines.length === 0) return { importados: 0, errores: 0, total: 0 };
 
@@ -62,9 +68,15 @@ export class ImportacionService {
     return { importados, errores, total: dataLines.length, detalles };
   }
 
-  async importarProductos(tenantId: string, fileBuffer: Buffer): Promise<ImportResult> {
+  async importarProductos(
+    tenantId: string,
+    fileBuffer: Buffer,
+  ): Promise<ImportResult> {
     const text = fileBuffer.toString('utf-8');
-    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    const lines = text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
 
     if (lines.length === 0) return { importados: 0, errores: 0, total: 0 };
 
@@ -75,7 +87,14 @@ export class ImportacionService {
 
     for (const line of dataLines) {
       const cols = this.parseCsvLine(line);
-      const [nombre, descripcion, precioStr, stockStr, stockMinimoStr, categoria] = cols;
+      const [
+        nombre,
+        descripcion,
+        precioStr,
+        stockStr,
+        stockMinimoStr,
+        categoria,
+      ] = cols;
 
       if (!nombre?.trim()) {
         errores++;

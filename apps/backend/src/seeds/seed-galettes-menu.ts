@@ -176,7 +176,9 @@ async function main() {
   });
 
   if (!tenant) {
-    console.error('❌  Tenant "restaurante-mi-vecina" no encontrado. Créalo primero.');
+    console.error(
+      '❌  Tenant "restaurante-mi-vecina" no encontrado. Créalo primero.',
+    );
     process.exit(1);
   }
 
@@ -193,12 +195,14 @@ async function main() {
     data: productos.map((p) => ({
       ...p,
       tenantId: tenant.id,
-      stock: 999,   // restaurante: sin control de stock real
+      stock: 999, // restaurante: sin control de stock real
       minStock: 0,
     })),
   });
 
-  console.log(`✅  ${productos.length} productos insertados para "${tenant.name}".`);
+  console.log(
+    `✅  ${productos.length} productos insertados para "${tenant.name}".`,
+  );
   await prisma.$disconnect();
 }
 

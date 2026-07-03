@@ -178,9 +178,7 @@ export class AutomacionesService {
 
     if (paso.tipo === 'WAIT') {
       const days = Number(config['days'] ?? 1);
-      const nextScheduled = new Date(
-        Date.now() + days * 24 * 60 * 60 * 1000,
-      );
+      const nextScheduled = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
       await this.prisma.automacionEjecucion.update({
         where: { id: ejecucion.id },
         data: {

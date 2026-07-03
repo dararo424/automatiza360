@@ -25,7 +25,9 @@ const TENANT_ID = 'tenant-abc-1234';
 const SECRET = 'test_events_secret';
 
 /** Construye un evento de Wompi con checksum válido según su spec. */
-function wompiEvent(overrides: { txId?: string; status?: string; amount?: number } = {}) {
+function wompiEvent(
+  overrides: { txId?: string; status?: string; amount?: number } = {},
+) {
   const transaction = {
     id: overrides.txId ?? 'tx-1',
     status: overrides.status ?? 'APPROVED',
@@ -33,9 +35,16 @@ function wompiEvent(overrides: { txId?: string; status?: string; amount?: number
     reference: 'A360-tenant-ab-111',
   };
   const timestamp = 1719900000;
-  const properties = ['transaction.id', 'transaction.status', 'transaction.amount_in_cents'];
+  const properties = [
+    'transaction.id',
+    'transaction.status',
+    'transaction.amount_in_cents',
+  ];
   const concatenado = `${transaction.id}${transaction.status}${transaction.amount_in_cents}${timestamp}${SECRET}`;
-  const checksum = crypto.createHash('sha256').update(concatenado).digest('hex');
+  const checksum = crypto
+    .createHash('sha256')
+    .update(concatenado)
+    .digest('hex');
   return {
     payload: {
       event: 'transaction.updated',
@@ -143,9 +152,15 @@ describe('PaymentsService', () => {
     });
 
     it('es idempotente si el webhook ya aprobó el intent', async () => {
-      mockPrisma.paymentIntent.findFirst.mockResolvedValue({ ...intent, status: 'APPROVED' });
+      mockPrisma.paymentIntent.findFirst.mockResolvedValue({
+        ...intent,
+        status: 'APPROVED',
+      });
       global.fetch = jest.fn();
-      const res = await service.activarPorReferencia(TENANT_ID, intent.referencia);
+      const res = await service.activarPorReferencia(
+        TENANT_ID,
+        intent.referencia,
+      );
       expect(res).toEqual({ ok: true, plan: 'PRO' });
       expect(global.fetch).not.toHaveBeenCalled();
       expect(mockPrisma.$transaction).not.toHaveBeenCalled();
@@ -155,7 +170,13 @@ describe('PaymentsService', () => {
       mockPrisma.paymentIntent.findFirst.mockResolvedValue(intent);
       global.fetch = jest.fn().mockResolvedValue({
         json: async () => ({
-          data: [{ status: 'DECLINED', amount_in_cents: intent.monto, currency: 'COP' }],
+          data: [
+            {
+              status: 'DECLINED',
+              amount_in_cents: intent.monto,
+              currency: 'COP',
+            },
+          ],
         }),
       }) as any;
       await expect(
@@ -168,7 +189,9 @@ describe('PaymentsService', () => {
       mockPrisma.paymentIntent.findFirst.mockResolvedValue(intent);
       global.fetch = jest.fn().mockResolvedValue({
         json: async () => ({
-          data: [{ status: 'APPROVED', amount_in_cents: 1000, currency: 'COP' }],
+          data: [
+            { status: 'APPROVED', amount_in_cents: 1000, currency: 'COP' },
+          ],
         }),
       }) as any;
       await expect(
@@ -180,25 +203,49 @@ describe('PaymentsService', () => {
       mockPrisma.paymentIntent.findFirst.mockResolvedValue(intent);
       global.fetch = jest.fn().mockResolvedValue({
         json: async () => ({
-          data: [{ id: 'tx-9', status: 'APPROVED', amount_in_cents: intent.monto, currency: 'COP' }],
+          data: [
+            {
+              id: 'tx-9',
+              status: 'APPROVED',
+              amount_in_cents: intent.monto,
+              currency: 'COP',
+            },
+          ],
         }),
       }) as any;
-      const res = await service.activarPorReferencia(TENANT_ID, intent.referencia);
+      const res = await service.activarPorReferencia(
+        TENANT_ID,
+        intent.referencia,
+      );
       expect(res).toEqual({ ok: true, plan: 'PRO' });
       expect(mockPrisma.$transaction).toHaveBeenCalled();
       expect(mockPrisma.tenant.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: TENANT_ID },
-          data: expect.objectContaining({ subscriptionStatus: 'ACTIVE', subscriptionPlan: 'PRO' }),
+          data: expect.objectContaining({
+            subscriptionStatus: 'ACTIVE',
+            subscriptionPlan: 'PRO',
+          }),
         }),
       );
     });
 
     it('un intent ANUAL extiende la suscripción ~12 meses', async () => {
-      mockPrisma.paymentIntent.findFirst.mockResolvedValue({ ...intent, periodo: 'ANUAL', monto: 242000000 });
+      mockPrisma.paymentIntent.findFirst.mockResolvedValue({
+        ...intent,
+        periodo: 'ANUAL',
+        monto: 242000000,
+      });
       global.fetch = jest.fn().mockResolvedValue({
         json: async () => ({
-          data: [{ id: 'tx-9', status: 'APPROVED', amount_in_cents: 242000000, currency: 'COP' }],
+          data: [
+            {
+              id: 'tx-9',
+              status: 'APPROVED',
+              amount_in_cents: 242000000,
+              currency: 'COP',
+            },
+          ],
         }),
       }) as any;
       await service.activarPorReferencia(TENANT_ID, intent.referencia);
@@ -217,7 +264,10 @@ describe('PaymentsService', () => {
 
   describe('crearTransaccion', () => {
     beforeEach(() => {
-      mockPrisma.tenant.findUnique.mockResolvedValue({ id: TENANT_ID, users: [] });
+      mockPrisma.tenant.findUnique.mockResolvedValue({
+        id: TENANT_ID,
+        users: [],
+      });
       mockPrisma.paymentIntent.create.mockResolvedValue({});
       process.env.WOMPI_INTEGRITY_SECRET = 'int_secret';
       process.env.WOMPI_PUBLIC_KEY = 'pub_test_x';
@@ -227,14 +277,22 @@ describe('PaymentsService', () => {
     it('crea intent mensual con el precio de tabla', async () => {
       await service.crearTransaccion(TENANT_ID, 'PRO');
       expect(mockPrisma.paymentIntent.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ plan: 'PRO', periodo: 'MENSUAL', monto: 24200000 }),
+        data: expect.objectContaining({
+          plan: 'PRO',
+          periodo: 'MENSUAL',
+          monto: 24200000,
+        }),
       });
     });
 
     it('crea intent anual cobrando 10 meses', async () => {
       await service.crearTransaccion(TENANT_ID, 'PRO', 'ANUAL');
       expect(mockPrisma.paymentIntent.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ plan: 'PRO', periodo: 'ANUAL', monto: 242000000 }),
+        data: expect.objectContaining({
+          plan: 'PRO',
+          periodo: 'ANUAL',
+          monto: 242000000,
+        }),
       });
     });
   });

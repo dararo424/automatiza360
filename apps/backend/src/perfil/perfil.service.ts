@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ActualizarPagosConfigDto, ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
+import {
+  ActualizarPagosConfigDto,
+  ActualizarPerfilDto,
+} from './dto/actualizar-perfil.dto';
 
 @Injectable()
 export class PerfilService {
@@ -156,13 +159,14 @@ export class PerfilService {
   /** Cuenta los registros de ejemplo sembrados en el registro. */
   async contarDatosEjemplo(tenantId: string) {
     const where = { tenantId, isDemo: true };
-    const [ordenes, tickets, citas, conversaciones, contactos] = await Promise.all([
-      this.prisma.order.count({ where }),
-      this.prisma.ticket.count({ where }),
-      this.prisma.appointment.count({ where }),
-      this.prisma.conversation.count({ where }),
-      this.prisma.contact.count({ where }),
-    ]);
+    const [ordenes, tickets, citas, conversaciones, contactos] =
+      await Promise.all([
+        this.prisma.order.count({ where }),
+        this.prisma.ticket.count({ where }),
+        this.prisma.appointment.count({ where }),
+        this.prisma.conversation.count({ where }),
+        this.prisma.contact.count({ where }),
+      ]);
     return { total: ordenes + tickets + citas + conversaciones + contactos };
   }
 
@@ -179,6 +183,8 @@ export class PerfilService {
       this.prisma.contact.deleteMany({ where }),
     ]);
     return { eliminado: true };
+  }
+
   async getWhatsappStatus(tenantId: string) {
     const tenant = await this.prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },
@@ -231,7 +237,9 @@ export class PerfilService {
       data: {
         ...(dto.paymentMode !== undefined && { paymentMode: dto.paymentMode }),
         ...(dto.paymentText !== undefined && { paymentText: dto.paymentText }),
-        ...(dto.wompiPublicKey !== undefined && { wompiPublicKey: dto.wompiPublicKey }),
+        ...(dto.wompiPublicKey !== undefined && {
+          wompiPublicKey: dto.wompiPublicKey,
+        }),
         ...(dto.wompiIntegritySecret !== undefined && {
           wompiIntegritySecret: dto.wompiIntegritySecret,
         }),

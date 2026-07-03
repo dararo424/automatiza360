@@ -36,7 +36,9 @@ export class GarantiasService {
   }
 
   async remove(tenantId: string, id: string) {
-    const garantia = await this.prisma.garantia.findFirst({ where: { id, tenantId } });
+    const garantia = await this.prisma.garantia.findFirst({
+      where: { id, tenantId },
+    });
     if (!garantia) throw new NotFoundException('Garantía no encontrada');
     return this.prisma.garantia.delete({ where: { id } });
   }

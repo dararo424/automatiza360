@@ -140,7 +140,12 @@ export class AdminBotController {
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.cambiarEstadoTicket(id, dto.tenantId, dto.estado, dto.fotoUrl);
+    return this.service.cambiarEstadoTicket(
+      id,
+      dto.tenantId,
+      dto.estado,
+      dto.fotoUrl,
+    );
   }
 
   @Get('ticket/buscar')
@@ -210,7 +215,11 @@ export class AdminBotController {
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.cambiarEstadoOrden(dto.tenantId, parseInt(numero, 10), dto.estado);
+    return this.service.cambiarEstadoOrden(
+      dto.tenantId,
+      parseInt(numero, 10),
+      dto.estado,
+    );
   }
 
   // ── Citas avanzadas ────────────────────────────────────────────────────────
@@ -259,7 +268,12 @@ export class AdminBotController {
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.reagendarCita(dto.tenantId, id, dto.nuevaFecha, dto.nuevaHora);
+    return this.service.reagendarCita(
+      dto.tenantId,
+      id,
+      dto.nuevaFecha,
+      dto.nuevaHora,
+    );
   }
 
   // ── Contactos ──────────────────────────────────────────────────────────────
@@ -282,7 +296,12 @@ export class AdminBotController {
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.registrarGasto(dto.tenantId, dto.descripcion, dto.monto, dto.categoria);
+    return this.service.registrarGasto(
+      dto.tenantId,
+      dto.descripcion,
+      dto.monto,
+      dto.categoria,
+    );
   }
 
   // ── Ticket nuevo ───────────────────────────────────────────────────────────
@@ -403,7 +422,13 @@ export class AdminBotController {
     @Headers('x-internal-key') key: string,
   ) {
     verifyInternalKey(key);
-    return this.service.agregarContacto(dto.tenantId, dto.nombre, dto.phone, dto.email, dto.notas);
+    return this.service.agregarContacto(
+      dto.tenantId,
+      dto.nombre,
+      dto.phone,
+      dto.email,
+      dto.notas,
+    );
   }
 
   // ── Turnos ─────────────────────────────────────────────────────────────────

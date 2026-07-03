@@ -6,18 +6,26 @@ import { encryptSecret, decryptSecret } from '../common/utils/secret-crypto';
 export class InstagramService {
   private readonly logger = new Logger(InstagramService.name);
 
-  private readonly appId     = process.env.META_APP_ID ?? '';
+  private readonly appId = process.env.META_APP_ID ?? '';
   private readonly appSecret = process.env.META_APP_SECRET ?? '';
-  private readonly backendUrl = process.env.BACKEND_URL_PUBLIC ?? process.env.FRONTEND_URL?.replace('5173', '3000') ?? '';
-  private readonly frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5173';
+  private readonly backendUrl =
+    process.env.BACKEND_URL_PUBLIC ??
+    process.env.FRONTEND_URL?.replace('5173', '3000') ??
+    '';
+  private readonly frontendUrl =
+    process.env.FRONTEND_URL ?? 'http://localhost:5173';
 
   constructor(private readonly prisma: PrismaService) {}
 
   /** Returns the Meta OAuth URL to redirect the user to. */
   getConnectUrl(tenantId: string): string {
-    if (!this.appId) throw new BadRequestException('META_APP_ID no configurado');
-    const redirectUri = encodeURIComponent(`${this.backendUrl}/instagram/callback`);
-    const scope = 'instagram_manage_messages,pages_messaging,pages_read_engagement,pages_show_list';
+    if (!this.appId)
+      throw new BadRequestException('META_APP_ID no configurado');
+    const redirectUri = encodeURIComponent(
+      `${this.backendUrl}/instagram/callback`,
+    );
+    const scope =
+      'instagram_manage_messages,pages_messaging,pages_read_engagement,pages_show_list';
     const state = Buffer.from(tenantId).toString('base64');
     return (
       `https://www.facebook.com/v19.0/dialog/oauth` +
@@ -37,12 +45,12 @@ export class InstagramService {
     // 1. Exchange code for short-lived user token
     const tokenRes = await fetch(
       `https://graph.facebook.com/v19.0/oauth/access_token` +
-      `?client_id=${this.appId}` +
-      `&client_secret=${this.appSecret}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&code=${code}`,
+        `?client_id=${this.appId}` +
+        `&client_secret=${this.appSecret}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&code=${code}`,
     );
-    const tokenData = await tokenRes.json() as any;
+    const tokenData = await tokenRes.json();
     if (!tokenData.access_token) {
       this.logger.error('Meta token exchange failed: %j', tokenData);
       return `${this.frontendUrl}/configuracion?instagram=error`;
@@ -52,19 +60,19 @@ export class InstagramService {
     // 2. Exchange for long-lived user token (~60 days)
     const longRes = await fetch(
       `https://graph.facebook.com/v19.0/oauth/access_token` +
-      `?grant_type=fb_exchange_token` +
-      `&client_id=${this.appId}` +
-      `&client_secret=${this.appSecret}` +
-      `&fb_exchange_token=${shortToken}`,
+        `?grant_type=fb_exchange_token` +
+        `&client_id=${this.appId}` +
+        `&client_secret=${this.appSecret}` +
+        `&fb_exchange_token=${shortToken}`,
     );
-    const longData = await longRes.json() as any;
+    const longData = await longRes.json();
     const longToken: string = longData.access_token ?? shortToken;
 
     // 3. Get the Facebook Pages the user manages
     const pagesRes = await fetch(
       `https://graph.facebook.com/v19.0/me/accounts?access_token=${longToken}`,
     );
-    const pagesData = await pagesRes.json() as any;
+    const pagesData = await pagesRes.json();
     const pages: any[] = pagesData.data ?? [];
 
     if (!pages.length) {
@@ -81,14 +89,14 @@ export class InstagramService {
     for (const page of pages) {
       const igRes = await fetch(
         `https://graph.facebook.com/v19.0/${page.id}` +
-        `?fields=instagram_business_account&access_token=${page.access_token}`,
+          `?fields=instagram_business_account&access_token=${page.access_token}`,
       );
-      const igData = await igRes.json() as any;
+      const igData = await igRes.json();
       if (igData.instagram_business_account?.id) {
-        chosenPage        = page;
-        instagramPageId   = igData.instagram_business_account.id;
+        chosenPage = page;
+        instagramPageId = igData.instagram_business_account.id;
         instagramPageName = page.name;
-        pageAccessToken   = page.access_token; // Page Access Token (never expires if page is live)
+        pageAccessToken = page.access_token; // Page Access Token (never expires if page is live)
         break;
       }
     }
@@ -108,7 +116,12 @@ export class InstagramService {
       },
     });
 
-    this.logger.log('Instagram connected: tenantId=%s pageId=%s page=%s', tenantId, instagramPageId, instagramPageName);
+    this.logger.log(
+      'Instagram connected: tenantId=%s pageId=%s page=%s',
+      tenantId,
+      instagramPageId,
+      instagramPageName,
+    );
     return `${this.frontendUrl}/configuracion?instagram=connected`;
   }
 
@@ -116,7 +129,11 @@ export class InstagramService {
   async getStatus(tenantId: string) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { instagramPageId: true, instagramPageName: true, instagramConnectedAt: true },
+      select: {
+        instagramPageId: true,
+        instagramPageName: true,
+        instagramConnectedAt: true,
+      },
     });
     return {
       connected: !!tenant?.instagramPageId,

@@ -8,7 +8,13 @@ import { OrdenesController } from './ordenes.controller';
 import { OrdenesService } from './ordenes.service';
 
 @Module({
-  imports: [AuthModule, ContactosModule, AutomacionesModule, CuponesModule, PushModule],
+  imports: [
+    AuthModule,
+    ContactosModule,
+    AutomacionesModule,
+    CuponesModule,
+    PushModule,
+  ],
   controllers: [OrdenesController],
   providers: [OrdenesService],
 })

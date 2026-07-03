@@ -23,7 +23,11 @@ export class PaymentsController {
     @CurrentUser() user: { tenantId: string },
     @Body() dto: CrearTransaccionDto,
   ) {
-    return this.payments.crearTransaccion(user.tenantId, dto.plan, dto.periodo ?? 'MENSUAL');
+    return this.payments.crearTransaccion(
+      user.tenantId,
+      dto.plan,
+      dto.periodo ?? 'MENSUAL',
+    );
   }
 
   @SkipThrottle()
@@ -65,6 +69,10 @@ export class PaymentsController {
     @CurrentUser() user: { tenantId: string },
     @Body() body: { referencia: string; razon?: string },
   ) {
-    return this.payments.solicitarReembolso(user.tenantId, body.referencia, body.razon);
+    return this.payments.solicitarReembolso(
+      user.tenantId,
+      body.referencia,
+      body.razon,
+    );
   }
 }

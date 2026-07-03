@@ -1,5 +1,10 @@
 import { Test } from '@nestjs/testing';
-import { ConflictException, UnauthorizedException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  ConflictException,
+  UnauthorizedException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -82,15 +87,29 @@ describe('AuthService', () => {
 
     it('lanza ConflictException si el email ya está registrado', async () => {
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'existing' });
-      await expect(service.registrarTenant(dto)).rejects.toThrow(ConflictException);
+      await expect(service.registrarTenant(dto)).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('crea tenant, owner y bot en una transacción', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.tenant.findUnique.mockResolvedValue(null);
 
-      const fakeTenant = { id: 't1', name: dto.businessName, slug: 'restaurante-test', industry: dto.industry, trialEndsAt: new Date() };
-      const fakeOwner = { id: 'u1', email: dto.email, role: 'OWNER', tenantId: 't1', tokenVersion: 0 };
+      const fakeTenant = {
+        id: 't1',
+        name: dto.businessName,
+        slug: 'restaurante-test',
+        industry: dto.industry,
+        trialEndsAt: new Date(),
+      };
+      const fakeOwner = {
+        id: 'u1',
+        email: dto.email,
+        role: 'OWNER',
+        tenantId: 't1',
+        tokenVersion: 0,
+      };
 
       mockPrisma.$transaction.mockImplementation(async (cb: any) => {
         const tx = {
@@ -132,15 +151,29 @@ describe('AuthService', () => {
       mockPrisma.user.findUnique.mockResolvedValueOnce(null); // email no existe
 
       const tenantSinOwner = {
-        id: 't2', name: dto.businessName, slug: 'restaurante-test',
-        industry: dto.industry, users: [], twilioNumber: null, ownerPhone: null,
+        id: 't2',
+        name: dto.businessName,
+        slug: 'restaurante-test',
+        industry: dto.industry,
+        users: [],
+        twilioNumber: null,
+        ownerPhone: null,
         trialEndsAt: new Date(),
       };
       mockPrisma.tenant.findUnique.mockResolvedValue(tenantSinOwner);
 
-      const fakeOwner = { id: 'u2', email: dto.email, role: 'OWNER', tenantId: 't2', tokenVersion: 0 };
+      const fakeOwner = {
+        id: 'u2',
+        email: dto.email,
+        role: 'OWNER',
+        tenantId: 't2',
+        tokenVersion: 0,
+      };
       mockPrisma.user.create.mockResolvedValue(fakeOwner);
-      mockPrisma.user.findFirst.mockResolvedValue({ id: 'bot1', email: 'bot@test.com' });
+      mockPrisma.user.findFirst.mockResolvedValue({
+        id: 'bot1',
+        email: 'bot@test.com',
+      });
       mockPrisma.user.update.mockResolvedValue({});
       mockPrisma.tenant.update.mockResolvedValue({});
 
@@ -158,39 +191,62 @@ describe('AuthService', () => {
 
     it('lanza UnauthorizedException si el usuario no existe', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
-      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(loginDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('lanza UnauthorizedException si la contraseña es incorrecta', async () => {
       mockPrisma.user.findUnique.mockResolvedValue({
-        id: 'u1', email: loginDto.email,
+        id: 'u1',
+        email: loginDto.email,
         password: '$2b$10$wronghash',
         active: true,
         tenant: { active: true },
-        tokenVersion: 0, role: 'OWNER', tenantId: 't1',
+        tokenVersion: 0,
+        role: 'OWNER',
+        tenantId: 't1',
       });
-      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      await expect(service.login(loginDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('lanza ForbiddenException si el usuario está inactivo', async () => {
       // bcrypt hash real de "segura123"
-      const hash = '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LPVyRnMxBgu';
+      const hash =
+        '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LPVyRnMxBgu';
       mockPrisma.user.findUnique.mockResolvedValue({
-        id: 'u1', email: loginDto.email, password: hash,
-        active: false, tenant: { active: true },
-        tokenVersion: 0, role: 'OWNER', tenantId: 't1',
+        id: 'u1',
+        email: loginDto.email,
+        password: hash,
+        active: false,
+        tenant: { active: true },
+        tokenVersion: 0,
+        role: 'OWNER',
+        tenantId: 't1',
       });
-      await expect(service.login({ ...loginDto, password: 'abc' })).rejects.toThrow();
+      await expect(
+        service.login({ ...loginDto, password: 'abc' }),
+      ).rejects.toThrow();
     });
 
     it('lanza ForbiddenException si el tenant está inactivo', async () => {
-      const hash = '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LPVyRnMxBgu';
+      const hash =
+        '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LPVyRnMxBgu';
       mockPrisma.user.findUnique.mockResolvedValue({
-        id: 'u1', email: loginDto.email, password: hash,
-        active: true, tenant: { active: false },
-        tokenVersion: 0, role: 'OWNER', tenantId: 't1',
+        id: 'u1',
+        email: loginDto.email,
+        password: hash,
+        active: true,
+        tenant: { active: false },
+        tokenVersion: 0,
+        role: 'OWNER',
+        tenantId: 't1',
       });
-      await expect(service.login({ ...loginDto, password: 'abc' })).rejects.toThrow();
+      await expect(
+        service.login({ ...loginDto, password: 'abc' }),
+      ).rejects.toThrow();
     });
   });
 
@@ -207,7 +263,12 @@ describe('AuthService', () => {
     });
 
     it('envía email si el usuario existe y está activo', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', name: 'Juan', email: 'juan@test.com', active: true });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        name: 'Juan',
+        email: 'juan@test.com',
+        active: true,
+      });
       mockPrisma.passwordResetToken.updateMany.mockResolvedValue({});
       mockPrisma.passwordResetToken.create.mockResolvedValue({});
 
@@ -224,37 +285,52 @@ describe('AuthService', () => {
   describe('resetearContrasena', () => {
     it('lanza BadRequestException con token inválido', async () => {
       mockPrisma.passwordResetToken.findUnique.mockResolvedValue(null);
-      await expect(service.resetearContrasena('bad-token', 'nueva')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.resetearContrasena('bad-token', 'nueva'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('lanza BadRequestException con token ya usado', async () => {
       mockPrisma.passwordResetToken.findUnique.mockResolvedValue({
-        id: 'rt1', userId: 'u1', used: true,
+        id: 'rt1',
+        userId: 'u1',
+        used: true,
         expiresAt: new Date(Date.now() + 60000),
         user: { id: 'u1' },
       });
-      await expect(service.resetearContrasena('used-token', 'nueva')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.resetearContrasena('used-token', 'nueva'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('lanza BadRequestException con token expirado', async () => {
       mockPrisma.passwordResetToken.findUnique.mockResolvedValue({
-        id: 'rt1', userId: 'u1', used: false,
+        id: 'rt1',
+        userId: 'u1',
+        used: false,
         expiresAt: new Date(Date.now() - 60000), // pasado
         user: { id: 'u1' },
       });
-      await expect(service.resetearContrasena('expired-token', 'nueva')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.resetearContrasena('expired-token', 'nueva'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('actualiza contraseña e invalida el token con token válido', async () => {
       mockPrisma.passwordResetToken.findUnique.mockResolvedValue({
-        id: 'rt1', userId: 'u1', used: false,
+        id: 'rt1',
+        userId: 'u1',
+        used: false,
         expiresAt: new Date(Date.now() + 60000),
         user: { id: 'u1' },
       });
       mockPrisma.user.update.mockResolvedValue({});
       mockPrisma.passwordResetToken.update.mockResolvedValue({});
 
-      const result = await service.resetearContrasena('valid-token', 'nueva123');
+      const result = await service.resetearContrasena(
+        'valid-token',
+        'nueva123',
+      );
       expect(result.message).toContain('actualizada');
       expect(mockPrisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'u1' } }),
