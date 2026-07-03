@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { OnboardingChecklist } from '../components/onboarding/OnboardingChecklist';
+import { getDatosEjemplo, eliminarDatosEjemplo } from '../api/onboarding';
 import {
   LineChart,
   Line,
@@ -21,29 +22,6 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { getResenasStats } from '../api/resenas';
 import { getNpsStats } from '../api/nps';
 
-const APPOINTMENT_COLORS: Record<string, string> = {
-  SCHEDULED: 'bg-blue-100 text-blue-800',
-  CONFIRMED: 'bg-green-100 text-green-800',
-  CANCELLED: 'bg-red-100 text-red-800',
-  COMPLETED: 'bg-slate-100 text-slate-800',
-  NO_SHOW: 'bg-orange-100 text-orange-800',
-};
-const APPOINTMENT_LABELS: Record<string, string> = {
-  SCHEDULED: 'Agendada',
-  CONFIRMED: 'Confirmada',
-  CANCELLED: 'Cancelada',
-  COMPLETED: 'Completada',
-  NO_SHOW: 'No asistió',
-};
-
-function AppointmentBadge({ status }: { status: string }) {
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${APPOINTMENT_COLORS[status] ?? 'bg-gray-100 text-gray-800'}`}>
-      {APPOINTMENT_LABELS[status] ?? status}
-    </span>
-  );
-}
-
 function TendenciasChart({ showCitas = false, showOrdenes = true }: { showCitas?: boolean; showOrdenes?: boolean }) {
   const { data: tendencias = [], isLoading } = useQuery({
     queryKey: ['dashboard-tendencias'],
@@ -61,21 +39,22 @@ function TendenciasChart({ showCitas = false, showOrdenes = true }: { showCitas?
   }));
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-      <h2 className="text-base font-semibold text-slate-800 mb-4">Tendencias — últimos 30 días</h2>
+    <div className="card p-4">
+      <p className="label-mono mb-1">Últimos 30 días</p>
+      <h2 className="font-display text-base font-bold text-ink mb-4">Tendencias</h2>
       <ResponsiveContainer width="100%" height={240}>
         <LineChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#eceae2" />
           <XAxis
             dataKey="fecha"
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            tick={{ fontSize: 11, fill: '#94927f' }}
             interval={4}
             tickLine={false}
             axisLine={false}
           />
-          <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+          <YAxis tick={{ fontSize: 11, fill: '#94927f' }} tickLine={false} axisLine={false} />
           <Tooltip
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+            contentStyle={{ fontSize: 12, borderRadius: 12, border: '1px solid #101b10', boxShadow: '3px 3px 0 0 #101b10' }}
             formatter={(value) => {
               const num = typeof value === 'number' ? value : 0;
               if (String(value).includes('.')) return [`$${num}k`, ''];
@@ -88,8 +67,8 @@ function TendenciasChart({ showCitas = false, showOrdenes = true }: { showCitas?
               type="monotone"
               dataKey="ordenes"
               name="Órdenes"
-              stroke="#6366f1"
-              strokeWidth={2}
+              stroke="#2c7229"
+              strokeWidth={2.5}
               dot={false}
               activeDot={{ r: 4 }}
             />
@@ -99,8 +78,8 @@ function TendenciasChart({ showCitas = false, showOrdenes = true }: { showCitas?
               type="monotone"
               dataKey="citas"
               name="Citas"
-              stroke="#22c55e"
-              strokeWidth={2}
+              stroke="#1e7864"
+              strokeWidth={2.5}
               dot={false}
               activeDot={{ r: 4 }}
             />
@@ -109,8 +88,8 @@ function TendenciasChart({ showCitas = false, showOrdenes = true }: { showCitas?
             type="monotone"
             dataKey="ingresosK"
             name="Ingresos (k)"
-            stroke="#f59e0b"
-            strokeWidth={2}
+            stroke="#d97706"
+            strokeWidth={2.5}
             dot={false}
             activeDot={{ r: 4 }}
           />
@@ -133,23 +112,23 @@ function RestaurantDashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Órdenes hoy" value={m.ordenesHoy} colorClass="border-indigo-500" emoji="📦"
+        <StatCard title="Órdenes hoy" value={m.ordenesHoy} colorClass="border-selva-600" emoji="📦"
           trend={{ current: m.ordenesHoy, previous: m.ordenesAyer, label: 'vs ayer' }} />
-        <StatCard title="Órdenes este mes" value={m.ordenesMes} colorClass="border-blue-500" emoji="📅" />
+        <StatCard title="Órdenes este mes" value={m.ordenesMes} colorClass="border-rio-500" emoji="📅" />
         <StatCard
           title="Ingresos este mes"
           value={`$${m.ingresosMes.toLocaleString('es-CO')}`}
-          colorClass="border-green-500"
+          colorClass="border-lima-dim"
           emoji="💰"
           trend={{ current: m.ingresosMes, previous: m.ingresosAyer * 30, label: 'est.' }}
         />
-        <StatCard title="Conversaciones este mes" value={m.conversacionesMes} colorClass="border-purple-500" emoji="💬" />
+        <StatCard title="Conversaciones este mes" value={m.conversacionesMes} colorClass="border-amber-500" emoji="💬" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard title="Total productos activos" value={m.totalProductos} colorClass="border-slate-400" emoji="📦" />
         <StatCard title="Stock bajo (< 5 uds)" value={m.productosStockBajo} colorClass="border-red-400" emoji="⚠️" />
-        <StatCard title="Contactos nuevos (7 días)" value={m.contactosNuevosSemana} colorClass="border-teal-400" emoji="👥"
+        <StatCard title="Contactos nuevos (7 días)" value={m.contactosNuevosSemana} colorClass="border-rio-400" emoji="👥"
           subtitle={`${m.contactosTotales} total`} />
       </div>
 
@@ -172,17 +151,17 @@ function TechStoreDashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Órdenes hoy" value={m.ordenesHoy} colorClass="border-indigo-500" emoji="📦"
+        <StatCard title="Órdenes hoy" value={m.ordenesHoy} colorClass="border-selva-600" emoji="📦"
           trend={{ current: m.ordenesHoy, previous: m.ordenesAyer, label: 'vs ayer' }} />
-        <StatCard title="Órdenes este mes" value={m.ordenesMes} colorClass="border-blue-500" emoji="📅" />
-        <StatCard title="Tickets abiertos" value={m.ticketsAbiertos} colorClass="border-yellow-500" emoji="🎫" />
-        <StatCard title="Resueltos hoy" value={m.ticketsResueltosHoy} colorClass="border-green-500" emoji="✅" />
+        <StatCard title="Órdenes este mes" value={m.ordenesMes} colorClass="border-rio-500" emoji="📅" />
+        <StatCard title="Tickets abiertos" value={m.ticketsAbiertos} colorClass="border-amber-500" emoji="🎫" />
+        <StatCard title="Resueltos hoy" value={m.ticketsResueltosHoy} colorClass="border-lima-dim" emoji="✅" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard title="Total productos activos" value={m.totalProductos} colorClass="border-slate-400" emoji="📦" />
-        <StatCard title="Conversaciones este mes" value={m.conversacionesMes} colorClass="border-purple-500" emoji="💬" />
-        <StatCard title="Contactos nuevos (7 días)" value={m.contactosNuevosSemana} colorClass="border-teal-400" emoji="👥"
+        <StatCard title="Conversaciones este mes" value={m.conversacionesMes} colorClass="border-amber-500" emoji="💬" />
+        <StatCard title="Contactos nuevos (7 días)" value={m.contactosNuevosSemana} colorClass="border-rio-400" emoji="👥"
           subtitle={`${m.contactosTotales} total`} />
       </div>
 
@@ -205,11 +184,11 @@ function ClinicBeautyDashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Citas hoy" value={m.citasHoy} colorClass="border-indigo-500" emoji="📅"
+        <StatCard title="Citas hoy" value={m.citasHoy} colorClass="border-selva-600" emoji="📅"
           trend={{ current: m.citasHoy, previous: m.citasAyer, label: 'vs ayer' }} />
-        <StatCard title="Citas este mes" value={m.citasMes} colorClass="border-blue-500" emoji="📅" />
-        <StatCard title="Citas pendientes" value={m.citasPendientes} colorClass="border-yellow-500" emoji="⏳" />
-        <StatCard title="Conversaciones este mes" value={m.conversacionesMes} colorClass="border-purple-500" emoji="💬" />
+        <StatCard title="Citas este mes" value={m.citasMes} colorClass="border-rio-500" emoji="📅" />
+        <StatCard title="Citas pendientes" value={m.citasPendientes} colorClass="border-amber-500" emoji="⏳" />
+        <StatCard title="Conversaciones este mes" value={m.conversacionesMes} colorClass="border-amber-500" emoji="💬" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -217,11 +196,11 @@ function ClinicBeautyDashboard() {
         <StatCard
           title="Ingresos este mes"
           value={`$${m.ingresosMes.toLocaleString('es-CO')}`}
-          colorClass="border-green-500"
+          colorClass="border-lima-dim"
           emoji="💰"
           trend={{ current: m.ingresosMes, previous: m.ingresosAyer * 30, label: 'est.' }}
         />
-        <StatCard title="Contactos nuevos (7 días)" value={m.contactosNuevosSemana} colorClass="border-teal-400" emoji="👥"
+        <StatCard title="Contactos nuevos (7 días)" value={m.contactosNuevosSemana} colorClass="border-rio-400" emoji="👥"
           subtitle={`${m.contactosTotales} total`} />
       </div>
 
@@ -241,10 +220,10 @@ function RecentActivity({
   linkTo: string;
 }) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200">
-      <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-slate-800">Actividad reciente</h2>
-        <Link to={linkTo} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+    <div className="card overflow-hidden">
+      <div className="p-4 border-b border-bone-deep flex items-center justify-between">
+        <h2 className="font-display text-base font-bold text-ink">Actividad reciente</h2>
+        <Link to={linkTo} className="text-sm text-selva-600 hover:text-selva-800 font-semibold">
           Ver todas →
         </Link>
       </div>
@@ -254,11 +233,11 @@ function RecentActivity({
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-slate-500 border-b border-slate-100">
-                  <th className="px-4 py-3 font-medium">Cliente</th>
-                  <th className="px-4 py-3 font-medium">Total</th>
-                  <th className="px-4 py-3 font-medium">Estado</th>
-                  <th className="px-4 py-3 font-medium">Fecha</th>
+                <tr className="text-left border-b border-bone-deep">
+                  <th className="px-4 py-3 label-mono font-medium">Cliente</th>
+                  <th className="px-4 py-3 label-mono font-medium">Total</th>
+                  <th className="px-4 py-3 label-mono font-medium">Estado</th>
+                  <th className="px-4 py-3 label-mono font-medium">Fecha</th>
                 </tr>
               </thead>
               <tbody>
@@ -266,9 +245,9 @@ function RecentActivity({
                   <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">No hay órdenes recientes</td></tr>
                 ) : (
                   m.ultimasOrdenes.map((o) => (
-                    <tr key={o.id} className="border-b border-slate-50 hover:bg-slate-50">
-                      <td className="px-4 py-3 text-slate-700">{o.clienteNombre}</td>
-                      <td className="px-4 py-3 font-medium">${o.total.toLocaleString('es-CO')}</td>
+                    <tr key={o.id} className="border-b border-bone-soft hover:bg-bone-soft">
+                      <td className="px-4 py-3 text-ink-soft">{o.clienteNombre}</td>
+                      <td className="px-4 py-3 font-mono font-medium tabular-nums">${o.total.toLocaleString('es-CO')}</td>
                       <td className="px-4 py-3"><Badge status={o.status} type="order" /></td>
                       <td className="px-4 py-3 text-slate-500">{new Date(o.createdAt).toLocaleDateString('es-CO')}</td>
                     </tr>
@@ -278,18 +257,18 @@ function RecentActivity({
             </table>
           </div>
           {/* Mobile cards */}
-          <div className="md:hidden divide-y divide-slate-100">
+          <div className="md:hidden divide-y divide-bone-deep">
             {m.ultimasOrdenes.length === 0 ? (
               <p className="px-4 py-8 text-center text-slate-400 text-sm">No hay órdenes recientes</p>
             ) : (
               m.ultimasOrdenes.map((o) => (
                 <div key={o.id} className="px-4 py-3 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-slate-800 text-sm">{o.clienteNombre}</span>
+                    <span className="font-medium text-ink text-sm">{o.clienteNombre}</span>
                     <Badge status={o.status} type="order" />
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>${o.total.toLocaleString('es-CO')}</span>
+                    <span className="font-mono tabular-nums">${o.total.toLocaleString('es-CO')}</span>
                     <span>{new Date(o.createdAt).toLocaleDateString('es-CO')}</span>
                   </div>
                 </div>
@@ -303,11 +282,11 @@ function RecentActivity({
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-slate-500 border-b border-slate-100">
-                  <th className="px-4 py-3 font-medium">Paciente / Cliente</th>
-                  <th className="px-4 py-3 font-medium">Servicio</th>
-                  <th className="px-4 py-3 font-medium">Fecha / Hora</th>
-                  <th className="px-4 py-3 font-medium">Estado</th>
+                <tr className="text-left border-b border-bone-deep">
+                  <th className="px-4 py-3 label-mono font-medium">Paciente / Cliente</th>
+                  <th className="px-4 py-3 label-mono font-medium">Servicio</th>
+                  <th className="px-4 py-3 label-mono font-medium">Fecha / Hora</th>
+                  <th className="px-4 py-3 label-mono font-medium">Estado</th>
                 </tr>
               </thead>
               <tbody>
@@ -315,8 +294,8 @@ function RecentActivity({
                   <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">No hay citas recientes</td></tr>
                 ) : (
                   m.ultimasCitas.map((c) => (
-                    <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50">
-                      <td className="px-4 py-3 text-slate-700">{c.clienteName}</td>
+                    <tr key={c.id} className="border-b border-bone-soft hover:bg-bone-soft">
+                      <td className="px-4 py-3 text-ink-soft">{c.clienteName}</td>
                       <td className="px-4 py-3 text-slate-600">{c.serviceName}</td>
                       <td className="px-4 py-3 text-slate-500">
                         {new Date(c.date).toLocaleString('es-CO', {
@@ -325,7 +304,7 @@ function RecentActivity({
                           hour: '2-digit', minute: '2-digit',
                         })}
                       </td>
-                      <td className="px-4 py-3"><AppointmentBadge status={c.status} /></td>
+                      <td className="px-4 py-3"><Badge status={c.status} type="appointment" /></td>
                     </tr>
                   ))
                 )}
@@ -333,15 +312,15 @@ function RecentActivity({
             </table>
           </div>
           {/* Mobile cards */}
-          <div className="md:hidden divide-y divide-slate-100">
+          <div className="md:hidden divide-y divide-bone-deep">
             {m.ultimasCitas.length === 0 ? (
               <p className="px-4 py-8 text-center text-slate-400 text-sm">No hay citas recientes</p>
             ) : (
               m.ultimasCitas.map((c) => (
                 <div key={c.id} className="px-4 py-3 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-slate-800 text-sm">{c.clienteName}</span>
-                    <AppointmentBadge status={c.status} />
+                    <span className="font-medium text-ink text-sm">{c.clienteName}</span>
+                    <Badge status={c.status} type="appointment" />
                   </div>
                   <p className="text-xs text-slate-500">{c.serviceName}</p>
                   <p className="text-xs text-slate-400">
@@ -374,10 +353,10 @@ function NpsCard() {
     stats.total < 5
       ? 'text-slate-400'
       : stats.npsScore > 50
-      ? 'text-green-400'
+      ? 'text-selva-600'
       : stats.npsScore >= 0
-      ? 'text-yellow-400'
-      : 'text-red-400';
+      ? 'text-amber-600'
+      : 'text-red-500';
 
   const label =
     stats.total < 5
@@ -389,19 +368,19 @@ function NpsCard() {
       : 'Mejorable';
 
   return (
-    <Link to="/nps" className="block bg-slate-800 hover:bg-slate-700 rounded-xl p-4 transition-colors">
-      <p className="text-slate-400 text-xs mb-1">NPS — Net Promoter Score</p>
+    <Link to="/nps" className="card block p-4 transition-all hover:shadow-pop-sm hover:border-ink">
+      <p className="label-mono mb-1">NPS — Net Promoter Score</p>
       <div className="flex items-end gap-3">
-        <span className={`font-black text-3xl ${color}`}>
+        <span className={`font-display font-bold text-3xl tabular-nums ${color}`}>
           {stats.total < 5 ? '—' : stats.npsScore}
         </span>
-        <span className="text-slate-400 text-sm pb-0.5">{label}</span>
+        <span className="text-slate-500 text-sm pb-0.5">{label}</span>
       </div>
       {stats.total >= 5 && (
-        <div className="flex gap-3 mt-2 text-xs text-slate-400">
-          <span className="text-green-400">{stats.promotores} promotores</span>
-          <span className="text-yellow-400">{stats.neutrales} neutrales</span>
-          <span className="text-red-400">{stats.detractores} detractores</span>
+        <div className="flex gap-3 mt-2 font-mono text-[11px]">
+          <span className="text-selva-600">{stats.promotores} promotores</span>
+          <span className="text-amber-600">{stats.neutrales} neutrales</span>
+          <span className="text-red-500">{stats.detractores} detractores</span>
         </div>
       )}
     </Link>
@@ -417,12 +396,12 @@ function ResenasCard() {
   if (!stats || stats.total === 0) return null;
 
   return (
-    <Link to="/resenas" className="block bg-slate-800 hover:bg-slate-700 rounded-xl p-4 transition-colors">
-      <p className="text-slate-400 text-xs mb-1">Reseñas de clientes</p>
+    <Link to="/resenas" className="card block p-4 transition-all hover:shadow-pop-sm hover:border-ink">
+      <p className="label-mono mb-1">Reseñas de clientes</p>
       <div className="flex items-center gap-2">
-        <span className="text-white font-bold text-2xl">{stats.promedio}</span>
-        <span className="text-yellow-400 text-lg">★</span>
-        <span className="text-slate-400 text-sm">({stats.total} reseña{stats.total !== 1 ? 's' : ''})</span>
+        <span className="font-display text-ink font-bold text-2xl tabular-nums">{stats.promedio}</span>
+        <span className="text-amber-500 text-lg" aria-hidden>★</span>
+        <span className="text-slate-500 text-sm">({stats.total} reseña{stats.total !== 1 ? 's' : ''})</span>
       </div>
     </Link>
   );
@@ -445,14 +424,14 @@ function MiEnlaceCard() {
   }
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-      <p className="text-slate-400 text-xs mb-1">Tu enlace público</p>
+    <div className="card p-4">
+      <p className="label-mono mb-1">Tu enlace público</p>
       <p className="text-slate-500 text-xs mb-3">Compártelo en tu bio de Instagram, stories o tarjeta de presentación</p>
       <div className="flex items-center gap-2">
-        <code className="flex-1 bg-slate-900 text-green-400 text-xs px-3 py-2 rounded-lg truncate">{url}</code>
+        <code className="flex-1 bg-ink text-lima font-mono text-xs px-3 py-2 rounded-lg truncate">{url}</code>
         <button
           onClick={copy}
-          className="shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+          className="shrink-0 bg-ink hover:bg-selva-900 text-lima text-xs font-semibold px-3 py-2 rounded-lg border border-ink transition-colors"
         >
           {copied ? '✓ Copiado' : 'Copiar'}
         </button>
@@ -460,7 +439,7 @@ function MiEnlaceCard() {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+          className="shrink-0 bg-white hover:bg-bone-soft text-ink text-xs font-semibold px-3 py-2 rounded-lg border border-bone-deep hover:border-ink transition-colors"
         >
           Ver
         </a>
@@ -483,30 +462,38 @@ function RoiWidget() {
     `$${n.toLocaleString('es-CO')} COP`;
 
   return (
-    <div className="bg-gradient-to-r from-indigo-900 to-purple-900 border border-indigo-700 rounded-xl p-5">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-2xl">🤖</span>
+    <div className="relative bg-ink border-2 border-ink rounded-2xl p-5 shadow-pop-lima overflow-hidden">
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-[0.06]"
+        style={{
+          backgroundImage:
+            'linear-gradient(#c9f24b 1px, transparent 1px), linear-gradient(90deg, #c9f24b 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+        }}
+      />
+      <div className="relative flex items-center gap-2 mb-4">
         <div>
-          <p className="text-white font-semibold text-sm">Automatiza360 este mes</p>
-          <p className="text-indigo-300 text-xs">Tiempo y dinero que ahorraste</p>
+          <p className="label-mono !text-lima/70">Automatiza360 este mes</p>
+          <p className="font-display text-bone font-bold text-lg">Tiempo y dinero que ahorraste</p>
         </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white/10 rounded-lg p-3 text-center">
-          <p className="text-indigo-200 text-xs mb-1">Mensajes enviados</p>
-          <p className="text-white text-xl font-bold">{roi.mensajesAutomatizados.toLocaleString('es-CO')}</p>
+      <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white/5 border border-lima/20 rounded-xl p-3 text-center">
+          <p className="label-mono !text-bone/50 !text-[10px] mb-1">Mensajes enviados</p>
+          <p className="font-mono text-bone text-xl font-bold tabular-nums">{roi.mensajesAutomatizados.toLocaleString('es-CO')}</p>
         </div>
-        <div className="bg-white/10 rounded-lg p-3 text-center">
-          <p className="text-indigo-200 text-xs mb-1">Horas ahorradas</p>
-          <p className="text-white text-xl font-bold">{roi.horasAhorradas}</p>
+        <div className="bg-white/5 border border-lima/20 rounded-xl p-3 text-center">
+          <p className="label-mono !text-bone/50 !text-[10px] mb-1">Horas ahorradas</p>
+          <p className="font-mono text-bone text-xl font-bold tabular-nums">{roi.horasAhorradas}</p>
         </div>
-        <div className="bg-white/10 rounded-lg p-3 text-center">
-          <p className="text-indigo-200 text-xs mb-1">Ahorro estimado</p>
-          <p className="text-green-300 text-lg font-bold">{fmt(roi.ahorroEstimadoCOP)}</p>
+        <div className="bg-white/5 border border-lima/20 rounded-xl p-3 text-center">
+          <p className="label-mono !text-bone/50 !text-[10px] mb-1">Ahorro estimado</p>
+          <p className="font-mono text-lima text-lg font-bold tabular-nums">{fmt(roi.ahorroEstimadoCOP)}</p>
         </div>
-        <div className="bg-white/10 rounded-lg p-3 text-center">
-          <p className="text-indigo-200 text-xs mb-1">Órdenes via bot</p>
-          <p className="text-white text-xl font-bold">{roi.ordenesViaBot}</p>
+        <div className="bg-white/5 border border-lima/20 rounded-xl p-3 text-center">
+          <p className="label-mono !text-bone/50 !text-[10px] mb-1">Órdenes via bot</p>
+          <p className="font-mono text-bone text-xl font-bold tabular-nums">{roi.ordenesViaBot}</p>
         </div>
       </div>
     </div>
@@ -525,10 +512,46 @@ function DashboardContent() {
   return <RestaurantDashboard />;
 }
 
+function DemoDataBanner() {
+  const queryClient = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ['datos-ejemplo'],
+    queryFn: getDatosEjemplo,
+    staleTime: 5 * 60_000,
+  });
+
+  const eliminar = useMutation({
+    mutationFn: eliminarDatosEjemplo,
+    onSuccess: () => queryClient.invalidateQueries(),
+  });
+
+  if (!data || data.total === 0) return null;
+
+  return (
+    <div className="card border-lima-dim bg-lima-ghost/60 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex-1">
+        <p className="font-display font-bold text-ink text-sm">Estás viendo datos de ejemplo</p>
+        <p className="text-slate-600 text-xs mt-0.5">
+          Sembramos órdenes, contactos y conversaciones de muestra para que veas la plataforma en acción.
+          Cuando quieras empezar de cero, elimínalos con un clic.
+        </p>
+      </div>
+      <button
+        onClick={() => eliminar.mutate()}
+        disabled={eliminar.isPending}
+        className="btn-ghost !border-ink text-sm shrink-0 disabled:opacity-50"
+      >
+        {eliminar.isPending ? 'Eliminando…' : 'Eliminar ejemplos'}
+      </button>
+    </div>
+  );
+}
+
 export function DashboardPage() {
   return (
     <div className="space-y-6">
       <OnboardingChecklist />
+      <DemoDataBanner />
       <DashboardContent />
       <RoiWidget />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

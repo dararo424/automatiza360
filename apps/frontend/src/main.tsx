@@ -28,11 +28,50 @@ const queryClient = new QueryClient({
   },
 });
 
+function CrashFallback() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        padding: 32,
+        textAlign: 'center',
+        background: '#f4f2ea',
+        color: '#101b10',
+        fontFamily: 'system-ui, sans-serif',
+      }}
+    >
+      <h1 style={{ fontSize: 24, fontWeight: 700 }}>Algo salió mal</h1>
+      <p style={{ color: '#6f6e5e' }}>Ya registramos el error. Recarga la página para continuar.</p>
+      <button
+        onClick={() => window.location.reload()}
+        style={{
+          background: '#101b10',
+          color: '#c9f24b',
+          border: 'none',
+          borderRadius: 12,
+          padding: '10px 20px',
+          fontWeight: 600,
+          cursor: 'pointer',
+        }}
+      >
+        Recargar →
+      </button>
+    </div>
+  );
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    <Sentry.ErrorBoundary fallback={<CrashFallback />}>
+      <QueryClientProvider client={queryClient}>
+        <App />
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </Sentry.ErrorBoundary>
   </StrictMode>,
 );

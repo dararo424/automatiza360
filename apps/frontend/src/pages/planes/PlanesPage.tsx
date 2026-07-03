@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import api from '../../api/axios';
 
+type Periodo = 'MENSUAL' | 'ANUAL';
+
+const MESES_PAGADOS_ANUAL = 10; // 2 meses gratis
+
 const PLANES = [
   {
     id: 'STARTER' as const,
     nombre: 'Starter',
-    precio: '$79.000',
+    precioMes: 79000,
     precioUSD: '≈ USD $19',
     descripcion: 'Ideal para comenzar a automatizar',
     features: [
@@ -21,7 +25,7 @@ const PLANES = [
   {
     id: 'PRO' as const,
     nombre: 'Pro',
-    precio: '$242.000',
+    precioMes: 242000,
     precioUSD: '≈ USD $59',
     descripcion: 'Para negocios en crecimiento',
     features: [
@@ -38,7 +42,7 @@ const PLANES = [
   {
     id: 'BUSINESS' as const,
     nombre: 'Business',
-    precio: '$529.000',
+    precioMes: 529000,
     precioUSD: '≈ USD $129',
     descripcion: 'Solución completa para empresas',
     features: [
@@ -55,14 +59,17 @@ const PLANES = [
   },
 ];
 
+const fmtCOP = (n: number) => `$${n.toLocaleString('es-CO')}`;
+
 export function PlanesPage() {
   const [cargando, setCargando] = useState<string | null>(null);
+  const [periodo, setPeriodo] = useState<Periodo>('MENSUAL');
 
   const iniciarPago = async (plan: 'STARTER' | 'PRO' | 'BUSINESS') => {
     if (cargando) return;
     setCargando(plan);
     try {
-      const res = await api.post('/payments/crear-transaccion', { plan });
+      const res = await api.post('/payments/crear-transaccion', { plan, periodo });
       // Redirigir directamente a Wompi — sin widget, sin scripts
       window.location.href = res.data.checkoutUrl;
     } catch (e) {
@@ -72,58 +79,101 @@ export function PlanesPage() {
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Elige tu plan</h1>
-      <p>Activa tu suscripción y sigue usando Automatiza360 sin límites</p>
+    <div className="max-w-5xl mx-auto">
+      <div className="text-center mb-8">
+        <p className="label-mono mb-2">Suscripción</p>
+        <h1 className="font-display text-3xl font-bold text-ink mb-2">Elige tu plan</h1>
+        <p className="text-slate-500">Activa tu suscripción y sigue usando Automatiza360 sin límites</p>
 
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap' }}>
-        {PLANES.map((plan) => (
-          <div
-            key={plan.id}
-            style={{
-              border: plan.popular ? '2px solid #6366f1' : '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '1.5rem',
-              flex: '1',
-              minWidth: '250px',
-            }}
+        {/* Toggle mensual / anual */}
+        <div className="inline-flex items-center gap-1 mt-6 bg-white border-2 border-ink rounded-full p-1">
+          <button
+            onClick={() => setPeriodo('MENSUAL')}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+              periodo === 'MENSUAL' ? 'bg-ink text-lima' : 'text-ink hover:bg-bone-soft'
+            }`}
           >
-            {plan.popular && (
-              <span style={{ background: '#6366f1', color: 'white', padding: '2px 10px', borderRadius: '20px', fontSize: '12px' }}>
-                MÁS POPULAR
-              </span>
-            )}
-            <h2>{plan.nombre}</h2>
-            <p style={{ color: '#6b7280' }}>{plan.descripcion}</p>
-            <h3 style={{ fontSize: '2rem', margin: '0.5rem 0 0' }}>
-              {plan.precio}
-              <span style={{ fontSize: '1rem', fontWeight: 'normal' }}>/mes</span>
-            </h3>
-            <p style={{ color: '#9ca3af', fontSize: '0.875rem', margin: '0 0 1rem' }}>{plan.precioUSD}/mes</p>
-            <ul style={{ listStyle: 'none', padding: 0, marginBottom: '1.5rem' }}>
-              {plan.features.map((f) => (
-                <li key={f}>✓ {f}</li>
-              ))}
-            </ul>
-            <button
-              onClick={() => iniciarPago(plan.id)}
-              disabled={cargando !== null}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                background: plan.popular ? '#6366f1' : '#1f2937',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: cargando ? 'wait' : 'pointer',
-                fontSize: '1rem',
-              }}
-            >
-              {cargando === plan.id ? 'Redirigiendo a Wompi...' : 'Contratar'}
-            </button>
-          </div>
-        ))}
+            Mensual
+          </button>
+          <button
+            onClick={() => setPeriodo('ANUAL')}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${
+              periodo === 'ANUAL' ? 'bg-ink text-lima' : 'text-ink hover:bg-bone-soft'
+            }`}
+          >
+            Anual
+            <span className={`ml-1.5 chip ${periodo === 'ANUAL' ? 'bg-lima text-ink ring-lima' : 'bg-lima-ghost text-selva-800 ring-selva-300'}`}>
+              2 meses gratis
+            </span>
+          </button>
+        </div>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+        {PLANES.map((plan) => {
+          const totalAnual = plan.precioMes * MESES_PAGADOS_ANUAL;
+          const mesEquivalente = Math.round(totalAnual / 12);
+          return (
+            <div
+              key={plan.id}
+              className={`relative flex flex-col p-6 rounded-2xl bg-white ${
+                plan.popular ? 'border-2 border-ink shadow-pop' : 'border border-bone-deep shadow-card'
+              }`}
+            >
+              {plan.popular && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 chip bg-lima text-ink ring-ink whitespace-nowrap">
+                  Más popular
+                </span>
+              )}
+              <h2 className="font-display text-xl font-bold text-ink">{plan.nombre}</h2>
+              <p className="text-slate-500 text-sm mb-4">{plan.descripcion}</p>
+
+              {periodo === 'MENSUAL' ? (
+                <>
+                  <p className="font-display text-3xl font-bold text-ink tabular-nums">
+                    {fmtCOP(plan.precioMes)}
+                    <span className="text-base font-normal text-slate-500">/mes</span>
+                  </p>
+                  <p className="text-slate-400 text-xs mb-5">{plan.precioUSD}/mes</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-display text-3xl font-bold text-ink tabular-nums">
+                    {fmtCOP(mesEquivalente)}
+                    <span className="text-base font-normal text-slate-500">/mes</span>
+                  </p>
+                  <p className="text-slate-400 text-xs mb-1">
+                    <span className="line-through">{fmtCOP(plan.precioMes)}</span>{' '}
+                    <span className="text-selva-600 font-semibold">facturado anual: {fmtCOP(totalAnual)}</span>
+                  </p>
+                  <p className="text-selva-600 text-xs font-semibold mb-4">
+                    Ahorras {fmtCOP(plan.precioMes * 2)} al año
+                  </p>
+                </>
+              )}
+
+              <ul className="space-y-1.5 mb-6 flex-1">
+                {plan.features.map((f) => (
+                  <li key={f} className="text-sm text-ink-soft flex gap-2">
+                    <span className="text-selva-600 font-bold" aria-hidden>✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => iniciarPago(plan.id)}
+                disabled={cargando !== null}
+                className={plan.popular ? 'btn-lima w-full !py-3' : 'btn-primary w-full !py-3'}
+              >
+                {cargando === plan.id ? 'Redirigiendo a Wompi…' : 'Contratar'}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="text-center text-slate-400 text-xs mt-8">
+        Pagos procesados de forma segura por Wompi (Bancolombia). Puedes cancelar cuando quieras.
+      </p>
     </div>
   );
 }

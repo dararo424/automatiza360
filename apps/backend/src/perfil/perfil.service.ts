@@ -156,6 +156,35 @@ export class PerfilService {
     });
   }
 
+  /** Cuenta los registros de ejemplo sembrados en el registro. */
+  async contarDatosEjemplo(tenantId: string) {
+    const where = { tenantId, isDemo: true };
+    const [ordenes, tickets, citas, conversaciones, contactos] =
+      await Promise.all([
+        this.prisma.order.count({ where }),
+        this.prisma.ticket.count({ where }),
+        this.prisma.appointment.count({ where }),
+        this.prisma.conversation.count({ where }),
+        this.prisma.contact.count({ where }),
+      ]);
+    return { total: ordenes + tickets + citas + conversaciones + contactos };
+  }
+
+  /** Elimina todos los datos de ejemplo del tenant (acción del banner del dashboard). */
+  async eliminarDatosEjemplo(tenantId: string) {
+    const where = { tenantId, isDemo: true };
+    await this.prisma.$transaction([
+      this.prisma.orderItem.deleteMany({ where: { order: where } }),
+      this.prisma.order.deleteMany({ where }),
+      this.prisma.ticket.deleteMany({ where }),
+      this.prisma.appointment.deleteMany({ where }),
+      // Message tiene onDelete: Cascade desde Conversation
+      this.prisma.conversation.deleteMany({ where }),
+      this.prisma.contact.deleteMany({ where }),
+    ]);
+    return { eliminado: true };
+  }
+
   async getWhatsappStatus(tenantId: string) {
     const tenant = await this.prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },

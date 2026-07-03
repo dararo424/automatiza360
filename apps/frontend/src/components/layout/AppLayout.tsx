@@ -126,7 +126,7 @@ export function AppLayout() {
 
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         <TopBar onMenuToggle={() => setIsMobileOpen((v) => !v)} isMobileOpen={isMobileOpen} />
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-6">
+        <main className="flex-1 overflow-y-auto bg-bone p-6">
           <Outlet />
         </main>
       </div>

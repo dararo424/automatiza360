@@ -643,5 +643,184 @@ export class AuthService {
         ],
       });
     }
+
+    await this.crearActividadEjemplo(tx, tenantId, industry);
+  }
+
+  /**
+   * Siembra actividad de ejemplo (isDemo: true) para que el primer ingreso
+   * al dashboard se sienta vivo. El usuario puede eliminarla con un clic
+   * desde el banner del dashboard (DELETE /perfil/datos-ejemplo).
+   */
+  private async crearActividadEjemplo(
+    tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
+    tenantId: string,
+    industry: Industry,
+  ): Promise<void> {
+    const ayer = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const hoy10am = new Date();
+    hoy10am.setHours(10, 30, 0, 0);
+
+    // Contacto de ejemplo con puntos — común a todas las industrias
+    await tx.contact.create({
+      data: {
+        tenantId,
+        phone: '+573001112233',
+        name: 'María García (ejemplo)',
+        puntos: 12,
+        tags: 'frecuente',
+        isDemo: true,
+      },
+    });
+
+    // Conversación de ejemplo con mensajes — muestra cómo se ve la bandeja
+    await tx.conversation.create({
+      data: {
+        tenantId,
+        clientPhone: '+573001112233',
+        clientName: 'María García (ejemplo)',
+        lastMessage: '¡Gracias! Quedó perfecto 😊',
+        lastMessageAt: ayer,
+        isDemo: true,
+        messages: {
+          create: [
+            {
+              body: 'Hola, ¿tienen disponibilidad para hoy?',
+              direction: 'INBOUND',
+              createdAt: ayer,
+            },
+            {
+              body: '¡Hola María! 👋 Claro que sí. ¿En qué te puedo ayudar?',
+              direction: 'OUTBOUND',
+              createdAt: ayer,
+            },
+            {
+              body: '¡Gracias! Quedó perfecto 😊',
+              direction: 'INBOUND',
+              createdAt: ayer,
+            },
+          ],
+        },
+      },
+    });
+
+    const usaOrdenes = [
+      Industry.RESTAURANT,
+      Industry.BAKERY,
+      Industry.CLOTHING_STORE,
+      Industry.PHARMACY,
+      Industry.OTHER,
+    ] as Industry[];
+    const usaCitas = [
+      Industry.CLINIC,
+      Industry.BEAUTY,
+      Industry.VETERINARY,
+      Industry.GYM,
+      Industry.HOTEL,
+    ] as Industry[];
+    const usaTickets = [Industry.TECH_STORE, Industry.WORKSHOP] as Industry[];
+
+    if (usaOrdenes.includes(industry)) {
+      await tx.order.create({
+        data: {
+          tenantId,
+          number: 1,
+          status: 'DELIVERED',
+          total: 23000,
+          phone: '+573001112233',
+          notes: 'Pedido de ejemplo — puedes eliminarlo desde el dashboard',
+          isDemo: true,
+          createdAt: ayer,
+          items: {
+            create: [
+              { name: 'Producto de ejemplo', quantity: 1, price: 18000 },
+              { name: 'Bebida de ejemplo', quantity: 1, price: 5000 },
+            ],
+          },
+        },
+      });
+      await tx.order.create({
+        data: {
+          tenantId,
+          number: 2,
+          status: 'READY',
+          total: 15000,
+          phone: '+573001112233',
+          isDemo: true,
+          items: {
+            create: [
+              { name: 'Producto de ejemplo', quantity: 1, price: 15000 },
+            ],
+          },
+        },
+      });
+    }
+
+    if (usaCitas.includes(industry)) {
+      const servicio = await tx.service.findFirst({
+        where: { tenantId },
+        select: { id: true },
+      });
+      const profesional = await tx.professional.findFirst({
+        where: { tenantId },
+        select: { id: true },
+      });
+      if (servicio) {
+        await tx.appointment.create({
+          data: {
+            tenantId,
+            clientName: 'María García (ejemplo)',
+            clientPhone: '+573001112233',
+            date: hoy10am,
+            status: 'CONFIRMED',
+            notes: 'Cita de ejemplo — puedes eliminarla desde el dashboard',
+            isDemo: true,
+            serviceId: servicio.id,
+            professionalId: profesional?.id,
+          },
+        });
+        await tx.appointment.create({
+          data: {
+            tenantId,
+            clientName: 'Carlos Pérez (ejemplo)',
+            clientPhone: '+573004445566',
+            date: ayer,
+            status: 'COMPLETED',
+            isDemo: true,
+            serviceId: servicio.id,
+            professionalId: profesional?.id,
+          },
+        });
+      }
+    }
+
+    if (usaTickets.includes(industry)) {
+      await tx.ticket.createMany({
+        data: [
+          {
+            tenantId,
+            number: 1,
+            clientName: 'María García (ejemplo)',
+            clientPhone: '+573001112233',
+            device: 'Samsung Galaxy S22',
+            issue: 'No enciende — ticket de ejemplo',
+            status: 'DIAGNOSING',
+            isDemo: true,
+          },
+          {
+            tenantId,
+            number: 2,
+            clientName: 'Carlos Pérez (ejemplo)',
+            clientPhone: '+573004445566',
+            device: 'Portátil Lenovo IdeaPad',
+            issue: 'Cambio de pantalla — ticket de ejemplo',
+            status: 'READY',
+            price: 280000,
+            isDemo: true,
+            createdAt: ayer,
+          },
+        ],
+      });
+    }
   }
 }

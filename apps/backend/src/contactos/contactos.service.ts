@@ -7,6 +7,7 @@ import {
 import { AutomacionTrigger } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AutomacionesService } from '../automaciones/automaciones.service';
+import { toCsv } from '../common/utils/csv';
 import { UpsertContactDto } from './dto/upsert-contact.dto';
 
 @Injectable()
@@ -168,5 +169,34 @@ export class ContactosService {
       where: { tenantId, phone },
       data: { unsubscribed: true },
     });
+  }
+
+  async exportarCsv(tenantId: string): Promise<string> {
+    const contactos = await this.prisma.contact.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'asc' },
+    });
+    return toCsv(
+      [
+        'Nombre',
+        'Telefono',
+        'Email',
+        'Puntos',
+        'Etiquetas',
+        'Cumpleanos',
+        'Desuscrito',
+        'Creado',
+      ],
+      contactos.map((c) => [
+        c.name,
+        c.phone,
+        c.email,
+        c.puntos,
+        c.tags,
+        c.fechaNacimiento ? c.fechaNacimiento.toISOString().slice(0, 10) : '',
+        c.unsubscribed ? 'Si' : 'No',
+        c.createdAt.toISOString().slice(0, 10),
+      ]),
+    );
   }
 }

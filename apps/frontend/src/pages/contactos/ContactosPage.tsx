@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { downloadCsv } from '../../lib/downloadCsv';
 import {
   getContactos,
   getHistorial,
@@ -415,6 +416,12 @@ export function ContactosPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-white">Contactos ({contactos.length})</h1>
         <div className="flex gap-2">
+          <button
+            onClick={() => downloadCsv('/contactos/exportar', 'contactos.csv')}
+            className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+          >
+            ⬇ Exportar CSV
+          </button>
           <button
             onClick={() => setImportarModal(true)}
             className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
