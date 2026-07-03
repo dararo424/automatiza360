@@ -1,8 +1,19 @@
-import { Body, Controller, Get, Param, Patch, UseGuards, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  UseGuards,
+  Post,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PerfilService } from './perfil.service';
-import { ActualizarPagosConfigDto, ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
+import {
+  ActualizarPagosConfigDto,
+  ActualizarPerfilDto,
+} from './dto/actualizar-perfil.dto';
 
 @Controller()
 export class PerfilController {
@@ -21,10 +32,7 @@ export class PerfilController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('perfil')
-  actualizarPerfil(
-    @CurrentUser() user: any,
-    @Body() dto: ActualizarPerfilDto,
-  ) {
+  actualizarPerfil(@CurrentUser() user: any, @Body() dto: ActualizarPerfilDto) {
     return this.perfilService.actualizarPerfil(user.tenantId, dto);
   }
 

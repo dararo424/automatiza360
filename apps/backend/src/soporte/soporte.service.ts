@@ -58,7 +58,8 @@ export class SoporteService {
       respuesta = block.type === 'text' ? block.text : '';
     } catch (err: any) {
       this.logger.error('Error calling Anthropic API: %s', err?.message ?? err);
-      respuesta = 'Lo siento, no pude procesar tu consulta en este momento. Por favor intenta de nuevo.';
+      respuesta =
+        'Lo siento, no pude procesar tu consulta en este momento. Por favor intenta de nuevo.';
     }
 
     const needsEscalation = respuesta.includes('[ESCALAR]');

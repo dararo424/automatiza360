@@ -17,7 +17,9 @@ async function main() {
 
   const password = await bcrypt.hash('A360Admin2026!', 10);
 
-  let tenant = await prisma.tenant.findFirst({ where: { slug: 'automatiza360-admin' } });
+  let tenant = await prisma.tenant.findFirst({
+    where: { slug: 'automatiza360-admin' },
+  });
   if (!tenant) {
     tenant = await prisma.tenant.create({
       data: {

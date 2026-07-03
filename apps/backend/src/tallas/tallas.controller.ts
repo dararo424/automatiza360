@@ -25,7 +25,10 @@ export class TallasController {
 
   @Post('sync-sheets')
   async syncSheets(@Body('sheetUrl') sheetUrl: string, @Request() req) {
-    return this.tallasService.sincronizarGoogleSheets(req.user.tenantId, sheetUrl);
+    return this.tallasService.sincronizarGoogleSheets(
+      req.user.tenantId,
+      sheetUrl,
+    );
   }
 
   @Get('config')
@@ -40,7 +43,13 @@ export class TallasController {
 
   @Post('bot/consultar')
   async consultarBot(
-    @Body() body: { clientePhone: string; altura: number; peso: number; cintura?: number },
+    @Body()
+    body: {
+      clientePhone: string;
+      altura: number;
+      peso: number;
+      cintura?: number;
+    },
     @Request() req,
   ) {
     return this.tallasService.consultarTallaPorBot(

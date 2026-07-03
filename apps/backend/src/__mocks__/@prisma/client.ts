@@ -5,8 +5,16 @@
 export const PrismaClient = jest.fn().mockImplementation(() => ({}));
 
 // Enums
-export enum Role { OWNER = 'OWNER', ADMIN = 'ADMIN', STAFF = 'STAFF' }
-export enum Plan { STARTER = 'STARTER', PRO = 'PRO', BUSINESS = 'BUSINESS' }
+export enum Role {
+  OWNER = 'OWNER',
+  ADMIN = 'ADMIN',
+  STAFF = 'STAFF',
+}
+export enum Plan {
+  STARTER = 'STARTER',
+  PRO = 'PRO',
+  BUSINESS = 'BUSINESS',
+}
 export enum Industry {
   RESTAURANT = 'RESTAURANT',
   TECH_STORE = 'TECH_STORE',

@@ -28,15 +28,20 @@ async function bootstrap() {
   const vercelPattern = /^https:\/\/automatiza360[a-z0-9-]*\.vercel\.app$/;
 
   app.enableCors({
-    origin: env === 'production'
-      ? (origin, cb) => {
-          if (!origin || allowedOrigins.includes(origin) || vercelPattern.test(origin)) {
-            cb(null, true);
-          } else {
-            cb(new Error('Not allowed by CORS'));
+    origin:
+      env === 'production'
+        ? (origin, cb) => {
+            if (
+              !origin ||
+              allowedOrigins.includes(origin) ||
+              vercelPattern.test(origin)
+            ) {
+              cb(null, true);
+            } else {
+              cb(new Error('Not allowed by CORS'));
+            }
           }
-        }
-      : true,
+        : true,
     credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
@@ -45,7 +50,9 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Automatiza360 API')
-    .setDescription('API para la plataforma de automatización de negocios con IA')
+    .setDescription(
+      'API para la plataforma de automatización de negocios con IA',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -55,7 +62,10 @@ async function bootstrap() {
   });
 
   await app.listen(port);
-  Logger.log(`Automatiza360 Backend running in ${env.toUpperCase()} mode on port ${port}`, 'Bootstrap');
+  Logger.log(
+    `Automatiza360 Backend running in ${env.toUpperCase()} mode on port ${port}`,
+    'Bootstrap',
+  );
   if (env !== 'production') {
     Logger.log(`Swagger docs: http://localhost:${port}/api/docs`, 'Bootstrap');
   }

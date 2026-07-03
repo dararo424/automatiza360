@@ -16,7 +16,9 @@ export class ProveedoresService {
         update: {},
       });
 
-      await tx.supplierProduct.deleteMany({ where: { supplierId: supplier.id } });
+      await tx.supplierProduct.deleteMany({
+        where: { supplierId: supplier.id },
+      });
 
       await tx.supplierProduct.createMany({
         data: products.map((p) => ({ ...p, supplierId: supplier.id })),

@@ -17,7 +17,10 @@ export class ConversacionesService {
     private readonly emailService: EmailService,
   ) {}
 
-  async checkAndTrackConversation(tenantId: string, clientPhone: string): Promise<{
+  async checkAndTrackConversation(
+    tenantId: string,
+    clientPhone: string,
+  ): Promise<{
     allowed: boolean;
     used: number;
     limit: number | null;
@@ -25,13 +28,21 @@ export class ConversacionesService {
   }> {
     const tenant = await this.prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },
-      select: { plan: true, conversationCountMonth: true, subscriptionStatus: true },
+      select: {
+        plan: true,
+        conversationCountMonth: true,
+        subscriptionStatus: true,
+      },
     });
-    const rawLimit = PLAN_LIMITS[tenant.plan as Plan] ?? 500;
+    const rawLimit = PLAN_LIMITS[tenant.plan] ?? 500;
     const limit = rawLimit === Infinity ? null : rawLimit;
 
     // Check if this phone already had a conversation THIS calendar month
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const startOfMonth = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      1,
+    );
     const existing = await this.prisma.conversation.findUnique({
       where: { tenantId_clientPhone: { tenantId, clientPhone } },
       select: { lastMessageAt: true },
@@ -41,12 +52,22 @@ export class ConversacionesService {
       existing?.lastMessageAt != null && existing.lastMessageAt >= startOfMonth;
 
     if (alreadyCountedThisMonth) {
-      return { allowed: true, used: tenant.conversationCountMonth, limit, plan: tenant.plan };
+      return {
+        allowed: true,
+        used: tenant.conversationCountMonth,
+        limit,
+        plan: tenant.plan,
+      };
     }
 
     // New conversation this month — check limit
     if (limit !== null && tenant.conversationCountMonth >= limit) {
-      return { allowed: false, used: tenant.conversationCountMonth, limit, plan: tenant.plan };
+      return {
+        allowed: false,
+        used: tenant.conversationCountMonth,
+        limit,
+        plan: tenant.plan,
+      };
     }
 
     // Within limit — increment
@@ -55,20 +76,28 @@ export class ConversacionesService {
       data: { conversationCountMonth: { increment: 1 } },
     });
 
-    return { allowed: true, used: tenant.conversationCountMonth + 1, limit, plan: tenant.plan };
+    return {
+      allowed: true,
+      used: tenant.conversationCountMonth + 1,
+      limit,
+      plan: tenant.plan,
+    };
   }
 
   async ingestMessage(tenantId: string, dto: IngestMessageDto) {
     // Upsert conversation
     const conversation = await this.prisma.conversation.upsert({
-      where: { tenantId_clientPhone: { tenantId, clientPhone: dto.clientPhone } },
+      where: {
+        tenantId_clientPhone: { tenantId, clientPhone: dto.clientPhone },
+      },
       update: {
         lastMessage: dto.body,
         lastMessageAt: new Date(),
         clientName: dto.clientName ?? undefined,
-        unreadCount: dto.direction === MessageDirection.INBOUND
-          ? { increment: 1 }
-          : undefined,
+        unreadCount:
+          dto.direction === MessageDirection.INBOUND
+            ? { increment: 1 }
+            : undefined,
       },
       create: {
         tenantId,
@@ -130,7 +159,7 @@ export class ConversacionesService {
       where: { id: tenantId },
       select: { plan: true, conversationCountMonth: true },
     });
-    const limit = PLAN_LIMITS[tenant.plan as Plan] ?? 500;
+    const limit = PLAN_LIMITS[tenant.plan] ?? 500;
     return {
       used: tenant.conversationCountMonth,
       limit: limit === Infinity ? null : limit,
@@ -140,7 +169,10 @@ export class ConversacionesService {
 
   async getSesion(tenantId: string, phone: string, limit = 10) {
     const conversation = await this.prisma.conversation.findFirst({
-      where: { tenantId, clientPhone: { contains: phone.replace('whatsapp:', '').trim() } },
+      where: {
+        tenantId,
+        clientPhone: { contains: phone.replace('whatsapp:', '').trim() },
+      },
     });
     if (!conversation) return [];
 

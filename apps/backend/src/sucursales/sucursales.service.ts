@@ -28,7 +28,9 @@ export class SucursalesService {
   }
 
   async update(tenantId: string, id: string, dto: CrearSucursalDto) {
-    const sucursal = await this.prisma.sucursal.findFirst({ where: { id, tenantId } });
+    const sucursal = await this.prisma.sucursal.findFirst({
+      where: { id, tenantId },
+    });
     if (!sucursal) throw new NotFoundException('Sucursal no encontrada');
 
     return this.prisma.sucursal.update({
@@ -45,7 +47,9 @@ export class SucursalesService {
   }
 
   async remove(tenantId: string, id: string) {
-    const sucursal = await this.prisma.sucursal.findFirst({ where: { id, tenantId } });
+    const sucursal = await this.prisma.sucursal.findFirst({
+      where: { id, tenantId },
+    });
     if (!sucursal) throw new NotFoundException('Sucursal no encontrada');
     await this.prisma.sucursal.delete({ where: { id } });
     return { message: 'Sucursal eliminada' };

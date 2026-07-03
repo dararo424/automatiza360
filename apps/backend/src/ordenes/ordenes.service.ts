@@ -113,9 +113,7 @@ export class OrdenesService {
       where: { tenantId, active: true },
     });
 
-    const productMap = new Map(
-      products.map((p) => [p.name.toLowerCase(), p]),
-    );
+    const productMap = new Map(products.map((p) => [p.name.toLowerCase(), p]));
 
     for (const nombre of nombres) {
       if (!productMap.has(nombre)) {
@@ -124,12 +122,20 @@ export class OrdenesService {
     }
 
     let total = dto.items.reduce((sum, item) => {
-      return sum + productMap.get(item.nombre_producto.toLowerCase())!.price * item.cantidad;
+      return (
+        sum +
+        productMap.get(item.nombre_producto.toLowerCase())!.price *
+          item.cantidad
+      );
     }, 0);
 
     let descuento = 0;
     if (dto.cuponCodigo) {
-      const validacion = await this.cuponesService.validar(tenantId, dto.cuponCodigo, total);
+      const validacion = await this.cuponesService.validar(
+        tenantId,
+        dto.cuponCodigo,
+        total,
+      );
       if (validacion.valido && validacion.descuento) {
         descuento = validacion.descuento;
         total = Math.max(0, total - descuento);
@@ -143,7 +149,8 @@ export class OrdenesService {
       `Dirección: ${dto.direccion_entrega}`,
     ];
     if (dto.notas) notesPartes.push(`Notas: ${dto.notas}`);
-    if (descuento > 0) notesPartes.push(`Descuento: $${descuento.toLocaleString('es-CO')}`);
+    if (descuento > 0)
+      notesPartes.push(`Descuento: $${descuento.toLocaleString('es-CO')}`);
 
     const orden = await this.prisma.$transaction(async (tx) => {
       const count = await tx.order.count({ where: { tenantId } });
@@ -195,9 +202,7 @@ export class OrdenesService {
 
     const header = 'Numero,Estado,Total,Cliente,Fecha,Items';
     const rows = orders.map((o) => {
-      const items = o.items
-        .map((i) => `${i.quantity}x ${i.name}`)
-        .join(' | ');
+      const items = o.items.map((i) => `${i.quantity}x ${i.name}`).join(' | ');
       return [
         escape(o.number),
         escape(o.status),
@@ -211,14 +216,21 @@ export class OrdenesService {
     return [header, ...rows].join('\n');
   }
 
-  async generarLinkPago(tenantId: string, orderId: string): Promise<{ url: string }> {
+  async generarLinkPago(
+    tenantId: string,
+    orderId: string,
+  ): Promise<{ url: string }> {
     const orden = await this.buscarUno(orderId, tenantId);
     return this.buildLinkPago(orden.id, orden.total);
   }
 
-  private async buildLinkPago(orderId: string, total: number): Promise<{ url: string }> {
+  private async buildLinkPago(
+    orderId: string,
+    total: number,
+  ): Promise<{ url: string }> {
     const publicKey = process.env.WOMPI_PUBLIC_KEY;
-    if (!publicKey) throw new BadRequestException('WOMPI_PUBLIC_KEY no configurada');
+    if (!publicKey)
+      throw new BadRequestException('WOMPI_PUBLIC_KEY no configurada');
     const amountInCents = Math.round(total * 100);
     const referencia = `ORD-${orderId}`;
 
@@ -242,7 +254,9 @@ export class OrdenesService {
   async enviarLinkPagoWhatsApp(
     tenantId: string,
     orderId: string,
-  ): Promise<{ ok: true; url: string; sentTo: string } | { ok: false; reason: string }> {
+  ): Promise<
+    { ok: true; url: string; sentTo: string } | { ok: false; reason: string }
+  > {
     const orden = await this.buscarUno(orderId, tenantId);
 
     if (!orden.phone) {
@@ -274,7 +288,9 @@ export class OrdenesService {
       `Paga seguro con tarjeta, Nequi o PSE en este enlace:\n${url}\n\n` +
       `Una vez confirmado, prepararemos tu pedido. ¡Gracias! 🙏`;
 
-    const to = orden.phone.startsWith('whatsapp:') ? orden.phone : `whatsapp:${orden.phone}`;
+    const to = orden.phone.startsWith('whatsapp:')
+      ? orden.phone
+      : `whatsapp:${orden.phone}`;
     const params = new URLSearchParams({
       From: `whatsapp:${from}`,
       To: to,
@@ -294,13 +310,26 @@ export class OrdenesService {
       });
       if (!res.ok) {
         const text = await res.text();
-        this.logger.error('Twilio link-pago error %d for order #%d: %s', res.status, orden.number, text);
+        this.logger.error(
+          'Twilio link-pago error %d for order #%d: %s',
+          res.status,
+          orden.number,
+          text,
+        );
         return { ok: false, reason: `Twilio respondió ${res.status}` };
       }
-      this.logger.log('Link de pago enviado por WhatsApp para orden #%d → %s', orden.number, orden.phone);
+      this.logger.log(
+        'Link de pago enviado por WhatsApp para orden #%d → %s',
+        orden.number,
+        orden.phone,
+      );
       return { ok: true, url, sentTo: orden.phone };
     } catch (err: any) {
-      this.logger.error('Failed to send payment link for order #%d: %s', orden.number, err?.message ?? err);
+      this.logger.error(
+        'Failed to send payment link for order #%d: %s',
+        orden.number,
+        err?.message ?? err,
+      );
       return { ok: false, reason: err?.message ?? 'Error de red' };
     }
   }
@@ -318,21 +347,34 @@ export class OrdenesService {
 
     if (orden.phone) {
       // Fire-and-forget — do not await so Twilio latency never affects the response
-      this.sendWhatsAppNotification(orden.phone, orden.number, dto.estado).catch(
-        (err) => this.logger.error('WhatsApp notification error: %s', err?.message ?? err),
+      this.sendWhatsAppNotification(
+        orden.phone,
+        orden.number,
+        dto.estado,
+      ).catch((err) =>
+        this.logger.error(
+          'WhatsApp notification error: %s',
+          err?.message ?? err,
+        ),
       );
     }
 
     // Add loyalty points when order is delivered/completed
     if (
-      (dto.estado === OrderStatus.DELIVERED || (dto.estado as string) === 'COMPLETED') &&
+      (dto.estado === OrderStatus.DELIVERED ||
+        (dto.estado as string) === 'COMPLETED') &&
       orden.phone
     ) {
       const puntos = Math.floor(orden.total / 10000);
       if (puntos > 0) {
         this.contactosService
           .agregarPuntos(tenantId, orden.phone, puntos)
-          .catch((err) => this.logger.error('Error agregando puntos de fidelización: %s', err?.message ?? err));
+          .catch((err) =>
+            this.logger.error(
+              'Error agregando puntos de fidelización: %s',
+              err?.message ?? err,
+            ),
+          );
       }
 
       // Trigger automaciones
@@ -345,7 +387,10 @@ export class OrdenesService {
           { orderId: id },
         )
         .catch((err) =>
-          this.logger.error('Error disparando automatización ORDER_DELIVERED: %s', err?.message ?? err),
+          this.logger.error(
+            'Error disparando automatización ORDER_DELIVERED: %s',
+            err?.message ?? err,
+          ),
         );
     }
 
@@ -403,7 +448,11 @@ export class OrdenesService {
           text,
         );
       } else {
-        this.logger.log('WhatsApp notification sent for order #%d → %s', orderNumber, status);
+        this.logger.log(
+          'WhatsApp notification sent for order #%d → %s',
+          orderNumber,
+          status,
+        );
       }
     } catch (err: any) {
       this.logger.error(

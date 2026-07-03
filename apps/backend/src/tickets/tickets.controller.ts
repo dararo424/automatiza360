@@ -35,16 +35,16 @@ export class TicketsController {
   @Get('exportar')
   @Header('Content-Type', 'text/csv; charset=utf-8')
   @Header('Content-Disposition', 'attachment; filename="tickets.csv"')
-  async exportar(@CurrentUser() user: any, @Res({ passthrough: false }) res: Response) {
+  async exportar(
+    @CurrentUser() user: any,
+    @Res({ passthrough: false }) res: Response,
+  ) {
     const csv = await this.ticketsService.exportarCsv(user.tenantId);
     res.send(csv);
   }
 
   @Get()
-  listar(
-    @CurrentUser() user: any,
-    @Query('estado') estado?: TicketStatus,
-  ) {
+  listar(@CurrentUser() user: any, @Query('estado') estado?: TicketStatus) {
     return this.ticketsService.listar(user.tenantId, estado);
   }
 

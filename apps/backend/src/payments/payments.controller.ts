@@ -59,6 +59,10 @@ export class PaymentsController {
     @CurrentUser() user: { tenantId: string },
     @Body() body: { referencia: string; razon?: string },
   ) {
-    return this.payments.solicitarReembolso(user.tenantId, body.referencia, body.razon);
+    return this.payments.solicitarReembolso(
+      user.tenantId,
+      body.referencia,
+      body.razon,
+    );
   }
 }

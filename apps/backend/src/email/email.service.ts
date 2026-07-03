@@ -15,13 +15,16 @@ export class EmailService {
 
   constructor() {
     const apiKey = process.env.RESEND_API_KEY;
-    this.from = process.env.SMTP_FROM ?? 'Automatiza360 <onboarding@resend.dev>';
+    this.from =
+      process.env.SMTP_FROM ?? 'Automatiza360 <onboarding@resend.dev>';
 
     if (apiKey) {
       this.resend = new Resend(apiKey);
       this.logger.log('Email service configured via Resend');
     } else {
-      this.logger.warn('RESEND_API_KEY not configured — emails will be skipped');
+      this.logger.warn(
+        'RESEND_API_KEY not configured — emails will be skipped',
+      );
     }
   }
 
@@ -40,7 +43,11 @@ export class EmailService {
     }
   }
 
-  async enviarRecuperacionContrasena(email: string, nombre: string, resetUrl: string) {
+  async enviarRecuperacionContrasena(
+    email: string,
+    nombre: string,
+    resetUrl: string,
+  ) {
     await this.send({
       to: email,
       subject: 'Recupera tu contraseña — Automatiza360',
@@ -67,7 +74,12 @@ export class EmailService {
     });
   }
 
-  async enviarBienvenida(email: string, nombre: string, tenantName: string, loginUrl: string) {
+  async enviarBienvenida(
+    email: string,
+    nombre: string,
+    tenantName: string,
+    loginUrl: string,
+  ) {
     await this.send({
       to: email,
       subject: `¡Bienvenido a Automatiza360, ${nombre}!`,
@@ -102,7 +114,15 @@ export class EmailService {
     });
   }
 
-  async send_nueva_orden(to: string, opts: { storeName: string; orderNumber: number; total: number; clientPhone?: string }) {
+  async send_nueva_orden(
+    to: string,
+    opts: {
+      storeName: string;
+      orderNumber: number;
+      total: number;
+      clientPhone?: string;
+    },
+  ) {
     await this.send({
       to,
       subject: `Nueva orden #${opts.orderNumber} — ${opts.storeName}`,
@@ -116,7 +136,10 @@ export class EmailService {
     });
   }
 
-  async sendActivacionDia1(to: string, opts: { ownerName: string; storeName: string; dashboardUrl: string }) {
+  async sendActivacionDia1(
+    to: string,
+    opts: { ownerName: string; storeName: string; dashboardUrl: string },
+  ) {
     await this.send({
       to,
       subject: `${opts.storeName} — tu bot está listo para activar`,
@@ -156,7 +179,10 @@ export class EmailService {
     });
   }
 
-  async sendTrialMidPoint(to: string, opts: { storeName: string; loginUrl: string }) {
+  async sendTrialMidPoint(
+    to: string,
+    opts: { storeName: string; loginUrl: string },
+  ) {
     await this.send({
       to,
       subject: `¿Cómo va todo en ${opts.storeName}? — A mitad del trial`,
@@ -191,7 +217,10 @@ export class EmailService {
     });
   }
 
-  async sendTrialExpirando(to: string, opts: { storeName: string; daysRemaining: number }) {
+  async sendTrialExpirando(
+    to: string,
+    opts: { storeName: string; daysRemaining: number },
+  ) {
     const isLastDay = opts.daysRemaining === 1;
     await this.send({
       to,
@@ -207,9 +236,10 @@ export class EmailService {
             <h2 style="color:#0f172a;margin-top:0;">${isLastDay ? '🚨 Mañana termina tu trial' : `⏰ Te quedan ${opts.daysRemaining} días`}</h2>
             <p style="color:#475569;line-height:1.6;">Hola equipo de <strong>${opts.storeName}</strong>,</p>
             <p style="color:#475569;line-height:1.6;">
-              ${isLastDay
-                ? 'Tu período de prueba gratuita <strong>vence mañana</strong>. Para no perder acceso a tu bot, tus datos y tus clientes configurados, activa tu plan hoy.'
-                : `Tu trial gratuito vence en <strong>${opts.daysRemaining} días</strong>. Activa tu plan para seguir automatizando sin interrupciones.`
+              ${
+                isLastDay
+                  ? 'Tu período de prueba gratuita <strong>vence mañana</strong>. Para no perder acceso a tu bot, tus datos y tus clientes configurados, activa tu plan hoy.'
+                  : `Tu trial gratuito vence en <strong>${opts.daysRemaining} días</strong>. Activa tu plan para seguir automatizando sin interrupciones.`
               }
             </p>
             <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:16px;margin:20px 0;">
@@ -230,8 +260,21 @@ export class EmailService {
     });
   }
 
-  async sendConfirmacionPago(to: string, opts: { ownerName: string; storeName: string; plan: string; monto: number; referencia: string }) {
-    const planLabel: Record<string, string> = { STARTER: 'Starter', PRO: 'Pro', BUSINESS: 'Business' };
+  async sendConfirmacionPago(
+    to: string,
+    opts: {
+      ownerName: string;
+      storeName: string;
+      plan: string;
+      monto: number;
+      referencia: string;
+    },
+  ) {
+    const planLabel: Record<string, string> = {
+      STARTER: 'Starter',
+      PRO: 'Pro',
+      BUSINESS: 'Business',
+    };
     const label = planLabel[opts.plan] ?? opts.plan;
     const fmt = (n: number) => `$${n.toLocaleString('es-CO')} COP`;
     await this.send({
@@ -267,7 +310,10 @@ export class EmailService {
     });
   }
 
-  async sendEscalacion(to: string, opts: { storeName: string; clientPhone: string; lastMessage: string }) {
+  async sendEscalacion(
+    to: string,
+    opts: { storeName: string; clientPhone: string; lastMessage: string },
+  ) {
     await this.send({
       to,
       subject: `⚠️ Cliente requiere atención humana — ${opts.storeName}`,
@@ -285,11 +331,21 @@ export class EmailService {
     });
   }
 
-  async sendReporteEjecutivo(to: string, data: {
-    storeName: string; semana: string; ordenes: number; ingresos: number;
-    citas: number; contactos: number; ordenesChange: number; ingresosChange: number;
-    citasChange: number; contactosChange: number;
-  }) {
+  async sendReporteEjecutivo(
+    to: string,
+    data: {
+      storeName: string;
+      semana: string;
+      ordenes: number;
+      ingresos: number;
+      citas: number;
+      contactos: number;
+      ordenesChange: number;
+      ingresosChange: number;
+      citasChange: number;
+      contactosChange: number;
+    },
+  ) {
     const fmt = (n: number) => n.toLocaleString('es-CO');
     const fmtCOP = (n: number) => `$${n.toLocaleString('es-CO')} COP`;
     const pct = (n: number) => {
@@ -338,7 +394,12 @@ export class EmailService {
 
   // ── Lifecycle emails ────────────────────────────────────────────────────────
 
-  async enviarTrialTerminaPronto(to: string, nombre: string, diasRestantes: number, plan: string) {
+  async enviarTrialTerminaPronto(
+    to: string,
+    nombre: string,
+    diasRestantes: number,
+    plan: string,
+  ) {
     const appUrl = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
     await this.send({
       to,
@@ -366,7 +427,12 @@ export class EmailService {
     });
   }
 
-  async enviarSuscripcionExpiraPronto(to: string, nombre: string, diasRestantes: number, fechaVencimiento: string) {
+  async enviarSuscripcionExpiraPronto(
+    to: string,
+    nombre: string,
+    diasRestantes: number,
+    fechaVencimiento: string,
+  ) {
     const appUrl = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
     await this.send({
       to,
@@ -410,13 +476,18 @@ export class EmailService {
     });
   }
 
-  async enviarResemanalDigest(to: string, nombre: string, negocio: string, data: {
-    ingresosSemana: number;
-    ordenesSemana: number;
-    citasSemana: number;
-    contactosNuevos: number;
-    appUrl: string;
-  }) {
+  async enviarResemanalDigest(
+    to: string,
+    nombre: string,
+    negocio: string,
+    data: {
+      ingresosSemana: number;
+      ordenesSemana: number;
+      citasSemana: number;
+      contactosNuevos: number;
+      appUrl: string;
+    },
+  ) {
     const fmt = (n: number) => `$${n.toLocaleString('es-CO')} COP`;
     await this.send({
       to,
@@ -461,7 +532,11 @@ export class EmailService {
     });
   }
 
-  async enviarFelicitacionCumpleanos(to: string, clienteNombre: string, negocioNombre: string) {
+  async enviarFelicitacionCumpleanos(
+    to: string,
+    clienteNombre: string,
+    negocioNombre: string,
+  ) {
     await this.send({
       to,
       subject: `🎂 ¡Feliz cumpleaños de parte de ${negocioNombre}!`,
@@ -481,7 +556,11 @@ export class EmailService {
     });
   }
 
-  async enviarReciboPago(to: string, nombre: string, opts: { plan: string; monto: number; referencia: string; fecha: string }) {
+  async enviarReciboPago(
+    to: string,
+    nombre: string,
+    opts: { plan: string; monto: number; referencia: string; fecha: string },
+  ) {
     const appUrl = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
     const montoFmt = `$${opts.monto.toLocaleString('es-CO')} COP`;
     await this.send({

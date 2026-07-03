@@ -21,14 +21,22 @@ export class ComprasService {
     return this.prisma.proveedor.create({ data: { ...dto, tenantId } });
   }
 
-  async actualizarProveedor(id: string, tenantId: string, dto: Partial<CrearProveedorDto>) {
-    const found = await this.prisma.proveedor.findFirst({ where: { id, tenantId } });
+  async actualizarProveedor(
+    id: string,
+    tenantId: string,
+    dto: Partial<CrearProveedorDto>,
+  ) {
+    const found = await this.prisma.proveedor.findFirst({
+      where: { id, tenantId },
+    });
     if (!found) throw new NotFoundException('Proveedor no encontrado');
     return this.prisma.proveedor.update({ where: { id }, data: dto });
   }
 
   async eliminarProveedor(id: string, tenantId: string) {
-    const found = await this.prisma.proveedor.findFirst({ where: { id, tenantId } });
+    const found = await this.prisma.proveedor.findFirst({
+      where: { id, tenantId },
+    });
     if (!found) throw new NotFoundException('Proveedor no encontrado');
     return this.prisma.proveedor.delete({ where: { id } });
   }
@@ -52,7 +60,10 @@ export class ComprasService {
     });
     if (!proveedor) throw new NotFoundException('Proveedor no encontrado');
 
-    const total = dto.items.reduce((s, i) => s + i.cantidad * i.precioUnitario, 0);
+    const total = dto.items.reduce(
+      (s, i) => s + i.cantidad * i.precioUnitario,
+      0,
+    );
 
     return this.prisma.ordenCompra.create({
       data: {

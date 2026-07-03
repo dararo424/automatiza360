@@ -37,7 +37,13 @@ export class EquipoController {
   async listar(@CurrentUser() user: any) {
     return this.prisma.user.findMany({
       where: { tenantId: user.tenantId, active: true },
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'asc' },
     });
   }
@@ -45,7 +51,9 @@ export class EquipoController {
   @Post('invitar')
   async invitar(@CurrentUser() user: any, @Body() dto: InvitarUsuarioDto) {
     if (user.role !== Role.OWNER && user.role !== Role.ADMIN) {
-      throw new ForbiddenException('Solo OWNER o ADMIN pueden invitar usuarios');
+      throw new ForbiddenException(
+        'Solo OWNER o ADMIN pueden invitar usuarios',
+      );
     }
 
     const tenant = await this.prisma.tenant.findUniqueOrThrow({
@@ -53,7 +61,7 @@ export class EquipoController {
       select: { plan: true },
     });
 
-    const maxAgentes = AGENT_LIMITS[tenant.plan as Plan] ?? 1;
+    const maxAgentes = AGENT_LIMITS[tenant.plan] ?? 1;
     if (maxAgentes !== Infinity) {
       const actuales = await this.prisma.user.count({
         where: { tenantId: user.tenantId, active: true },
@@ -74,7 +82,13 @@ export class EquipoController {
         password: passwordHash,
         role: dto.role === Role.OWNER ? Role.ADMIN : dto.role,
       },
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
     });
   }
 

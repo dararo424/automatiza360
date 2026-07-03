@@ -7,58 +7,154 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly client: PrismaClient;
 
   constructor() {
-    const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+    const adapter = new PrismaPg({
+      connectionString: process.env.DATABASE_URL,
+    });
     this.client = new PrismaClient({ adapter });
   }
 
   // Model proxies
-  get user() { return this.client.user; }
-  get tenant() { return this.client.tenant; }
-  get order() { return this.client.order; }
-  get orderItem() { return this.client.orderItem; }
-  get product() { return this.client.product; }
-  get ticket() { return this.client.ticket; }
-  get cotizacion() { return this.client.cotizacion; }
-  get cotizacionItem() { return this.client.cotizacionItem; }
-  get notificacion() { return this.client.notificacion; }
-  get supplier() { return this.client.supplier; }
-  get supplierProduct() { return this.client.supplierProduct; }
-  get menuDia() { return this.client.menuDia; }
-  get platoMenuDia() { return this.client.platoMenuDia; }
-  get professional() { return this.client.professional; }
-  get schedule() { return this.client.schedule; }
-  get service() { return this.client.service; }
-  get appointment() { return this.client.appointment; }
-  get paymentIntent() { return this.client.paymentIntent; }
-  get conversation() { return this.client.conversation; }
-  get message() { return this.client.message; }
-  get contact() { return this.client.contact; }
-  get referralCode() { return this.client.referralCode; }
-  get referral() { return this.client.referral; }
-  get apiKey() { return this.client.apiKey; }
-  get gasto() { return this.client.gasto; }
-  get campaña() { return this.client.campaña; }
-  get garantia() { return this.client.garantia; }
-  get automacion() { return this.client.automacion; }
-  get automacionPaso() { return this.client.automacionPaso; }
-  get automacionEjecucion() { return this.client.automacionEjecucion; }
-  get resena() { return this.client.resena; }
-  get proveedor() { return this.client.proveedor; }
-  get ordenCompra() { return this.client.ordenCompra; }
-  get ordenCompraItem() { return this.client.ordenCompraItem; }
-  get turno() { return this.client.turno; }
-  get cupon() { return this.client.cupon; }
-  get pushSubscription() { return this.client.pushSubscription; }
-  get pagoRegistro() { return this.client.pagoRegistro; }
-  get npsRespuesta() { return this.client.npsRespuesta; }
-  get sucursal() { return this.client.sucursal; }
-  get tallaConfig() { return this.client.tallaConfig; }
-  get tallaConsulta() { return this.client.tallaConsulta; }
-  get passwordResetToken() { return this.client.passwordResetToken; }
-  get refreshToken() { return this.client.refreshToken; }
-  get hazloRequest() { return this.client.hazloRequest; }
-  get auditLog() { return this.client.auditLog; }
-  get notificadoVentas() { return this.client.notificadoVentas; }
+  get user() {
+    return this.client.user;
+  }
+  get tenant() {
+    return this.client.tenant;
+  }
+  get order() {
+    return this.client.order;
+  }
+  get orderItem() {
+    return this.client.orderItem;
+  }
+  get product() {
+    return this.client.product;
+  }
+  get ticket() {
+    return this.client.ticket;
+  }
+  get cotizacion() {
+    return this.client.cotizacion;
+  }
+  get cotizacionItem() {
+    return this.client.cotizacionItem;
+  }
+  get notificacion() {
+    return this.client.notificacion;
+  }
+  get supplier() {
+    return this.client.supplier;
+  }
+  get supplierProduct() {
+    return this.client.supplierProduct;
+  }
+  get menuDia() {
+    return this.client.menuDia;
+  }
+  get platoMenuDia() {
+    return this.client.platoMenuDia;
+  }
+  get professional() {
+    return this.client.professional;
+  }
+  get schedule() {
+    return this.client.schedule;
+  }
+  get service() {
+    return this.client.service;
+  }
+  get appointment() {
+    return this.client.appointment;
+  }
+  get paymentIntent() {
+    return this.client.paymentIntent;
+  }
+  get conversation() {
+    return this.client.conversation;
+  }
+  get message() {
+    return this.client.message;
+  }
+  get contact() {
+    return this.client.contact;
+  }
+  get referralCode() {
+    return this.client.referralCode;
+  }
+  get referral() {
+    return this.client.referral;
+  }
+  get apiKey() {
+    return this.client.apiKey;
+  }
+  get gasto() {
+    return this.client.gasto;
+  }
+  get campaña() {
+    return this.client.campaña;
+  }
+  get garantia() {
+    return this.client.garantia;
+  }
+  get automacion() {
+    return this.client.automacion;
+  }
+  get automacionPaso() {
+    return this.client.automacionPaso;
+  }
+  get automacionEjecucion() {
+    return this.client.automacionEjecucion;
+  }
+  get resena() {
+    return this.client.resena;
+  }
+  get proveedor() {
+    return this.client.proveedor;
+  }
+  get ordenCompra() {
+    return this.client.ordenCompra;
+  }
+  get ordenCompraItem() {
+    return this.client.ordenCompraItem;
+  }
+  get turno() {
+    return this.client.turno;
+  }
+  get cupon() {
+    return this.client.cupon;
+  }
+  get pushSubscription() {
+    return this.client.pushSubscription;
+  }
+  get pagoRegistro() {
+    return this.client.pagoRegistro;
+  }
+  get npsRespuesta() {
+    return this.client.npsRespuesta;
+  }
+  get sucursal() {
+    return this.client.sucursal;
+  }
+  get tallaConfig() {
+    return this.client.tallaConfig;
+  }
+  get tallaConsulta() {
+    return this.client.tallaConsulta;
+  }
+  get passwordResetToken() {
+    return this.client.passwordResetToken;
+  }
+  get refreshToken() {
+    return this.client.refreshToken;
+  }
+  get hazloRequest() {
+    return this.client.hazloRequest;
+  }
+  get auditLog() {
+    return this.client.auditLog;
+  }
+  get notificadoVentas() {
+    return this.client.notificadoVentas;
+  }
 
   // Transaction support
   $transaction: PrismaClient['$transaction'] = (...args: any[]) =>

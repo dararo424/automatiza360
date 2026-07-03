@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
@@ -43,7 +52,11 @@ export class ConversacionesController {
     @Param('phone') phone: string,
     @Query('limit') limit?: string,
   ) {
-    return this.svc.getSesion(user.tenantId, phone, limit ? parseInt(limit, 10) : 10);
+    return this.svc.getSesion(
+      user.tenantId,
+      phone,
+      limit ? parseInt(limit, 10) : 10,
+    );
   }
 
   @Get(':id')
@@ -62,7 +75,10 @@ export class ConversacionesController {
   }
 
   @Post('escalar-por-telefono')
-  escalarPorTelefono(@CurrentUser() user: any, @Body() body: { phone: string }) {
+  escalarPorTelefono(
+    @CurrentUser() user: any,
+    @Body() body: { phone: string },
+  ) {
     return this.svc.escalarConversacionPorTelefono(user.tenantId, body.phone);
   }
 }

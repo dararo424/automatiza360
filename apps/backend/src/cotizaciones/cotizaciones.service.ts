@@ -79,7 +79,12 @@ export class CotizacionesService {
           tenantId,
         },
       })
-      .catch((err) => this.logger.error('Error creando notificación: %s', err?.message ?? err));
+      .catch((err) =>
+        this.logger.error(
+          'Error creando notificación: %s',
+          err?.message ?? err,
+        ),
+      );
 
     // Push al panel — fire-and-forget
     this.pushService
@@ -101,7 +106,10 @@ export class CotizacionesService {
         items: cotizacion.items,
       })
       .catch((err) =>
-        this.logger.error('Error notificando cotización via WhatsApp: %s', err?.message ?? err),
+        this.logger.error(
+          'Error notificando cotización via WhatsApp: %s',
+          err?.message ?? err,
+        ),
       );
 
     // Mensaje de cobro al cliente final (según paymentMode del tenant) — fire-and-forget
@@ -112,7 +120,10 @@ export class CotizacionesService {
         clientPhone: cotizacion.clientPhone,
         total: cotizacion.total,
       }).catch((err) =>
-        this.logger.error('Error enviando cobro al cliente: %s', err?.message ?? err),
+        this.logger.error(
+          'Error enviando cobro al cliente: %s',
+          err?.message ?? err,
+        ),
       );
     }
 
@@ -182,7 +193,9 @@ export class CotizacionesService {
       // TEXT mode
       const texto = tenant.paymentText?.trim();
       if (!texto) {
-        this.logger.warn(`Tenant ${tenantId} en modo TEXT sin paymentText configurado`);
+        this.logger.warn(
+          `Tenant ${tenantId} en modo TEXT sin paymentText configurado`,
+        );
         return;
       }
       body =
@@ -203,15 +216,21 @@ export class CotizacionesService {
         to: `whatsapp:${this.normalizePhone(cot.clientPhone)}`,
         body,
       });
-      this.logger.log(`Cobro enviado al cliente para cotización #${cot.number}`);
+      this.logger.log(
+        `Cobro enviado al cliente para cotización #${cot.number}`,
+      );
     } catch (err) {
-      this.logger.error(`Twilio error enviando cobro #${cot.number}: ${(err as Error).message}`);
+      this.logger.error(
+        `Twilio error enviando cobro #${cot.number}: ${(err as Error).message}`,
+      );
     }
   }
 
   private normalizePhone(phone: string): string {
     const cleaned = phone.replace(/[\s\-]/g, '');
-    return cleaned.startsWith('+') ? cleaned : `+57${cleaned.replace(/^0+/, '')}`;
+    return cleaned.startsWith('+')
+      ? cleaned
+      : `+57${cleaned.replace(/^0+/, '')}`;
   }
 
   listar(tenantId: string, estado?: CotizacionStatus) {

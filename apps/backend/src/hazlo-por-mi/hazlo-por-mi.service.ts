@@ -3,8 +3,12 @@ import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 
-const ADMIN_EMAIL = process.env.HAZLO_NOTIFY_EMAIL ?? process.env.SUPERADMIN_EMAIL ?? 'admin@automatiza360.com';
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
+const ADMIN_EMAIL =
+  process.env.HAZLO_NOTIFY_EMAIL ??
+  process.env.SUPERADMIN_EMAIL ??
+  'admin@automatiza360.com';
+const FRONTEND_URL =
+  process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
 
 @Injectable()
 export class HazloPorMiService {
@@ -93,7 +97,9 @@ export class HazloPorMiService {
       });
     }
 
-    this.logger.log(`Hazlo por mí request created: ${solicitud.id} for tenant ${tenantId}`);
+    this.logger.log(
+      `Hazlo por mí request created: ${solicitud.id} for tenant ${tenantId}`,
+    );
     return { id: solicitud.id, status: solicitud.status };
   }
 

@@ -27,10 +27,7 @@ export class CotizacionesController {
   }
 
   @Get()
-  listar(
-    @CurrentUser() user: any,
-    @Query('estado') estado?: CotizacionStatus,
-  ) {
+  listar(@CurrentUser() user: any, @Query('estado') estado?: CotizacionStatus) {
     return this.cotizacionesService.listar(user.tenantId, estado);
   }
 

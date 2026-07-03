@@ -47,7 +47,11 @@ export class NotificadosVentasService {
     });
   }
 
-  async actualizar(tenantId: string, id: string, dto: ActualizarNotificadoVentasDto) {
+  async actualizar(
+    tenantId: string,
+    id: string,
+    dto: ActualizarNotificadoVentasDto,
+  ) {
     const existing = await this.prisma.notificadoVentas.findFirst({
       where: { id, tenantId },
     });
@@ -57,11 +61,19 @@ export class NotificadosVentasService {
       where: { id },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
-        ...(dto.phone !== undefined && { phone: this.normalizePhone(dto.phone) }),
+        ...(dto.phone !== undefined && {
+          phone: this.normalizePhone(dto.phone),
+        }),
         ...(dto.rol !== undefined && { rol: dto.rol }),
-        ...(dto.resumenMatinal !== undefined && { resumenMatinal: dto.resumenMatinal }),
-        ...(dto.resumenCierre !== undefined && { resumenCierre: dto.resumenCierre }),
-        ...(dto.notifInstantanea !== undefined && { notifInstantanea: dto.notifInstantanea }),
+        ...(dto.resumenMatinal !== undefined && {
+          resumenMatinal: dto.resumenMatinal,
+        }),
+        ...(dto.resumenCierre !== undefined && {
+          resumenCierre: dto.resumenCierre,
+        }),
+        ...(dto.notifInstantanea !== undefined && {
+          notifInstantanea: dto.notifInstantanea,
+        }),
         ...(dto.montoMinimo !== undefined && { montoMinimo: dto.montoMinimo }),
         ...(dto.active !== undefined && { active: dto.active }),
       },
@@ -79,7 +91,10 @@ export class NotificadosVentasService {
 
   // ── Envíos WhatsApp ──────────────────────────────────────────────────────
 
-  async probar(tenantId: string, id: string): Promise<{ ok: boolean; reason?: string }> {
+  async probar(
+    tenantId: string,
+    id: string,
+  ): Promise<{ ok: boolean; reason?: string }> {
     const persona = await this.prisma.notificadoVentas.findFirst({
       where: { id, tenantId },
     });
@@ -138,7 +153,8 @@ export class NotificadosVentasService {
       .map((i) => `• ${i.quantity}x ${i.name}`)
       .join('\n');
 
-    const frontendUrl = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
+    const frontendUrl =
+      process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
     const body =
       `🔔 *Nueva cotización* — ${tenant.name}\n\n` +
       `👤 ${cotizacion.clientName}\n` +
@@ -149,7 +165,9 @@ export class NotificadosVentasService {
       `Ver detalle: ${frontendUrl}/cotizaciones`;
 
     await Promise.all(
-      personas.map((p) => this.enviarWhatsApp(tenant.twilioNumber, p.phone, body)),
+      personas.map((p) =>
+        this.enviarWhatsApp(tenant.twilioNumber, p.phone, body),
+      ),
     );
   }
 
@@ -188,9 +206,8 @@ export class NotificadosVentasService {
     });
     if (!tenant) return;
 
-    const filtroPersonas = tipo === 'matinal'
-      ? { resumenMatinal: true }
-      : { resumenCierre: true };
+    const filtroPersonas =
+      tipo === 'matinal' ? { resumenMatinal: true } : { resumenCierre: true };
 
     const personas = await this.prisma.notificadoVentas.findMany({
       where: { tenantId, active: true, ...filtroPersonas },
@@ -212,7 +229,11 @@ export class NotificadosVentasService {
       }),
     ]);
 
-    if (cotizaciones.length === 0 && tickets.length === 0 && ordenes.length === 0) {
+    if (
+      cotizaciones.length === 0 &&
+      tickets.length === 0 &&
+      ordenes.length === 0
+    ) {
       return; // Sin actividad, no spam
     }
 
@@ -229,19 +250,25 @@ export class NotificadosVentasService {
       maximumFractionDigits: 0,
     });
 
-    const frontendUrl = process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
+    const frontendUrl =
+      process.env.FRONTEND_URL ?? 'https://app.automatiza360.com';
 
-    const header = tipo === 'matinal'
-      ? `🌅 *Buen día Equipo ${tenant.name}*\n\nResumen de la noche (8pm → 8am):`
-      : `🌆 *Cierre del día — ${tenant.name}*\n\nResumen del día (8am → 8pm):`;
+    const header =
+      tipo === 'matinal'
+        ? `🌅 *Buen día Equipo ${tenant.name}*\n\nResumen de la noche (8pm → 8am):`
+        : `🌆 *Cierre del día — ${tenant.name}*\n\nResumen del día (8am → 8pm):`;
 
     const lineas: string[] = [header, ''];
 
     if (cotizaciones.length > 0) {
-      lineas.push(`💰 *${cotizaciones.length} cotizaciones* — total ${totalCotizadoFmt}`);
+      lineas.push(
+        `💰 *${cotizaciones.length} cotizaciones* — total ${totalCotizadoFmt}`,
+      );
     }
     if (ordenes.length > 0) {
-      lineas.push(`🛒 *${ordenes.length} ventas confirmadas* — total ${totalVendidoFmt}`);
+      lineas.push(
+        `🛒 *${ordenes.length} ventas confirmadas* — total ${totalVendidoFmt}`,
+      );
     }
     if (tickets.length > 0) {
       lineas.push(`🔧 *${tickets.length} reparaciones nuevas*`);
@@ -278,7 +305,9 @@ export class NotificadosVentasService {
     const body = lineas.join('\n');
 
     await Promise.all(
-      personas.map((p) => this.enviarWhatsApp(tenant.twilioNumber, p.phone, body)),
+      personas.map((p) =>
+        this.enviarWhatsApp(tenant.twilioNumber, p.phone, body),
+      ),
     );
   }
 
@@ -286,7 +315,9 @@ export class NotificadosVentasService {
 
   private normalizePhone(phone: string): string {
     const cleaned = phone.replace(/[\s\-]/g, '');
-    return cleaned.startsWith('+') ? cleaned : `+57${cleaned.replace(/^0+/, '')}`;
+    return cleaned.startsWith('+')
+      ? cleaned
+      : `+57${cleaned.replace(/^0+/, '')}`;
   }
 
   private async enviarWhatsApp(
@@ -311,7 +342,9 @@ export class NotificadosVentasService {
       });
       return true;
     } catch (err) {
-      this.logger.error(`Error enviando a ${toPhone}: ${(err as Error).message}`);
+      this.logger.error(
+        `Error enviando a ${toPhone}: ${(err as Error).message}`,
+      );
       return false;
     }
   }

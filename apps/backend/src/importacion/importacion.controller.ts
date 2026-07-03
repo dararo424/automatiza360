@@ -21,7 +21,10 @@ export class ImportacionController {
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() user: any,
   ) {
-    return this.importacionService.importarContactos(user.tenantId, file.buffer);
+    return this.importacionService.importarContactos(
+      user.tenantId,
+      file.buffer,
+    );
   }
 
   @Post('productos')
@@ -30,6 +33,9 @@ export class ImportacionController {
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() user: any,
   ) {
-    return this.importacionService.importarProductos(user.tenantId, file.buffer);
+    return this.importacionService.importarProductos(
+      user.tenantId,
+      file.buffer,
+    );
   }
 }
