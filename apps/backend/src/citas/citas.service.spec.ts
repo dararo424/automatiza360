@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CalendarService } from '../calendar/calendar.service';
 import { AutomacionesService } from '../automaciones/automaciones.service';
 import { PushService } from '../push/push.service';
+import { FlujoService } from '../flujos/flujos.service';
 
 const mockPrisma = {
   service: { findMany: jest.fn() },
@@ -21,6 +22,7 @@ const mockPrisma = {
 const mockCalendar = { crearEvento: jest.fn() };
 const mockAutomaciones = { dispararTrigger: jest.fn().mockResolvedValue(undefined) };
 const mockPush = { sendToTenant: jest.fn().mockResolvedValue(undefined) };
+const mockFlujos = { assertFlujoActivo: jest.fn().mockResolvedValue(undefined) };
 
 const TENANT_ID = 'tenant-1';
 
@@ -36,6 +38,7 @@ describe('CitasService', () => {
         { provide: CalendarService, useValue: mockCalendar },
         { provide: AutomacionesService, useValue: mockAutomaciones },
         { provide: PushService, useValue: mockPush },
+        { provide: FlujoService, useValue: mockFlujos },
       ],
     }).compile();
     service = module.get<CitasService>(CitasService);

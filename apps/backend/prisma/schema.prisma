@@ -75,6 +75,18 @@ model Tenant {
   instagramPageName    String?
   metaPageAccessToken  String?
   instagramConnectedAt DateTime?
+  // Cobros del bot (link enviado al cliente final por WhatsApp)
+  paymentMode          PaymentMode    @default(MANUAL)
+  paymentText          String?
+  wompiPublicKey       String?
+  wompiIntegritySecret String?
+  // Resumen WhatsApp (configurable por tenant)
+  resumenMatinalHora   String         @default("08:00")
+  resumenCierreHora    String         @default("20:00")
+  notificadosVentas    NotificadoVentas[]
+
+  @@index([active, ownerPhone])
+  @@index([subscriptionStatus])
 }
 
 // Usuario dentro de un negocio
@@ -96,6 +108,8 @@ model User {
   refreshTokens       RefreshToken[]
 
   @@index([tenantId])
+  @@index([tenantId, role, active])
+  @@index([phone])
 }
 
 model PasswordResetToken {
@@ -139,6 +153,7 @@ model Order {
   items     OrderItem[]
 
   @@index([tenantId, createdAt])
+  @@index([tenantId, status])
 }
 
 model OrderItem {
@@ -169,6 +184,7 @@ model Product {
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])
+  @@index([tenantId, active])
 }
 
 // Tickets de reparación (tienda tech)
@@ -191,6 +207,7 @@ model Ticket {
   tenant      Tenant       @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId, createdAt])
+  @@index([tenantId, status])
 }
 
 model Cotizacion {
@@ -209,6 +226,7 @@ model Cotizacion {
   items       CotizacionItem[]
 
   @@index([tenantId])
+  @@index([tenantId, createdAt])
 }
 
 model CotizacionItem {
@@ -234,6 +252,7 @@ model Notificacion {
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId, createdAt])
+  @@index([tenantId, read, createdAt])
 }
 
 model Supplier {
@@ -351,6 +370,7 @@ model Appointment {
   professional    Professional?     @relation(fields: [professionalId], references: [id])
 
   @@index([tenantId, date])
+  @@index([tenantId, status])
 }
 
 // Conversaciones WhatsApp (bandeja de mensajes)
@@ -372,6 +392,7 @@ model Conversation {
 
   @@unique([tenantId, clientPhone])
   @@index([tenantId, lastMessageAt])
+  @@index([tenantId, needsAttention])
 }
 
 model Message {
@@ -435,6 +456,41 @@ model HazloRequest {
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
 
   @@index([tenantId])
+  @@index([tenantId, createdAt])
+}
+
+model NotificadoVentas {
+  id               String   @id @default(cuid())
+  tenantId         String
+  name             String
+  phone            String
+  rol              String   @default("VENDEDOR") // VENDEDOR | OWNER | MANAGER
+  resumenMatinal   Boolean  @default(true)
+  resumenCierre    Boolean  @default(false)
+  notifInstantanea Boolean  @default(false)
+  montoMinimo      Float?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, phone])
+  @@index([tenantId, active])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  event     String
+  userId    String?
+  tenantId  String?
+  ip        String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([event, createdAt])
+  @@index([userId, createdAt])
 }
 
 // API pública (plan BUSINESS)
@@ -483,6 +539,12 @@ enum Plan {
   BUSINESS
 }
 
+enum PaymentMode {
+  MANUAL  // El bot solo genera la cotización; el equipo contacta al cliente.
+  TEXT    // El bot envía un mensaje predefinido (transferencia bancaria, etc.).
+  WOMPI   // El bot envía link de pago Wompi automatizado.
+}
+
 enum Industry {
   RESTAURANT
   TECH_STORE
@@ -495,6 +557,7 @@ enum Industry {
   HOTEL
   BAKERY
   WORKSHOP
+  JEWELRY
   OTHER
 }
 

@@ -54,6 +54,7 @@ import { PublicModule } from './public/public.module';
 import { HazloPorMiModule } from './hazlo-por-mi/hazlo-por-mi.module';
 import { ReportesModule } from './reportes/reportes.module';
 import { InstagramModule } from './instagram/instagram.module';
+import { NotificadosVentasModule } from './notificados-ventas/notificados-ventas.module';
 
 @Module({
   imports: [
@@ -115,6 +116,7 @@ import { InstagramModule } from './instagram/instagram.module';
     HazloPorMiModule,
     ReportesModule,
     InstagramModule,
+    NotificadosVentasModule,
   ],
   controllers: [AppController],
   providers: [

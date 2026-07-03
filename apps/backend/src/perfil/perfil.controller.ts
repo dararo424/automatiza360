@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, UseGuards, Post } from '@n
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PerfilService } from './perfil.service';
-import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
+import { ActualizarPagosConfigDto, ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 
 @Controller()
 export class PerfilController {
@@ -53,5 +53,23 @@ export class PerfilController {
   @Delete('perfil/datos-ejemplo')
   eliminarDatosEjemplo(@CurrentUser() user: any) {
     return this.perfilService.eliminarDatosEjemplo(user.tenantId);
+  @Get('perfil/whatsapp-status')
+  getWhatsappStatus(@CurrentUser() user: any) {
+    return this.perfilService.getWhatsappStatus(user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('perfil/pagos-config')
+  getPagosConfig(@CurrentUser() user: any) {
+    return this.perfilService.getPagosConfig(user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('perfil/pagos-config')
+  actualizarPagosConfig(
+    @CurrentUser() user: any,
+    @Body() dto: ActualizarPagosConfigDto,
+  ) {
+    return this.perfilService.actualizarPagosConfig(user.tenantId, dto);
   }
 }

@@ -147,15 +147,19 @@ export class InstagramService {
   async getTenantByPageId(pageId: string) {
     const tenant = await this.prisma.tenant.findFirst({
       where: { instagramPageId: pageId },
-      select: {
-        id: true,
-        metaPageAccessToken: true,
-      },
+      select: { id: true, metaPageAccessToken: true },
     });
     if (!tenant || !tenant.metaPageAccessToken) return null;
+
+    const owner = await this.prisma.user.findFirst({
+      where: { tenantId: tenant.id, role: 'OWNER', active: true },
+      select: { email: true },
+    });
+
     return {
       tenantId: tenant.id,
       pageAccessToken: decryptSecret(tenant.metaPageAccessToken),
+      botEmail: owner?.email ?? null,
     };
   }
 }

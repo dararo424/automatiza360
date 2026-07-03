@@ -20,12 +20,23 @@ export class NpsService {
   }
 
   async getStats(tenantId: string) {
-    const respuestas = await this.prisma.npsRespuesta.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: 'desc' },
-    });
+    const [aggregate, promotores, neutrales, detractores, ultimas] = await Promise.all([
+      this.prisma.npsRespuesta.aggregate({
+        where: { tenantId },
+        _count: { _all: true },
+        _avg: { score: true },
+      }),
+      this.prisma.npsRespuesta.count({ where: { tenantId, score: { gte: 9 } } }),
+      this.prisma.npsRespuesta.count({ where: { tenantId, score: { gte: 7, lte: 8 } } }),
+      this.prisma.npsRespuesta.count({ where: { tenantId, score: { lte: 6 } } }),
+      this.prisma.npsRespuesta.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+    ]);
 
-    const total = respuestas.length;
+    const total = aggregate._count._all;
 
     if (total === 0) {
       return {
@@ -39,12 +50,10 @@ export class NpsService {
       };
     }
 
-    const promotores = respuestas.filter((r) => r.score >= 9).length;
-    const neutrales = respuestas.filter((r) => r.score >= 7 && r.score <= 8).length;
-    const detractores = respuestas.filter((r) => r.score <= 6).length;
-
     const npsScore = Math.round(((promotores - detractores) / total) * 100);
-    const promedio = Math.round((respuestas.reduce((acc, r) => acc + r.score, 0) / total) * 10) / 10;
+    const promedio = aggregate._avg.score
+      ? Math.round(aggregate._avg.score * 10) / 10
+      : 0;
 
     return {
       npsScore,
@@ -53,7 +62,7 @@ export class NpsService {
       detractores,
       total,
       promedio,
-      ultimas: respuestas.slice(0, 10),
+      ultimas,
     };
   }
 }

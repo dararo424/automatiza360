@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
+import { ActualizarPagosConfigDto, ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 
 @Injectable()
 export class PerfilService {
@@ -93,6 +93,8 @@ export class PerfilService {
         ownerPhone: true,
         botName: true,
         botTone: true,
+        twilioNumber: true,
+        subscriptionStatus: true,
       },
     });
 
@@ -177,5 +179,68 @@ export class PerfilService {
       this.prisma.contact.deleteMany({ where }),
     ]);
     return { eliminado: true };
+  async getWhatsappStatus(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { twilioNumber: true, subscriptionStatus: true },
+    });
+    const env = process.env.TWILIO_ENV ?? 'sandbox';
+    const sandboxNumber = process.env.TWILIO_SANDBOX_NUMBER ?? '+14155238886';
+    const sandboxWord = process.env.TWILIO_SANDBOX_WORD ?? 'automatiza360';
+
+    if (tenant.twilioNumber) {
+      return {
+        mode: 'PRODUCCION' as const,
+        botNumber: tenant.twilioNumber,
+        sandboxNumber: null,
+        sandboxWord: null,
+      };
+    }
+
+    return {
+      mode: 'SANDBOX' as const,
+      botNumber: null,
+      sandboxNumber,
+      sandboxWord,
+      twilioEnv: env,
+    };
+  }
+
+  async getPagosConfig(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: {
+        paymentMode: true,
+        paymentText: true,
+        wompiPublicKey: true,
+        wompiIntegritySecret: true,
+      },
+    });
+    // Nunca devolver el secret completo, solo si está configurado
+    return {
+      paymentMode: tenant.paymentMode,
+      paymentText: tenant.paymentText,
+      wompiPublicKey: tenant.wompiPublicKey,
+      wompiIntegritySecretConfigured: Boolean(tenant.wompiIntegritySecret),
+    };
+  }
+
+  async actualizarPagosConfig(tenantId: string, dto: ActualizarPagosConfigDto) {
+    return this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        ...(dto.paymentMode !== undefined && { paymentMode: dto.paymentMode }),
+        ...(dto.paymentText !== undefined && { paymentText: dto.paymentText }),
+        ...(dto.wompiPublicKey !== undefined && { wompiPublicKey: dto.wompiPublicKey }),
+        ...(dto.wompiIntegritySecret !== undefined && {
+          wompiIntegritySecret: dto.wompiIntegritySecret,
+        }),
+      },
+      select: {
+        paymentMode: true,
+        paymentText: true,
+        wompiPublicKey: true,
+      },
+    });
   }
 }

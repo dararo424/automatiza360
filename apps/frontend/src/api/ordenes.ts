@@ -23,3 +23,10 @@ export function cambiarEstadoOrden(id: string, estado: OrderStatus): Promise<Ord
 
 export const getLinkPago = (id: string): Promise<{ url: string }> =>
   api.get(`/ordenes/${id}/link-pago`).then((r) => r.data);
+
+export type EnviarLinkResult =
+  | { ok: true; url: string; sentTo: string }
+  | { ok: false; reason: string };
+
+export const enviarLinkPagoWhatsApp = (id: string): Promise<EnviarLinkResult> =>
+  api.post(`/ordenes/${id}/enviar-link-pago`).then((r) => r.data);

@@ -1,4 +1,5 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
+import { PaymentMode } from '@prisma/client';
 
 export class ActualizarPerfilDto {
   @IsOptional()
@@ -40,4 +41,25 @@ export class ActualizarPerfilDto {
   @IsOptional()
   @IsString()
   botTone?: string;
+}
+
+export class ActualizarPagosConfigDto {
+  @IsOptional()
+  @IsEnum(PaymentMode)
+  paymentMode?: PaymentMode;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  paymentText?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  wompiPublicKey?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  wompiIntegritySecret?: string;
 }

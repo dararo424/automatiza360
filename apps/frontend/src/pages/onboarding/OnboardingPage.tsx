@@ -28,6 +28,7 @@ const INDUSTRY_OPTIONS: { value: Industry; label: string; emoji: string; desc: s
   { value: 'HOTEL', label: 'Hotel / Hostal', emoji: '🏨', desc: 'Reservas de habitaciones' },
   { value: 'BAKERY', label: 'Panadería / Pastelería', emoji: '🍞', desc: 'Órdenes, menú y pedidos del día' },
   { value: 'WORKSHOP', label: 'Taller / Mecánica', emoji: '🔧', desc: 'Tickets de reparación e inventario' },
+  { value: 'JEWELRY', label: 'Relojería / Joyería', emoji: '⌚', desc: 'Catálogo, reparaciones y garantías' },
   { value: 'OTHER', label: 'Otro tipo de negocio', emoji: '🏪', desc: 'Solución adaptable a tu industria' },
 ];
 

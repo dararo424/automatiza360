@@ -8,6 +8,14 @@ const INDUSTRY_LABEL: Record<string, string> = {
   TECH_STORE: 'Tienda Tech',
   CLINIC: 'Clínica',
   BEAUTY: 'Salón de belleza',
+  CLOTHING_STORE: 'Tienda de ropa',
+  GYM: 'Gimnasio',
+  PHARMACY: 'Farmacia',
+  VETERINARY: 'Veterinaria',
+  HOTEL: 'Hotel',
+  BAKERY: 'Panadería',
+  WORKSHOP: 'Taller',
+  JEWELRY: 'Relojería / Joyería',
   OTHER: 'Negocio',
 };
 

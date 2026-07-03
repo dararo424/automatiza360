@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getOrdenes, cambiarEstadoOrden, getLinkPago } from '../../api/ordenes';
+import { getOrdenes, cambiarEstadoOrden, getLinkPago, enviarLinkPagoWhatsApp } from '../../api/ordenes';
 import { Badge } from '../../components/ui/Badge';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import type { Orden, OrderStatus } from '../../types';
@@ -17,10 +17,12 @@ const ESTADOS: { value: OrderStatus | ''; label: string }[] = [
 
 function PagarBtn({ orden }: { orden: Orden }) {
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const noActiva = orden.status === 'DELIVERED' || orden.status === 'CANCELLED';
   if (noActiva) return null;
 
-  const handlePagar = async () => {
+  const handleVer = async () => {
     setLoading(true);
     try {
       const { url } = await getLinkPago(orden.id);
@@ -32,14 +34,53 @@ function PagarBtn({ orden }: { orden: Orden }) {
     }
   };
 
+  const handleEnviarWA = async () => {
+    if (!orden.phone) {
+      setFeedback('La orden no tiene teléfono');
+      setTimeout(() => setFeedback(null), 2500);
+      return;
+    }
+    setSending(true);
+    try {
+      const result = await enviarLinkPagoWhatsApp(orden.id);
+      if (result.ok) {
+        setFeedback(`✓ Enviado a ${result.sentTo}`);
+      } else {
+        setFeedback(`✗ ${result.reason}`);
+      }
+      setTimeout(() => setFeedback(null), 3000);
+    } catch {
+      setFeedback('✗ Error de red');
+      setTimeout(() => setFeedback(null), 3000);
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
-    <button
-      onClick={(e) => { e.stopPropagation(); void handlePagar(); }}
-      disabled={loading}
-      className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-60"
-    >
-      {loading ? '...' : '💳 Pagar'}
-    </button>
+    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => void handleVer()}
+        disabled={loading}
+        className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-60"
+        title="Ver link de pago"
+      >
+        {loading ? '...' : '💳 Pagar'}
+      </button>
+      {orden.phone && (
+        <button
+          onClick={() => void handleEnviarWA()}
+          disabled={sending}
+          className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors disabled:opacity-60"
+          title="Enviar link al cliente por WhatsApp"
+        >
+          {sending ? '...' : '📲 Enviar'}
+        </button>
+      )}
+      {feedback && (
+        <span className="text-xs text-slate-600 truncate max-w-[160px]">{feedback}</span>
+      )}
+    </div>
   );
 }
 
